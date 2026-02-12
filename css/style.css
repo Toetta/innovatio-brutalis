@@ -1,0 +1,163 @@
+:root{
+  --bg-main:#0E0E0E;
+  --bg-surface:#151515;
+  --brass-main:#B87333;
+  --brass-dark:#8F5A2A;
+  --brass-light:#D6A46A;
+  --text-main:#E6E6E6;
+  --text-muted:#BDBDBD;
+
+  --maxw: 1080px;
+  --radius: 18px;
+  --shadow: 0 8px 30px rgba(0,0,0,.45);
+}
+
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
+  background: radial-gradient(1200px 700px at 25% -10%, rgba(184,115,51,.10), transparent 60%),
+              radial-gradient(900px 600px at 90% 20%, rgba(214,164,106,.08), transparent 55%),
+              var(--bg-main);
+  color:var(--text-main);
+  line-height:1.55;
+}
+
+a{color:var(--brass-light); text-decoration:none}
+a:hover{color:var(--brass-main); text-decoration:underline}
+small{color:var(--text-muted)}
+
+.container{max-width:var(--maxw); margin:0 auto; padding:28px 20px}
+
+.topbar{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px;
+}
+
+.lang{
+  display:flex; gap:10px; align-items:center;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  font-size:12px;
+}
+.lang a{
+  padding:8px 10px;
+  border:1px solid rgba(184,115,51,.35);
+  border-radius:999px;
+  color:var(--text-main);
+}
+.lang a.active{
+  background: rgba(184,115,51,.14);
+  border-color: rgba(214,164,106,.6);
+}
+.lang a:hover{background: rgba(184,115,51,.18); text-decoration:none}
+
+.hero{
+  margin-top:22px;
+  display:grid;
+  grid-template-columns: 140px 1fr;
+  gap:22px;
+  align-items:center;
+  background: linear-gradient(180deg, rgba(21,21,21,.92), rgba(21,21,21,.78));
+  border: 1px solid rgba(184,115,51,.22);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow);
+}
+
+.brand-mark{
+  width:140px; height:140px;
+  border-radius: 22px;
+  overflow:hidden;
+  border:1px solid rgba(214,164,106,.35);
+  background: #0b0b0b;
+}
+.brand-mark img{width:100%; height:100%; object-fit:cover; display:block}
+
+h1{
+  margin:0 0 6px 0;
+  font-family: "DejaVu Serif", Georgia, "Times New Roman", serif;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size: clamp(24px, 3.2vw, 44px);
+  line-height:1.15;
+}
+.tagline{
+  margin:0;
+  color: var(--text-muted);
+  font-size: 16px;
+  max-width: 60ch;
+}
+.cta-row{margin-top:14px; display:flex; flex-wrap:wrap; gap:10px}
+.btn{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:10px 14px;
+  border-radius: 999px;
+  border:1px solid rgba(214,164,106,.45);
+  background: rgba(184,115,51,.12);
+  color: var(--text-main);
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  font-size:12px;
+}
+.btn:hover{background: rgba(184,115,51,.18); text-decoration:none}
+.btn.secondary{background: transparent; border-color: rgba(184,115,51,.35); color: var(--text-main)}
+
+.grid{
+  margin-top:20px;
+  display:grid;
+  grid-template-columns: 1.2fr .8fr;
+  gap:18px;
+}
+.card{
+  background: rgba(21,21,21,.72);
+  border:1px solid rgba(184,115,51,.18);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.card h2{
+  margin:0 0 8px 0;
+  font-family: "DejaVu Serif", Georgia, "Times New Roman", serif;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-size: 16px;
+  color: var(--text-main);
+}
+hr.sep{
+  border:0;
+  height:1px;
+  background: rgba(184,115,51,.60);
+  margin: 14px 0;
+}
+
+ul{
+  margin:10px 0 0 18px;
+  padding:0;
+}
+li{margin:6px 0}
+
+.kv{
+  display:grid;
+  grid-template-columns: 150px 1fr;
+  gap:10px 12px;
+  margin-top:10px;
+}
+.kv div{padding:6px 0; border-bottom:1px solid rgba(184,115,51,.12)}
+.kv div:nth-child(odd){color:var(--text-muted)}
+
+footer{
+  margin-top:24px;
+  padding-top:14px;
+  border-top:1px solid rgba(184,115,51,.18);
+  color: var(--text-muted);
+  font-size: 12px;
+}
+@media (max-width: 860px){
+  .hero{grid-template-columns: 110px 1fr}
+  .brand-mark{width:110px; height:110px}
+  .grid{grid-template-columns: 1fr}
+  .kv{grid-template-columns: 120px 1fr}
+}

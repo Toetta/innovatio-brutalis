@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Innovatio Brutalis — Product development & industrial design</title>
+  <meta name="description" content="Innovatio Brutalis — industrial design, product development, CAD, prototyping and low-volume manufacturing. Malmö, Sweden.">
+  <meta name="theme-color" content="#0E0E0E">
+  <link rel="stylesheet" href="../css/style.css">
+</head>
+<body>
+  <div class="container">
+    <div class="topbar">
+      <div></div>
+      <nav class="lang" aria-label="Language">
+        <a href="/">SV</a>
+        <a class="active" href="/en/">EN</a>
+      </nav>
+    </div>
+
+    <section class="hero" aria-label="Intro">
+      <div class="brand-mark">
+        <picture>
+          <source srcset="../assets/logo.webp" type="image/webp">
+          <img src="../assets/logo.jpg" alt="Innovatio Brutalis logo">
+        </picture>
+      </div>
+      <div>
+        <h1>Innovatio Brutalis</h1>
+        <p class="tagline">Industrial design and mechanical product development — from CAD and prototyping to low-volume component manufacturing.</p>
+        <div class="cta-row">
+          <a class="btn" href="#contact">Contact</a>
+          <a class="btn secondary" href="#services">Services</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card" id="services">
+        <h2>Services</h2>
+        <p>I support teams that need robust, manufacturable hardware — practical engineering decisions, not over-design.</p>
+        <ul>
+          <li>Concept → CAD → prototype → iterate</li>
+          <li>Industrial design and mechanical development</li>
+          <li>DFM / industrialization support (materials, processes, tolerances)</li>
+          <li>Low-volume parts and special components (one-offs / small series)</li>
+          <li>Classic & vintage vehicle components (replacement parts / performance upgrades)</li>
+        </ul>
+        <hr class="sep">
+        <h2>Focus areas</h2>
+        <p>Typical work spans B2B products with electronics for purification/sterilization, outdoor & leisure consumer products, medical-device adjacent component needs, lighting products, and industrial systems.</p>
+      </article>
+
+      <aside class="card" id="contact">
+        <h2>Contact</h2>
+        <p>Inquiries, collaborations, or RFQs:</p>
+        <div class="kv" role="list">
+          <div role="listitem">Email</div><div><a href="mailto:m.arlemark@malkus.se">m.arlemark@malkus.se</a></div>
+          <div role="listitem">Location</div><div>Malmö, Sweden</div>
+          <div role="listitem">Company</div><div>Innovatio Brutalis</div>
+          <div role="listitem">Org. no.</div><div>770314-3516</div>
+        </div>
+        <hr class="sep">
+        <h2>Working style</h2>
+        <ul>
+          <li>Serviceability and function first</li>
+          <li>Realistic materials & manufacturing routes</li>
+          <li>Fast prototype loops with measurable decisions</li>
+        </ul>
+      </aside>
+    </section>
+
+    <footer>
+      <div>Innovatio Brutalis — Sole proprietorship (SE) — Org. no. 770314-3516</div>
+      <div style="margin-top:6px">© <span id="y"></span> Innovatio Brutalis</div>
+    </footer>
+  </div>
+
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
