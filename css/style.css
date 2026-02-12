@@ -85,7 +85,6 @@ small{color:var(--text-muted)}
   width: min(520px, 96%);
   height: auto;
   display:block;
-  /* mild shadow so alpha/glow stays clean */
   filter: drop-shadow(0 10px 24px rgba(0,0,0,.45));
 }
 
