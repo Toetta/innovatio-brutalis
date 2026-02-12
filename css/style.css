@@ -183,3 +183,14 @@ footer{
   .kv{grid-template-columns: 120px 1fr}
   .brand-hero img{width: min(420px, 96%);}
 }
+
+/* FIX3: Ensure hero logo is centered and never visually cropped */
+.brand-hero{
+  width: 100%;
+}
+.brand-hero img{
+  margin-left: auto;
+  margin-right: auto;
+  max-height: 72vh;
+  object-fit: contain;
+}
