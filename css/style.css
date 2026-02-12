@@ -12,104 +12,64 @@
   --shadow: 0 8px 30px rgba(0,0,0,.45);
 }
 
-*{
-  box-sizing:border-box;
-}
-
-html,body{
-  height:100%;
-}
+*{box-sizing:border-box}
+html,body{height:100%}
 
 body{
   margin:0;
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Apple Color Emoji","Segoe UI Emoji";
-  background: radial-gradient(1200px 700px at 25% -10%, rgba(184,115,51,.10), transparent 60%),
-              radial-gradient(900px 600px at 90% 20%, rgba(214,164,106,.08), transparent 55%),
-              var(--bg-main);
+  background:
+    radial-gradient(1200px 700px at 25% -10%, rgba(184,115,51,.10), transparent 60%),
+    radial-gradient(900px 600px at 90% 20%, rgba(214,164,106,.08), transparent 55%),
+    var(--bg-main);
   color:var(--text-main);
   line-height:1.55;
 }
 
-/* ===========================
-   Links
-=========================== */
+a{color:var(--brass-light); text-decoration:none}
+a:hover{color:var(--brass-main); text-decoration:underline}
+small{color:var(--text-muted)}
 
-a{
-  color:var(--brass-light);
-  text-decoration:none;
-}
+.container{max-width:var(--maxw); margin:0 auto; padding:28px 20px}
 
-a:hover{
-  color:var(--brass-main);
-  text-decoration:underline;
-}
-
-small{
-  color:var(--text-muted);
-}
-
-/* ===========================
-   Layout container
-=========================== */
-
-.container{
-  max-width:var(--maxw);
-  margin:0 auto;
-  padding:28px 20px;
-}
-
-/* ===========================
-   Topbar / Language switch
-=========================== */
-
+/* Topbar / language */
 .topbar{
   display:flex;
   align-items:center;
-  justify-content:space-between;
+  justify-content:flex-end;
   gap:16px;
 }
 
 .lang{
-  display:flex;
-  gap:10px;
-  align-items:center;
+  display:flex; gap:10px; align-items:center;
   font-weight:600;
   letter-spacing:.06em;
   text-transform:uppercase;
   font-size:12px;
 }
-
 .lang a{
   padding:8px 10px;
   border:1px solid rgba(184,115,51,.35);
   border-radius:999px;
   color:var(--text-main);
 }
-
 .lang a.active{
   background: rgba(184,115,51,.14);
   border-color: rgba(214,164,106,.6);
 }
+.lang a:hover{background: rgba(184,115,51,.18); text-decoration:none}
 
-.lang a:hover{
-  background: rgba(184,115,51,.18);
-  text-decoration:none;
-}
-
-/* ===========================
-   HERO
-=========================== */
-
+/* Hero */
 .hero{
   margin-top:22px;
   display:grid;
   grid-template-columns: 1fr;
-  gap:18px;
+  gap:12px;
   align-items:center;
   background: linear-gradient(180deg, rgba(21,21,21,.92), rgba(21,21,21,.78));
   border: 1px solid rgba(184,115,51,.22);
   border-radius: var(--radius);
-  padding: 32px;
+  padding: 34px;
   box-shadow: var(--shadow);
   text-align:center;
 }
@@ -118,53 +78,40 @@ small{
   display:flex;
   justify-content:center;
   align-items:center;
-  padding: 10px 0 6px 0;
+  padding: 6px 0 0 0;
 }
 
 .brand-hero img{
-  width: min(520px, 92%);
-  height:auto;
+  width: min(520px, 96%);
+  height: auto;
   display:block;
-  /* Mild skugga så att alpha/glow inte förstörs */
+  /* mild shadow so alpha/glow stays clean */
   filter: drop-shadow(0 10px 24px rgba(0,0,0,.45));
 }
 
-/* ===========================
-   Typography
-=========================== */
-
+/* Typography (Alt 1) */
 h1{
-  margin:0 0 6px 0;
-  font-family: "DejaVu Serif", Georgia, "Times New Roman", serif;
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  font-size: clamp(26px, 3.2vw, 48px);
-  line-height:1.15;
+  margin: 6px 0 10px 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans";
+  text-transform:none;
+  letter-spacing:0.01em;
+  font-size: clamp(18px, 2.0vw, 26px);
+  line-height:1.25;
+  font-weight:700;
+  color: var(--text-main);
 }
 
 .tagline{
-  margin:0 auto;
+  margin: 0 auto;
   color: var(--text-muted);
-  font-size: 17px;
-  max-width: 60ch;
+  font-size: 16px;
+  max-width: 62ch;
 }
 
-.cta-row{
-  margin-top:18px;
-  display:flex;
-  justify-content:center;
-  flex-wrap:wrap;
-  gap:12px;
-}
-
-/* ===========================
-   Buttons
-=========================== */
+.cta-row{margin-top:14px; display:flex; justify-content:center; flex-wrap:wrap; gap:12px}
 
 .btn{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
+  display:inline-flex; align-items:center; justify-content:center;
   padding:12px 18px;
   border-radius: 999px;
   border:1px solid rgba(214,164,106,.45);
@@ -176,22 +123,10 @@ h1{
   font-size:12px;
   transition: all .2s ease;
 }
+.btn:hover{background: rgba(184,115,51,.20); text-decoration:none}
+.btn.secondary{background: transparent; border-color: rgba(184,115,51,.35); color: var(--text-main)}
 
-.btn:hover{
-  background: rgba(184,115,51,.20);
-  text-decoration:none;
-}
-
-.btn.secondary{
-  background: transparent;
-  border-color: rgba(184,115,51,.35);
-  color: var(--text-main);
-}
-
-/* ===========================
-   Content grid
-=========================== */
-
+/* Content */
 .grid{
   margin-top:28px;
   display:grid;
@@ -204,6 +139,7 @@ h1{
   border:1px solid rgba(184,115,51,.18);
   border-radius: var(--radius);
   padding: 22px;
+  text-align:left;
 }
 
 .card h2{
@@ -222,18 +158,8 @@ hr.sep{
   margin: 16px 0;
 }
 
-/* ===========================
-   Lists & key-value layout
-=========================== */
-
-ul{
-  margin:10px 0 0 18px;
-  padding:0;
-}
-
-li{
-  margin:6px 0;
-}
+ul{margin:10px 0 0 18px; padding:0}
+li{margin:6px 0}
 
 .kv{
   display:grid;
@@ -241,19 +167,8 @@ li{
   gap:10px 12px;
   margin-top:10px;
 }
-
-.kv div{
-  padding:6px 0;
-  border-bottom:1px solid rgba(184,115,51,.12);
-}
-
-.kv div:nth-child(odd){
-  color:var(--text-muted);
-}
-
-/* ===========================
-   Footer
-=========================== */
+.kv div{padding:6px 0; border-bottom:1px solid rgba(184,115,51,.12)}
+.kv div:nth-child(odd){color:var(--text-muted)}
 
 footer{
   margin-top:40px;
@@ -264,25 +179,8 @@ footer{
   text-align:center;
 }
 
-/* ===========================
-   Responsive
-=========================== */
-
 @media (max-width: 860px){
-
-  .brand-hero img{
-    width: min(420px, 96%);
-  }
-
-  .grid{
-    grid-template-columns: 1fr;
-  }
-
-  .kv{
-    grid-template-columns: 120px 1fr;
-  }
-
-  .cta-row{
-    justify-content:center;
-  }
+  .grid{grid-template-columns: 1fr}
+  .kv{grid-template-columns: 120px 1fr}
+  .brand-hero img{width: min(420px, 96%);}
 }
