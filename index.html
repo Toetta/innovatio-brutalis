@@ -1,65 +1,94 @@
 <!doctype html>
 <html lang="sv">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Innovatio Brutalis — Industridesign & teknisk produktutveckling</title>
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Innovatio Brutalis — Industridesign & teknisk produktutveckling</title>
+  <meta name="description" content="Innovatio Brutalis arbetar tidigt i utvecklingskedjan — från analys av behov och problemformulering till konceptutveckling, konstruktion (CAD), prototypframtagning och lågvolymproduktion.">
+  <meta name="theme-color" content="#0E0E0E">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div class="container">
+  <div class="container">
+    <div class="topbar">
+      <nav class="site-nav" aria-label="Site">
+        <a class="active" href="./">Start</a>
+        <a class="" href="cnc/">CNC & Laser</a>
+        <a class="" href="print/">3D-print</a>
+        <a class="" href="scan/">3D-scanning</a>
+        <a class="" href="materials/">Material</a>
+      </nav>
+      <nav class="lang" aria-label="Language">
+        <a class="active" href="./">SV</a><a href="en/">EN</a>
+      </nav>
+    </div>
 
-<section class="hero">
-<div class="brand-hero">
-<img src="assets/logo.png" alt="Innovatio Brutalis logotyp">
-</div>
-<h1>Industridesign & teknisk produktutveckling</h1>
-<p class="tagline">
-Innovatio Brutalis arbetar tidigt i utvecklingskedjan — från analys av behov och problemformulering 
-till konceptutveckling, konstruktion (CAD), prototypframtagning och lågvolymproduktion.
-</p>
-</section>
+    <section class="hero">
+      <div class="brand-hero"><picture>
+          <source srcset="assets/logo.webp" type="image/webp">
+          <img src="assets/logo.png" alt="Innovatio Brutalis logo">
+        </picture></div>
+      <h1>Industridesign & teknisk produktutveckling</h1>
+      <p class="tagline">Innovatio Brutalis arbetar tidigt i utvecklingskedjan — från analys av behov och problemformulering till konceptutveckling, konstruktion (CAD), prototypframtagning och lågvolymproduktion.</p>
+      <div class="cta-row">
+        <a class="btn" href="./#kontakt">Kontakt</a>
+        <a class="btn secondary" href="materials/">Material</a>
+      </div>
+    </section>
 
+    
 <section class="grid">
-<article class="card">
-<h2>Utvecklingskedja</h2>
-<ul>
-<li>Analys av behov och kravbild</li>
-<li>Problemformulering & funktionsnedbrytning</li>
-<li>Konceptutveckling & utvärdering</li>
-<li>Konstruktion (CAD)</li>
-<li>Prototyp & verifiering</li>
-<li>Produktionsanpassning (DFM)</li>
-<li>Lågvolymproduktion</li>
-</ul>
-</article>
-
-<aside class="card">
-<h2>Kontakt</h2>
-<div class="kv">
-<div>E-post</div><div><a href="mailto:m.arlemark@innovatio-brutalis.se">m.arlemark@innovatio-brutalis.se</a></div>
-<div>Plats</div><div>Malmö, Sverige</div>
-<div>Org.nr</div><div>770314-3516</div>
-</div>
-</aside>
+  <article class="card">
+    <h2>Utvecklingskedja</h2>
+    <p>Innovatio Brutalis arbetar tidigt i utvecklingskedjan — från analys av behov och problemformulering till konceptutveckling, konstruktion (CAD), prototypframtagning och lågvolymproduktion.</p>
+    <ul>
+      <li>Behovsanalys, kravbild och risker</li>
+      <li>Problemformulering & funktionsnedbrytning</li>
+      <li>Konceptutveckling, utvärdering och beslut</li>
+      <li>Konstruktion (CAD) med DFM i åtanke</li>
+      <li>Prototyp & verifiering</li>
+      <li>Enstyck & småserier (metall och tekniska polymerer)</li>
+    </ul>
+    <hr class="sep">
+    <h2>Snabblänkar</h2>
+    <ul>
+      <li><a href="cnc/">CNC & lasergravyr</a></li>
+      <li><a href="print/">3D-print (engineering grade + PVC/Vinyl 303)</a></li>
+      <li><a href="scan/">3D-scanning & reverse engineering</a></li>
+      <li><a href="materials/">Material & storlekar</a></li>
+    </ul>
+  </article>
+  <aside class="card">
+    <h2>Press</h2>
+    <p>Innovatio Brutalis uppmärksammades i Sydsvenskan för utveckling av slagtåliga 3D-printade glasögonbågar.</p>
+    <p><a href="https://www.sydsvenskan.se/malmo/han-gor-okrossbara-glasogonbagar-till-sonen-i-en-3d-skrivare/" target="_blank" rel="noopener">Läs artikeln</a></p>
+    <hr class="sep">
+    <h2>Kvalitet & arbetssätt</h2>
+    <ul>
+      <li>Spårbar projektstruktur och versionshantering av CAD</li>
+      <li>Mätverifiering och dokumentation vid behov</li>
+      <li>Snabb iteration med tydliga beslutspunkter</li>
+    </ul>
+  </aside>
 </section>
 
-<section class="card" style="margin-top:30px;">
-<h2>Maskinpark & Utrustning</h2>
-<p>Nestworks C500 (4-axlig), BambuLab X1C printerfarm, samt 3D-scanning med Revopoint Range.</p>
 
-<div style="margin-top:20px; display:grid; gap:20px;">
-  <iframe width="100%" height="315" src="https://www.youtube.com/embed/GYmuXTlQczU" allowfullscreen></iframe>
-  <iframe width="100%" height="315" src="https://www.youtube.com/embed/l-BYCi1tIUU" allowfullscreen></iframe>
-  <iframe width="100%" height="315" src="https://www.youtube.com/embed/aqmP5YHP7Bs" allowfullscreen></iframe>
-</div>
+    <section class="card" id="kontakt" style="margin-top:28px;">
+      <h2>Kontakt</h2>
+      <p>För förfrågningar, samarbeten eller offertunderlag:</p>
+      <div class="kv" role="list">
+        <div role="listitem">E-post</div><div><a href="mailto:m.arlemark@innovatio-brutalis.se">m.arlemark@innovatio-brutalis.se</a></div>
+        <div role="listitem">Plats</div><div>Malmö, Sverige</div>
+        <div role="listitem">Företag</div><div>Innovatio Brutalis</div>
+        <div role="listitem">Org.nr</div><div>770314-3516</div>
+      </div>
+    </section>
 
-</section>
-
-<footer>
-© 2026 Innovatio Brutalis™ – Varumärket är föremål för registrering hos PRV (Sverige).
-</footer>
-
-</div>
+    <footer>
+      <div>Innovatio Brutalis™ — Varumärket är föremål för registrering hos PRV (Sverige).</div>
+      <div style="margin-top:6px">© <span id="y"></span> Innovatio Brutalis</div>
+    </footer>
+  </div>
+  <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
 </body>
 </html>
