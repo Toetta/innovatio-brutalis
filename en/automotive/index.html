@@ -29,6 +29,11 @@
   <meta property="og:url" content="https://www.innovatio-brutalis.se/en/automotive/">
   <meta property="og:image" content="https://www.innovatio-brutalis.se/assets/og-image.jpg">
 
+  <!-- hreflang -->
+  <link rel="alternate" href="https://www.innovatio-brutalis.se/automotive/" hreflang="sv-se">
+  <link rel="alternate" href="https://www.innovatio-brutalis.se/en/automotive/" hreflang="en">
+  <link rel="alternate" href="https://www.innovatio-brutalis.se/automotive/" hreflang="x-default">
+
   <link rel="stylesheet" href="/css/style.css">
 </head>
 
@@ -42,11 +47,12 @@
   <section class="hero" style="text-align:left;">
     <h1>Automotive & Special Vehicles</h1>
     <p class="tagline">
-      Engineering for demanding mechanical environments where robustness,
-      weight optimisation and functional integration must align.
+      Vehicle development where analysis, material selection and practical manufacturing meet —
+      with respect for safety, function and the human behind the wheel.
     </p>
     <div class="cta-row">
-      <a class="btn" href="../#contact">Discuss a project</a>
+      <a class="btn" href="/en/#contact">Discuss a project</a>
+      <a class="btn secondary" href="/en/engineering/">See analysis capability</a>
     </div>
   </section>
 
@@ -54,33 +60,104 @@
     <article class="card">
       <h2>From Concept to Road-Ready Solution</h2>
       <ul>
-        <li>Structural components</li>
-        <li>Weight optimisation</li>
-        <li>Functional integration</li>
+        <li>Structural components and brackets</li>
+        <li>Weight optimisation and functional integration</li>
         <li>Material selection for dynamic loads</li>
-        <li>Prototype iteration</li>
+        <li>Prototyping &amp; iteration</li>
+        <li>Reverse engineering of obsolete parts</li>
       </ul>
 
       <hr class="sep">
 
-      <h2>Technical Focus</h2>
-      <ul>
-        <li>Chassis components</li>
-        <li>Mechanical systems</li>
-        <li>Reverse engineering</li>
-        <li>Low-volume production</li>
-      </ul>
+      <h2>Projects</h2>
+      <p style="margin-top:0;">
+        A mix of real customer cases (coming soon) and my own vehicle experiments.
+        Some start serious. Others start with “this is a bad idea” and end in Haparanda.
+      </p>
+
+      <!-- PROJECT CARDS -->
+      <div class="project-grid" style="margin-top:18px;">
+
+        <!-- PROJECT 1 -->
+        <article class="project-card">
+          <div class="project-thumb">
+            <a href="/assets/haparanda-small.pdf" target="_blank" rel="noopener">
+              <img src="/assets/haparanda-thumbnail.jpg" alt="Lambretta Cometa 75 — ride to Haparanda">
+            </a>
+            <span class="project-tag hobby">Exploration</span>
+          </div>
+
+          <div class="project-content">
+            <h3 style="margin-top:0;">Lambretta Cometa 75 — Haparanda - Malmö</h3>
+
+            <p>
+              Two people. 75cc. Far north. A hobby project mostly about finding out
+              if it was even possible — and how many times you can say “we’ll figure it out” before you actually have to.
+            </p>
+
+            <ul class="project-meta">
+              <li><strong>Vehicle:</strong> Lambretta Cometa 75</li>
+              <li><strong>Modifications:</strong> tyres/tubes, 12V electrical, GPS, cables, shocks, gaskets, service, welding, clutch</li>
+              <li><strong>Loadout:</strong> minimal packing, tie-down straps + fuel cans, small rear basket, backpacks</li>
+              <li><strong>3D printing:</strong> GPS mount</li>
+              <li><strong>Tested:</strong> strategy, problem solving, relationship dynamics (yes, it counts)</li>
+            </ul>
+
+            <a class="btn small" href="/assets/haparanda-small.pdf" target="_blank" rel="noopener">
+              Read the adventure (PDF)
+            </a>
+          </div>
+        </article>
+
+        <!-- UPCOMING -->
+        <article class="project-card upcoming">
+          <div class="project-thumb placeholder">
+            <span>More coming</span>
+          </div>
+          <div class="project-content">
+            <h3 style="margin-top:0;">Customer projects (coming soon)</h3>
+            <p>
+              Mostly for fun for now — proper customer cases with real substance are on the way.
+            </p>
+          </div>
+        </article>
+
+        <article class="project-card upcoming">
+          <div class="project-thumb placeholder">
+            <span>More coming</span>
+          </div>
+          <div class="project-content">
+            <h3 style="margin-top:0;">Reverse engineering &amp; special parts</h3>
+            <p>
+              When the part is obsolete, impossible to source, or needs to be better than the original.
+            </p>
+          </div>
+        </article>
+
+      </div>
     </article>
 
     <aside class="card">
-      <h2>Related Capabilities</h2>
+      <h2>Related</h2>
       <ul>
-        <li><a href="../engineering/">Engineering & Analysis</a></li>
-        <li><a href="../cnc/">CNC Machining</a></li>
-        <li><a href="../print/">3D Printing</a></li>
+        <li><a href="/en/cnc/">CNC &amp; laser engraving</a></li>
+        <li><a href="/en/print/">3D printing</a></li>
+        <li><a href="/en/scan/">3D scanning</a></li>
+      </ul>
+
+      <hr class="sep">
+
+      <h2>Links</h2>
+      <ul>
+        <li><a href="/assets/haparanda-small.pdf" target="_blank" rel="noopener">Haparanda (PDF)</a></li>
       </ul>
     </aside>
   </section>
+
+  <footer>
+    <div>Innovatio Brutalis™ — Trademark pending registration with PRV (Sweden).</div>
+    <div style="margin-top:6px">© <span id="y"></span> Innovatio Brutalis</div>
+  </footer>
 
 </div>
 </body>
