@@ -53,9 +53,16 @@
     </div>
   `;
 
-  // Inject into #site-topbar if present
-  const mount = document.getElementById("site-topbar");
-  if (mount) mount.innerHTML = topbarHTML;
+  // Inject into #site-topbar.
+  // If a page forgot to include the mount node, create it at the top of the main container.
+  let mount = document.getElementById("site-topbar");
+  if (!mount) {
+    const container = document.querySelector(".container") || document.body;
+    mount = document.createElement("div");
+    mount.id = "site-topbar";
+    container.insertBefore(mount, container.firstChild);
+  }
+  mount.innerHTML = topbarHTML;
 
   // Optional: keep year updated if footer uses #y
   const y = document.getElementById("y");
