@@ -229,6 +229,7 @@ footer{
   grid-template-columns: 96px 1fr;
   gap:12px;
   align-items:center;
+  margin: 12px 0 18px 0;
   padding:12px;
   border:1px solid rgba(184,115,51,.22);
   border-radius: 14px;
