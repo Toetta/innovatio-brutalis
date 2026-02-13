@@ -12,7 +12,7 @@
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Classic Mini Gearbox Visualiser</title>
+  <title>Classic Mini Gearbox Visualiser (HTML)</title>
 
   <link rel="stylesheet" href="/css/style.css">
 
@@ -41,9 +41,11 @@
       color:var(--text);
     }
 
-    /* Keep the global nav, but don't let this page's header overlap it */
     header{
       padding: 18px 18px 10px;
+      position: sticky;
+      top: 0;
+      z-index: 30;
       background: linear-gradient(to bottom, rgba(11,13,16,.96), rgba(11,13,16,.78));
       backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(35,48,64,.55);
@@ -268,6 +270,37 @@
     a{ color: #b7d8ff; text-decoration: none; }
     a:hover{ text-decoration: underline; }
 
+    .btn.mini{
+      padding: 7px 10px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1;
+      min-width: 38px;
+    }
+    .zoomRow{
+      display:flex;
+      gap: 8px;
+      align-items:center;
+    }
+    input[type="range"]{
+      width: 100%;
+      accent-color: var(--accent);
+      height: 26px;
+      padding: 0;
+    }
+
+    /* Table row-height scaling (vertical only) */
+    #rpmTable{
+      --rowH: 28px;
+      --cellFont: 12px;
+    }
+    #rpmTable tbody td{
+      height: var(--rowH);
+      line-height: var(--rowH);
+      padding: 0 8px;
+      font-size: var(--cellFont);
+    }
+
     /* Keep global nav readable on this page */
     #site-topbar{ margin: 14px auto 0; max-width: 1100px; padding: 0 18px; }
   </style>
@@ -279,8 +312,7 @@
   <script defer src="/assets/site.js"></script>
 
   <header>
-    <h1>Classic Mini Gearbox Visualiser</h1>
-    <p class="sub">Bygger samma logik som ditt Excel-blad: RPM per växel vid olika hastigheter + dynamisk bakgrundsfärg (grå → grön → gul → röd).</p>
+    <h1>Classic Mini Gearbox Visualiser (HTML)</h1>
   </header>
 
   <div class="wrap">
@@ -316,8 +348,25 @@
       <div class="toolbar">
         <div class="left">
           <div style="min-width:260px">
-            <label style="display:block;margin:0 0 6px">Speed step (km/h)</label>
+            <label style="display:block;margin:0 0 6px">Speed step <span id="speedUnitLabel" style="color:var(--muted)"></span></label>
             <input id="speedStep" type="number" min="1" step="1" value="5" />
+          </div>
+          <div style="min-width:200px">
+            <label style="display:block;margin:0 0 6px">Units</label>
+            <select id="unitSelect" aria-label="Units">
+              <option value="kmh">km/h</option>
+              <option value="mph">mph</option>
+            </select>
+          </div>
+          <div style="min-width:300px">
+            <label style="display:block;margin:0 0 6px">Table row height</label>
+            <div class="zoomRow">
+              <button class="btn mini" id="zoomOut" title="Decrease row height">−</button>
+              <input id="zoom" type="range" min="30" max="140" step="2" value="100" aria-label="Zoom slider" />
+              <button class="btn mini" id="zoomIn" title="Increase row height">+</button>
+              <button class="btn" id="btnFit" title="Try to fit the whole table in view">Fit</button>
+            </div>
+            <div class="hint" id="zoomLabel" style="margin-top:6px">100%</div>
           </div>
           <div class="pillbar" id="autoscalePills"></div>
         </div>
@@ -329,18 +378,10 @@
       </div>
 
       <div class="tableWrap">
-        <table id="rpmTable" aria-label="RPM table"></table>
+        <div id="zoomHost"><table id="rpmTable" aria-label="RPM table"></table></div>
       </div>
     </div>
   </div>
-
-  <footer>
-    Tips:
-    <ul>
-      <li>Detta är en statisk sida. Spara som <b>.html</b> och öppna i valfri webbläsare.</li>
-      <li>Makron behövs inte – all färgsättning görs i JavaScript via samma interpolation som din VBA-funktion.</li>
-    </ul>
-  </footer>
 
   <script>
     /** ===== Lookups (från din Lookups-flik) ===== */
@@ -383,13 +424,33 @@
     };
 
     let state = {
+      unit: "kmh",
       speedStep: 5,
+      zoom: 1.0,
       left: structuredClone(DEFAULT_SIDE),
       right: structuredClone(DEFAULT_SIDE),
     };
 
     /** ===== Helpers ===== */
     function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+
+    const KMH_PER_MPH = 1.609344;
+
+    function unitLabel(){
+      return (state.unit === "mph") ? "mph" : "km/h";
+    }
+    function toKmh(speedInUnit){
+      return (state.unit === "mph") ? (Number(speedInUnit) * KMH_PER_MPH) : Number(speedInUnit);
+    }
+    function fromKmh(speedKmh){
+      return (state.unit === "mph") ? (Number(speedKmh) / KMH_PER_MPH) : Number(speedKmh);
+    }
+    function formatSpeed(x){
+      if (x == null || !Number.isFinite(x)) return "";
+      const rounded = Math.round(x);
+      if (Math.abs(x - rounded) < 1e-6) return String(rounded);
+      return (Math.round(x*10)/10).toString();
+    }
 
     function rgb(r,g,b){ return `rgb(${r|0},${g|0},${b|0})`; }
 
@@ -467,7 +528,7 @@
     }
 
     function formatKmH(x){
-      return (Math.round(x*10)/10).toString(); // 1 decimal if needed
+      return formatSpeed(x);
     }
 
     /** ===== UI rendering ===== */
@@ -731,10 +792,12 @@
     /** ===== Table rendering ===== */
     function renderAutoscalePills(){
       const pills = document.getElementById("autoscalePills");
-      const step = Number(state.speedStep);
-      const leftMax = maxSpeedAtLimiterKmH(state.left);
-      const rightMax = maxSpeedAtLimiterKmH(state.right);
-      const overall = Math.ceil(Math.max(leftMax, rightMax) / step) * step;
+      const stepU = Math.max(0.1, Number(state.speedStep) || 5);
+      const leftMaxK = maxSpeedAtLimiterKmH(state.left);
+      const rightMaxK = maxSpeedAtLimiterKmH(state.right);
+      const leftMaxU = fromKmh(leftMaxK);
+      const rightMaxU = fromKmh(rightMaxK);
+      const overallU = Math.ceil(Math.max(leftMaxU, rightMaxU) / stepU) * stepU;
 
       pills.innerHTML = "";
       const mk = (label, val) => {
@@ -744,9 +807,10 @@
         return p;
       };
 
-      pills.appendChild(mk("Left max @ limiter", `${formatKmH(leftMax)} km/h`));
-      pills.appendChild(mk("Right max @ limiter", `${formatKmH(rightMax)} km/h`));
-      pills.appendChild(mk("Auto max speed", `${formatKmH(overall)} km/h`));
+      const u = unitLabel();
+      pills.appendChild(mk("Left max @ limiter", `${formatSpeed(leftMaxU)} ${u}`));
+      pills.appendChild(mk("Right max @ limiter", `${formatSpeed(rightMaxU)} ${u}`));
+      pills.appendChild(mk("Auto max speed", `${formatSpeed(overallU)} ${u}`));
     }
 
     function renderSidePills(sideKey){
@@ -758,7 +822,8 @@
       const drop = dropRatioByName(side.dropGear);
       const effFD = Number(side.finalDrive) * drop;
       const top = topGearRatio(side.gears);
-      const vmax = maxSpeedAtLimiterKmH(side);
+      const vmaxK = maxSpeedAtLimiterKmH(side);
+      const vmax = fromKmh(vmaxK);
 
       pills.innerHTML = "";
       const mk = (label, val) => {
@@ -772,20 +837,23 @@
       pills.appendChild(mk("Drop ratio", drop.toFixed(3)));
       pills.appendChild(mk("Eff. final", effFD.toFixed(3)));
       pills.appendChild(mk("Top gear", top.toFixed(3)));
-      pills.appendChild(mk("Vmax@lim", `${formatKmH(vmax)} km/h`));
+      pills.appendChild(mk("Vmax@lim", `${formatSpeed(vmax)} ${unitLabel()}`));
     }
 
     function renderTable(){
       const table = document.getElementById("rpmTable");
-      const step = Math.max(1, Number(state.speedStep) || 5);
+      const stepU = Math.max(0.1, Number(state.speedStep) || 5);
 
-      const leftMax = maxSpeedAtLimiterKmH(state.left);
-      const rightMax = maxSpeedAtLimiterKmH(state.right);
-      const overall = Math.ceil(Math.max(leftMax, rightMax) / step) * step;
+      const leftMaxK = maxSpeedAtLimiterKmH(state.left);
+      const rightMaxK = maxSpeedAtLimiterKmH(state.right);
+      const leftMaxU = fromKmh(leftMaxK);
+      const rightMaxU = fromKmh(rightMaxK);
+      const overallU = Math.ceil(Math.max(leftMaxU, rightMaxU) / stepU) * stepU;
 
-      const speeds = [];
-      for (let s = overall; s >= 0; s -= step){
-        speeds.push(s);
+      const speedsU = [];
+      for (let s = overallU; s >= 0; s -= stepU){
+        // avoid floating drift
+        speedsU.push(Math.round(s * 1000) / 1000);
       }
 
       const gearLabels = ["1st","2nd","3rd","4th","5th"];
@@ -794,35 +862,35 @@
       const thead = document.createElement("thead");
       const tr1 = document.createElement("tr");
       tr1.appendChild(th("LEFT RPM by gear", 5, "groupL"));
-      tr1.appendChild(th("Speed (km/h)", 1, "speedCol"));
+      tr1.appendChild(th(`Speed (${unitLabel()})`, 1, "speedCol"));
       tr1.appendChild(th("RIGHT RPM by gear", 5, "groupR"));
       thead.appendChild(tr1);
 
       const tr2 = document.createElement("tr");
       for (let i=0;i<5;i++) tr2.appendChild(th(`${gearLabels[i]} RPM`, 1, "groupL"));
-      tr2.appendChild(th("km/h", 1, "speedCol"));
+      tr2.appendChild(th(unitLabel(), 1, "speedCol"));
       for (let i=0;i<5;i++) tr2.appendChild(th(`${gearLabels[i]} RPM`, 1, "groupR"));
       thead.appendChild(tr2);
 
       // Build TBODY
       const tbody = document.createElement("tbody");
-      speeds.forEach(speed => {
+      speedsU.forEach(speedU => {
         const tr = document.createElement("tr");
 
         // Left 5 gears
         for (let gi=0; gi<5; gi++){
-          tr.appendChild(rpmCell(speed, state.left.gears[gi], state.left, gi === 4 ? "groupL" : ""));
+          tr.appendChild(rpmCell(speedU, state.left.gears[gi], state.left, gi === 4 ? "groupL" : ""));
         }
 
         // Speed center
         const tdS = document.createElement("td");
         tdS.className = "speedCol";
-        tdS.textContent = formatKmH(speed);
+        tdS.textContent = formatSpeed(speedU);
         tr.appendChild(tdS);
 
         // Right 5 gears
         for (let gi=0; gi<5; gi++){
-          tr.appendChild(rpmCell(speed, state.right.gears[gi], state.right, gi === 0 ? "groupR" : ""));
+          tr.appendChild(rpmCell(speedU, state.right.gears[gi], state.right, gi === 0 ? "groupR" : ""));
         }
 
         tbody.appendChild(tr);
@@ -839,11 +907,11 @@
         return x;
       }
 
-      function rpmCell(speed, gearRatio, side, extraClass=""){
+      function rpmCell(speedU, gearRatio, side, extraClass=""){
         const td = document.createElement("td");
         if (extraClass) td.classList.add(extraClass);
 
-        const rpm = rpmAtSpeedKmH(speed, gearRatio, side);
+        const rpm = rpmAtSpeedKmH(toKmh(speedU), gearRatio, side);
         if (rpm == null || rpm > Number(side.rpmLim) || !Number.isFinite(rpm)){
           td.textContent = "";
           td.classList.add("mutedCell");
@@ -866,11 +934,73 @@
     }
 
     let rafPending = false;
+
+    function applyZoom(){
+      const table = document.getElementById("rpmTable");
+      const label = document.getElementById("zoomLabel");
+      const z = Math.max(0.30, Math.min(1.40, Number(state.zoom) || 1));
+      state.zoom = z;
+
+      // Vertical-only scaling: change row height + font size (width stays the same)
+      const BASE_ROW_H = 28;   // px at 100%
+      const BASE_FONT  = 12;   // px at 100%
+      const rowH = Math.max(12, Math.round(BASE_ROW_H * z));
+      const font = Math.max(9,  Math.round(BASE_FONT  * z));
+
+      if (table){
+        table.style.setProperty("--rowH", rowH + "px");
+        table.style.setProperty("--cellFont", font + "px");
+      }
+      if (label) label.textContent = `${Math.round(z * 100)}% (height)`;
+    }
+
+    function setZoomFromPercent(pct){
+      const p = Number(pct);
+      if (!Number.isFinite(p)) return;
+      state.zoom = p / 100;
+      applyZoom();
+    }
+
+    function fitZoom(){
+      // Fit height: pick a row height so ALL rows fit inside the visible table area.
+      const wrap = document.querySelector(".tableWrap");
+      const table = document.getElementById("rpmTable");
+      if (!wrap || !table) return;
+
+      // Work with base sizes first so measurements are predictable.
+      const BASE_ROW_H = 28;
+      const BASE_FONT  = 12;
+      table.style.setProperty("--rowH", BASE_ROW_H + "px");
+      table.style.setProperty("--cellFont", BASE_FONT + "px");
+
+      requestAnimationFrame(() => {
+        const thead = table.querySelector("thead");
+        const headH = thead ? thead.offsetHeight : 0;
+        const rows = table.querySelectorAll("tbody tr").length;
+        if (!rows) return;
+
+        const availH = wrap.clientHeight - 4; // small margin
+        const perRow = Math.floor((availH - headH) / rows);
+
+        // convert target row height -> scale factor
+        const targetRowH = Math.max(12, Math.min(40, perRow - 1));
+        let z = targetRowH / BASE_ROW_H;
+        z = Math.max(0.30, Math.min(1.40, z));
+
+        state.zoom = z;
+        const slider = document.getElementById("zoom");
+        if (slider) slider.value = String(Math.round(z * 100));
+        applyZoom();
+      });
+    }
+
     function renderAll(){
       if (rafPending) return;
       rafPending = true;
       requestAnimationFrame(() => {
         rafPending = false;
+        const speedUnitLabel = document.getElementById("speedUnitLabel");
+        if (speedUnitLabel) speedUnitLabel.textContent = `(${unitLabel()})`;
         renderAutoscalePills();
         renderSidePills("left");
         renderSidePills("right");
@@ -889,6 +1019,8 @@
         const s = JSON.parse(raw);
         if (!s || !s.left || !s.right) return false;
         state = s;
+        if (typeof state.zoom !== "number") state.zoom = 1.0;
+        if (typeof state.unit !== "string") state.unit = "kmh";
         return true;
       }catch(e){
         return false;
@@ -896,7 +1028,9 @@
     }
     function resetState(){
       state = {
+        unit: "kmh",
         speedStep: 5,
+        zoom: 1.0,
         left: structuredClone(DEFAULT_SIDE),
         right: structuredClone(DEFAULT_SIDE),
       };
@@ -907,35 +1041,118 @@
       buildSideForm(document.getElementById("leftForm"), "left");
       buildSideForm(document.getElementById("rightForm"), "right");
 
+      const unitSel = document.getElementById("unitSelect");
+      const speedUnitLabel = document.getElementById("speedUnitLabel");
+
       const stepInput = document.getElementById("speedStep");
       stepInput.value = state.speedStep;
+
+      function syncUnitUI(){
+        if (unitSel) unitSel.value = state.unit || "kmh";
+        if (speedUnitLabel) speedUnitLabel.textContent = `(${unitLabel()})`;
+      }
+
+      syncUnitUI();
+
       stepInput.addEventListener("input", () => {
-        state.speedStep = Math.max(1, Number(stepInput.value) || 5);
+        const v = Number(stepInput.value);
+        state.speedStep = (Number.isFinite(v) && v > 0) ? v : 5;
         renderAll();
       });
 
+      if (unitSel){
+        unitSel.addEventListener("change", () => {
+          const oldUnit = state.unit || "kmh";
+          const newUnit = unitSel.value;
+
+          if (newUnit === oldUnit) return;
+
+          // Convert current step to preserve physical size
+          const step = Number(state.speedStep) || 5;
+          let stepKmh = (oldUnit === "mph") ? step * KMH_PER_MPH : step;
+          let stepNew = (newUnit === "mph") ? (stepKmh / KMH_PER_MPH) : stepKmh;
+
+          state.unit = newUnit;
+          // Keep nice numbers
+          stepNew = Math.max(0.1, Math.round(stepNew * 10) / 10);
+          state.speedStep = stepNew;
+
+          stepInput.value = state.speedStep;
+          syncUnitUI();
+          renderAll();
+        });
+      }
+
+      // Row-height control (vertical scaling)
+      const zoomSlider = document.getElementById("zoom");
+      const zoomOut = document.getElementById("zoomOut");
+      const zoomIn = document.getElementById("zoomIn");
+      const btnFit = document.getElementById("btnFit");
+
+      if (zoomSlider){
+        zoomSlider.value = String(Math.round((state.zoom || 1) * 100));
+        zoomSlider.addEventListener("input", () => {
+          setZoomFromPercent(zoomSlider.value);
+        });
+      }
+      if (zoomOut){
+        zoomOut.addEventListener("click", () => {
+          const v = Math.round(((state.zoom || 1) * 100 - 8));
+          const nv = Math.max(30, v);
+          if (zoomSlider) zoomSlider.value = String(nv);
+          setZoomFromPercent(nv);
+        });
+      }
+      if (zoomIn){
+        zoomIn.addEventListener("click", () => {
+          const v = Math.round(((state.zoom || 1) * 100 + 8));
+          const nv = Math.min(140, v);
+          if (zoomSlider) zoomSlider.value = String(nv);
+          setZoomFromPercent(nv);
+        });
+      }
+      if (btnFit){
+        btnFit.addEventListener("click", () => fitZoom());
+      }
+
+      applyZoom();
+
       document.getElementById("btnSave").addEventListener("click", () => {
         saveState();
-        flash("Sparat ✔");
+        flash("Saved ✔");
       });
       document.getElementById("btnLoad").addEventListener("click", () => {
         if (loadState()){
           document.getElementById("speedStep").value = state.speedStep;
+          const unitSel = document.getElementById("unitSelect");
+          if (unitSel) unitSel.value = state.unit || "kmh";
+          const speedUnitLabel = document.getElementById("speedUnitLabel");
+          if (speedUnitLabel) speedUnitLabel.textContent = `(${(state.unit === "mph") ? "mph" : "km/h"})`;
+          const zoomSlider = document.getElementById("zoom");
+          if (zoomSlider) zoomSlider.value = String(Math.round((state.zoom || 1) * 100));
+          applyZoom();
           buildSideForm(document.getElementById("leftForm"), "left");
           buildSideForm(document.getElementById("rightForm"), "right");
           renderAll();
-          flash("Laddat ✔");
+          flash("Loaded ✔");
         }else{
-          flash("Inget sparat hittades", true);
+          flash("No saved state found", true);
         }
       });
       document.getElementById("btnReset").addEventListener("click", () => {
         resetState();
         document.getElementById("speedStep").value = state.speedStep;
+        const unitSel = document.getElementById("unitSelect");
+        if (unitSel) unitSel.value = state.unit || "kmh";
+        const speedUnitLabel = document.getElementById("speedUnitLabel");
+        if (speedUnitLabel) speedUnitLabel.textContent = `(${(state.unit === "mph") ? "mph" : "km/h"})`;
+        const zoomSlider = document.getElementById("zoom");
+        if (zoomSlider) zoomSlider.value = String(Math.round((state.zoom || 1) * 100));
+        applyZoom();
         buildSideForm(document.getElementById("leftForm"), "left");
         buildSideForm(document.getElementById("rightForm"), "right");
         renderAll();
-        flash("Återställt ✔");
+        flash("Reset ✔");
       });
 
       renderAll();
