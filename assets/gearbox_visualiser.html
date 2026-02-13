@@ -426,7 +426,7 @@
     let state = {
       unit: "kmh",
       speedStep: 5,
-      zoom: 1.0,
+      zoom: 0.5,
       left: structuredClone(DEFAULT_SIDE),
       right: structuredClone(DEFAULT_SIDE),
     };
@@ -1019,7 +1019,7 @@
         const s = JSON.parse(raw);
         if (!s || !s.left || !s.right) return false;
         state = s;
-        if (typeof state.zoom !== "number") state.zoom = 1.0;
+        if (typeof state.zoom !== "number") state.zoom = 0.5;
         if (typeof state.unit !== "string") state.unit = "kmh";
         return true;
       }catch(e){
@@ -1030,7 +1030,7 @@
       state = {
         unit: "kmh",
         speedStep: 5,
-        zoom: 1.0,
+        zoom: 0.5,
         left: structuredClone(DEFAULT_SIDE),
         right: structuredClone(DEFAULT_SIDE),
       };
