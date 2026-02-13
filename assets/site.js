@@ -86,6 +86,32 @@
     const top = Math.round(screenTop + Math.max(0, (outerHeight - height) / 2));
 
     const features = `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`;
+
+    // Analytics: record popup clicks (even if the popup gets blocked).
+    // This lets GA4 report click intent separately from pageviews.
+    try {
+      if (typeof window.gtag === "function") {
+        const url = new URL(href, window.location.origin);
+        const popupName = url.pathname.includes("gearbox_visualiser.html")
+          ? "gearbox_visualiser"
+          : (url.pathname.split("/").filter(Boolean).slice(-1)[0] || "popup");
+
+        const eventName = (popupName === "gearbox_visualiser")
+          ? "gearbox_visualiser_click"
+          : "popup_click";
+
+        window.gtag("event", eventName, {
+          transport_type: "beacon",
+          popup_name: popupName,
+          popup_url: url.pathname + url.search,
+          popup_width: width,
+          popup_height: height,
+          link_text: (link.textContent || "").trim().slice(0, 80),
+          page_path: window.location.pathname,
+        });
+      }
+    } catch (_) {}
+
     const win = window.open(href, "ib_popup", features);
     if (win) {
       e.preventDefault();
