@@ -97,8 +97,13 @@
               <h3 style="margin-top:0;">Innocenti Mini — kompressormatad gatbil</h3>
 
               <p>
-                Ett genomtänkt prestandabygge med fokus på vridmoment och körbarhet,
-                snarare än att jaga högsta möjliga toppeffekt.
+                Det här projektet är en vridmomentsfokuserad, kompressormatad Classic Mini byggd med ett mål:
+                maximal användbar prestanda med full realtidskontroll och övervakning.
+              </p>
+
+              <p>
+                Det här är inte en “förgasare-och-hoppas”-setup.
+                Varje parameter loggas, analyseras och trimmas.
               </p>
 
               <ul class="project-meta">
@@ -111,33 +116,86 @@
 
               <hr class="sep">
 
-              <p>
-                Motorn är byggd för laddtryck med smidda Omega-kolvar och MED HT-kam.
-                Resultatet är ett starkt mellanregister och ett användbart varvtalsområde
-                ungefär från 2 500 upp till runt 6 500 rpm.
-              </p>
-
-              <p>
-                I projektet ingår också ett egenutvecklat verktyg för att analysera
-                växling och varvtal. Det hjälper mig att se hur olika slutväxlar och
-                däckdimensioner påverkar bilen i verklig körning – inte bara på papperet.
-              </p>
-
-              <ul class="project-meta">
-                <li>Visar varvtal per växel i olika hastigheter</li>
-                <li>Hjälper till att välja rätt slutväxel</li>
-                <li>Ger bättre förståelse för hur motorns vridmoment utnyttjas</li>
+              <p style="margin:14px 0 6px;"><strong>Motorspecifikation</strong></p>
+              <ul>
+                <li>A-Series 1300</li>
+                <li>Pre-A+ 4-synchro-växellåda</li>
+                <li>3.1:1 crownwheel &amp; pinion</li>
+                <li>Quaife ATB differential</li>
+                <li>14 mm nose mainshaft uppgraderad med MED Straight Cut Roller bearing drop gears</li>
+                <li>Byggd för gatprestanda med mekanisk sympati</li>
               </ul>
 
-              <p>
-                Eftersom motorn inte är crossflow är värmehantering viktig.
-                Därför är grenrör och rör isolerade för att minska värmestrålning
-                mot kompressorn och insuget.
+              <p style="margin:14px 0 6px;"><strong>Kolvar</strong></p>
+              <ul>
+                <li>Omega smidda kolvar (18cc dish)</li>
+                <li>Optimerade för laddtryck</li>
+                <li>Eliminerar behov av topplocksspacers</li>
+                <li>Designade för stabil förbränning vid boost</li>
+              </ul>
+
+              <p style="margin:14px 0 6px;"><strong>Kamaxel</strong></p>
+              <ul>
+                <li>MED Engineering HT</li>
+                <li>256° / 256° duration</li>
+                <li>109° lobe centres</li>
+                <li>38° overlap</li>
+                <li>~9.2 mm lyft med 1.3:1 vippor</li>
+                <li>Starkt mellanregister, ren körbarhet på ladd, peak ~5 500–6 000 rpm, användbart upp till ~6 500 rpm</li>
+              </ul>
+
+              <p style="margin:14px 0 6px;"><strong>Insug / laddning</strong></p>
+              <ul>
+                <li>Eaton M45 supercharger (~0.8 bar boost)</li>
+                <li>Positive displacement: omedelbart vrid från låga varv</li>
+                <li>Weber DCOE 40, draw-through</li>
+                <li>Kalibrerad för boosted enrichment</li>
+                <li>98 RON</li>
+              </ul>
+
+              <p style="margin:14px 0 6px;"><strong>Tändning &amp; styrstrategi</strong></p>
+              <ul>
+                <li>Programmerbar 123Ignition-fördelare (klassiskt utseende)</li>
+                <li>Fullt programmerbara förtändningskurvor</li>
+                <li>Bluetooth för realtidsövervakning och justering</li>
+                <li>Kan trimmas live under verklig last medan data loggas</li>
+              </ul>
+
+              <p style="margin:14px 0 6px;"><strong>Loggning &amp; övervakning</strong></p>
+              <ul>
+                <li>Innovate LM-2 logger</li>
+                <li>Wideband lambda + datalogging av AFR, RPM, throttle position och boost</li>
+                <li>Analoga ingångar används för: RPM, TPS och boost-referens</li>
+                <li>Korrelationsanalys mellan load, boost, AFR, tändning och respons</li>
+              </ul>
+
+              <p style="margin:14px 0 6px;"><strong>Knackövervakning</strong></p>
+              <ul>
+                <li>Knacksensor för säker förtändning och kontrollerad förbränning under ladd</li>
+                <li>Extra säkerhetslager vid trimning i verklig körning</li>
+              </ul>
+
+              <p style="margin:14px 0 6px;"><strong>Växelutväxling</strong></p>
+              <p style="margin-top:0;">
+                Ett eget visualiseringsverktyg togs fram för att analysera RPM-drop mellan växlar,
+                powerband-utnyttjande, shift-points och slutväxelval.
+                Med 10” hjul (165/70-10) och 3.1 slutväxel hålls motorn i den starkaste delen av den kompressormatade vridkurvan.
               </p>
 
+              <p style="margin:14px 0 6px;"><strong>Värmehantering</strong></p>
+              <ul>
+                <li>DEI Titanium (basalt) exhaust wrap</li>
+                <li>Strategisk isolering av primärer och downpipe</li>
+                <li>Isolering mot insugssidan (non-crossflow)</li>
+                <li>Stainless locking ties för hållbarhet</li>
+                <li>Downpipe går direkt under kompressorn → strålningsvärme måste kontrolleras</li>
+              </ul>
+
+              <p style="margin:14px 0 6px;"><strong>Prestandafilosofi</strong></p>
               <p style="margin:0;">
-                Målet är en snabb och rolig gatbil med bra respons,
-                inte en ren tävlingsmotor eller dyno-projekt.
+                Inte en högvarvig race-motor — utan ett brett, datadrivet fast road-bygge:
+                stark acceleration från låga varv, säker förbränning under boost,
+                realtidsoptimerad tändning, smart utväxling, kontrollerad värme och bibehållen driftsäkerhet.
               </p>
             </div>
           </article>
