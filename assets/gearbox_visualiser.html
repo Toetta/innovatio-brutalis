@@ -1,0 +1,964 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-LGJK9XKDZB');
+  </script>
+
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Classic Mini Gearbox Visualiser</title>
+
+  <link rel="stylesheet" href="/css/style.css">
+
+  <style>
+    :root{
+      --bg:#0b0d10;
+      --panel:#11151b;
+      --panel2:#0f1318;
+      --text:#e7eef7;
+      --muted:#93a4b8;
+      --border:#233040;
+      --accent:#4aa3ff;
+      --danger:#ff4a4a;
+      --ok:#2fe37a;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --radius:14px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    *{ box-sizing: border-box; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      background: radial-gradient(1200px 800px at 10% 0%, #142033 0%, var(--bg) 55%),
+                  radial-gradient(900px 600px at 95% 20%, #1b2233 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+
+    /* Keep the global nav, but don't let this page's header overlap it */
+    header{
+      padding: 18px 18px 10px;
+      background: linear-gradient(to bottom, rgba(11,13,16,.96), rgba(11,13,16,.78));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(35,48,64,.55);
+    }
+    h1{
+      margin:0 0 6px;
+      font-size: 18px;
+      letter-spacing:.2px;
+      font-weight: 700;
+    }
+    .sub{
+      margin:0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .wrap{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+      padding: 14px 18px 22px;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 980px){
+      .grid2{ grid-template-columns: 1fr; }
+    }
+    .card{
+      background: linear-gradient(180deg, rgba(17,21,27,.92), rgba(15,19,24,.92));
+      border: 1px solid rgba(35,48,64,.70);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .card .hd{
+      display:flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 12px 10px;
+      border-bottom: 1px solid rgba(35,48,64,.55);
+      background: rgba(8,10,12,.20);
+    }
+    .card .hd .ttl{
+      font-weight: 800;
+      font-size: 13px;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      color: #d7e6ff;
+    }
+    .card .bd{
+      padding: 12px;
+    }
+    .row{
+      display:grid;
+      grid-template-columns: 1.05fr 1fr;
+      gap: 10px;
+      align-items: center;
+      margin: 8px 0;
+    }
+    .row.small{
+      grid-template-columns: 1.05fr 1fr 1fr;
+    }
+    label{
+      font-size: 13px;
+      color: var(--muted);
+    }
+    select, input{
+      width: 100%;
+      padding: 9px 10px;
+      border-radius: 12px;
+      border: 1px solid rgba(35,48,64,.85);
+      background: rgba(10,13,17,.65);
+      color: var(--text);
+      outline: none;
+      font-size: 13px;
+    }
+    input[type="number"]{
+      font-family: var(--mono);
+    }
+    input:focus, select:focus{
+      border-color: rgba(74,163,255,.95);
+      box-shadow: 0 0 0 3px rgba(74,163,255,.20);
+    }
+    .hint{
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 8px;
+      line-height: 1.35;
+    }
+    .pillbar{
+      display:flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .pill{
+      font-family: var(--mono);
+      font-size: 12px;
+      padding: 7px 10px;
+      border: 1px solid rgba(35,48,64,.7);
+      border-radius: 999px;
+      background: rgba(10,13,17,.5);
+      color: #cfe1ff;
+    }
+    .pill b{ color:#ffffff; }
+    .toolbar{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(35,48,64,.55);
+      background: rgba(8,10,12,.20);
+    }
+    .toolbar .left, .toolbar .right{
+      display:flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .btn{
+      cursor: pointer;
+      border: 1px solid rgba(35,48,64,.85);
+      background: rgba(10,13,17,.65);
+      color: var(--text);
+      padding: 9px 11px;
+      border-radius: 12px;
+      font-size: 13px;
+    }
+    .btn:hover{ border-color: rgba(74,163,255,.75); }
+    .btn.danger:hover{ border-color: rgba(255,74,74,.75); }
+    .tableWrap{
+      overflow:auto;
+      max-height: 68vh;
+    }
+    table{
+      border-collapse: separate;
+      border-spacing: 0;
+      width: 100%;
+      min-width: 980px;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+    thead th{
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(9,12,16,.96);
+      color: #d7e6ff;
+      border-bottom: 1px solid rgba(35,48,64,.9);
+      padding: 10px 8px;
+      text-align:center;
+      white-space: nowrap;
+    }
+    thead tr:nth-child(1) th{
+      top: 0;
+      z-index: 12;
+    }
+    tbody td{
+      border-bottom: 1px solid rgba(35,48,64,.50);
+      padding: 7px 8px;
+      text-align:center;
+      white-space: nowrap;
+    }
+    tbody tr:hover td{
+      outline: 1px solid rgba(74,163,255,.22);
+      outline-offset: -1px;
+    }
+    .speedCol{
+      font-weight: 800;
+      color: #eaf2ff;
+      background: rgba(15,19,24,.85);
+      position: sticky;
+      left: 0;
+      z-index: 8;
+      border-right: 1px solid rgba(35,48,64,.7);
+    }
+    thead .speedCol{
+      z-index: 20;
+      left: 0;
+      border-right: 1px solid rgba(35,48,64,.9);
+    }
+    .groupL{
+      border-right: 1px solid rgba(35,48,64,.75);
+    }
+    .groupR{
+      border-left: 1px solid rgba(35,48,64,.75);
+    }
+    .mutedCell{
+      color: rgba(231,238,247,.55);
+    }
+    .legend{
+      display:flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+    }
+    .swatch{
+      width: 16px;
+      height: 10px;
+      border-radius: 4px;
+      border: 1px solid rgba(35,48,64,.85);
+      display:inline-block;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    footer{
+      padding: 14px 18px 24px;
+      max-width: 1400px;
+      margin: 0 auto;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    a{ color: #b7d8ff; text-decoration: none; }
+    a:hover{ text-decoration: underline; }
+
+    /* Keep global nav readable on this page */
+    #site-topbar{ margin: 14px auto 0; max-width: 1100px; padding: 0 18px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="site-topbar"></div>
+  </div>
+  <script defer src="/assets/site.js"></script>
+
+  <header>
+    <h1>Classic Mini Gearbox Visualiser</h1>
+    <p class="sub">Bygger samma logik som ditt Excel-blad: RPM per växel vid olika hastigheter + dynamisk bakgrundsfärg (grå → grön → gul → röd).</p>
+  </header>
+
+  <div class="wrap">
+    <div class="grid2">
+      <div class="card" id="leftCard">
+        <div class="hd">
+          <div class="ttl">LEFT setup</div>
+          <div class="legend">
+            <span><span class="swatch" style="background:rgb(217,217,217)"></span>under power-in</span>
+            <span><span class="swatch" style="background:rgb(0,176,80)"></span>powerband</span>
+            <span><span class="swatch" style="background:rgb(255,255,0)"></span>peak</span>
+            <span><span class="swatch" style="background:rgb(255,0,0)"></span>limiter</span>
+          </div>
+        </div>
+        <div class="bd" id="leftForm"></div>
+      </div>
+
+      <div class="card" id="rightCard">
+        <div class="hd">
+          <div class="ttl">RIGHT setup</div>
+          <div class="legend">
+            <span><span class="swatch" style="background:rgb(217,217,217)"></span>under power-in</span>
+            <span><span class="swatch" style="background:rgb(0,176,80)"></span>powerband</span>
+            <span><span class="swatch" style="background:rgb(255,255,0)"></span>peak</span>
+            <span><span class="swatch" style="background:rgb(255,0,0)"></span>limiter</span>
+          </div>
+        </div>
+        <div class="bd" id="rightForm"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <div class="left">
+          <div style="min-width:260px">
+            <label style="display:block;margin:0 0 6px">Speed step (km/h)</label>
+            <input id="speedStep" type="number" min="1" step="1" value="5" />
+          </div>
+          <div class="pillbar" id="autoscalePills"></div>
+        </div>
+        <div class="right">
+          <button class="btn" id="btnSave">Spara i webbläsaren</button>
+          <button class="btn" id="btnLoad">Ladda sparat</button>
+          <button class="btn danger" id="btnReset">Återställ</button>
+        </div>
+      </div>
+
+      <div class="tableWrap">
+        <table id="rpmTable" aria-label="RPM table"></table>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    Tips:
+    <ul>
+      <li>Detta är en statisk sida. Spara som <b>.html</b> och öppna i valfri webbläsare.</li>
+      <li>Makron behövs inte – all färgsättning görs i JavaScript via samma interpolation som din VBA-funktion.</li>
+    </ul>
+  </footer>
+
+  <script>
+    /** ===== Lookups (från din Lookups-flik) ===== */
+    const DROP_GEARS = [
+      { name: "1:1 (23/23)", ratio: 1.0 },
+      { name: "1:1 (24/24)", ratio: 1.0 },
+      { name: "1:1.043 (23/24)", ratio: 1.043 },
+      { name: "1:0.958 (24/23)", ratio: 0.958 }
+    ];
+
+    const FINAL_DRIVES_COMMON = [2.76, 2.95, 3.1, 3.44, 3.47, 3.55, 3.75, 3.88, 4.066, 4.2, 4.5];
+
+    const TYRE_PRESETS = [
+      { name: "145/80-10", width: 145, aspect: 0.8, rim: 10 },
+      { name: "165/70-10", width: 165, aspect: 0.7, rim: 10 },
+      { name: "175/50-10", width: 175, aspect: 0.5, rim: 10 },
+      { name: "165/60-12", width: 165, aspect: 0.6, rim: 12 },
+      { name: "175/50-13", width: 175, aspect: 0.5, rim: 13 }
+    ];
+
+    const GEAR_KITS = {
+      "Standard 4-synchro": { g1: 3.2,   g2: 1.916, g3: 1.357, g4: 1.0,  g5: null },
+      "Close ratio (SC)":   { g1: 2.98,  g2: 1.75,  g3: 1.26,  g4: 1.0,  g5: null },
+      "Close ratio (Road)": { g1: 3.0,   g2: 1.74,  g3: 1.27,  g4: 1.0,  g5: null },
+      "5-speed (Type-9 street)": { g1: 3.65, g2: 1.97, g3: 1.37, g4: 1.0, g5: 0.82 }
+    };
+
+    const DEFAULT_SIDE = {
+      tyrePreset: "165/70-10",
+      width: 165,
+      aspect: 0.7,
+      rim: 10,
+      finalDrive: 3.1,
+      dropGear: "1:1 (23/23)",
+      gearKit: "Standard 4-synchro",
+      gears: [3.2, 1.916, 1.357, 1.0, null],
+      rpmIn: 2800,
+      rpmPeak: 5400,
+      rpmLim: 6500
+    };
+
+    let state = {
+      speedStep: 5,
+      left: structuredClone(DEFAULT_SIDE),
+      right: structuredClone(DEFAULT_SIDE),
+    };
+
+    /** ===== Helpers ===== */
+    function clamp01(x){ return Math.max(0, Math.min(1, x)); }
+
+    function rgb(r,g,b){ return `rgb(${r|0},${g|0},${b|0})`; }
+
+    function luminance(r,g,b){
+      // relative luminance approximation
+      return 0.2126*r + 0.7152*g + 0.0722*b;
+    }
+
+    /** VBA -> JS: ColorForRPM */
+    function colorForRPM(rpm, rpmIn, rpmPeak, rpmLim){
+      if (rpm == null || !Number.isFinite(rpm)) return null;
+
+      // Below power-in: light grey
+      if (rpm <= rpmIn) return { r:217, g:217, b:217 };
+
+      // Between power-in and peak: GREEN -> YELLOW
+      if (rpm <= rpmPeak){
+        const t1 = (rpmPeak === rpmIn) ? 1 : (rpm - rpmIn) / (rpmPeak - rpmIn);
+        const r1 = Math.round(0   + t1 * (255 - 0));
+        const g1 = Math.round(176 + t1 * (255 - 176));
+        const b1 = Math.round(80  + t1 * (0   - 80));
+        return { r:r1, g:g1, b:b1 };
+      }
+
+      // Between peak and limiter: YELLOW -> RED
+      if (rpm <= rpmLim){
+        const t2 = (rpmLim === rpmPeak) ? 1 : (rpm - rpmPeak) / (rpmLim - rpmPeak);
+        const r2 = 255;
+        const g2 = Math.round(255 + t2 * (0 - 255));
+        const b2 = 0;
+        return { r:r2, g:g2, b:b2 };
+      }
+
+      // Above limiter: solid red
+      return { r:255, g:0, b:0 };
+    }
+
+    function tyreCircumferenceMeters(widthMm, aspect, rimIn){
+      // PI * ((rim_in*25.4 + 2*(width_mm*aspect))/1000)
+      return Math.PI * ((rimIn * 25.4 + 2 * (widthMm * aspect)) / 1000);
+    }
+
+    function dropRatioByName(name){
+      const hit = DROP_GEARS.find(d => d.name === name);
+      return hit ? hit.ratio : 1.0;
+    }
+
+    function topGearRatio(gears){
+      // Excel: IF(5th>0, 5th, 4th)
+      const g5 = gears[4];
+      if (g5 != null && Number(g5) > 0) return Number(g5);
+      return Number(gears[3] ?? 1.0);
+    }
+
+    function maxSpeedAtLimiterKmH(side){
+      const circ = tyreCircumferenceMeters(side.width, side.aspect, side.rim);
+      const effFD = Number(side.finalDrive) * dropRatioByName(side.dropGear);
+      const top = topGearRatio(side.gears);
+      const lim = Number(side.rpmLim);
+      // (rpmLim*circ*60)/(effFD*top*1000)
+      return (lim * circ * 60) / (effFD * top * 1000);
+    }
+
+    function rpmAtSpeedKmH(speedKmH, gearRatio, side){
+      if (gearRatio == null || !Number.isFinite(Number(gearRatio))) return null;
+      const circ = tyreCircumferenceMeters(side.width, side.aspect, side.rim);
+      const effFD = Number(side.finalDrive) * dropRatioByName(side.dropGear);
+      // (speed*1000 * gear * effFD)/(circ*60)
+      return (speedKmH * 1000 * Number(gearRatio) * effFD) / (circ * 60);
+    }
+
+    function formatRPM(x){
+      if (x == null || !Number.isFinite(x)) return "";
+      return String(Math.round(x));
+    }
+
+    function formatKmH(x){
+      return (Math.round(x*10)/10).toString(); // 1 decimal if needed
+    }
+
+    /** ===== UI rendering ===== */
+    function makeOptionEl(value, label){
+      const o = document.createElement("option");
+      o.value = value;
+      o.textContent = label ?? value;
+      return o;
+    }
+
+    function buildSideForm(container, sideKey){
+      const side = state[sideKey];
+
+      const el = document.createElement("div");
+
+      // Tyre preset
+      el.appendChild(rowSelect("Wheel/tyre preset", `${sideKey}-tyrePreset`, TYRE_PRESETS.map(p => p.name), side.tyrePreset, (v) => {
+        side.tyrePreset = v;
+        const p = TYRE_PRESETS.find(x => x.name === v);
+        if (p){
+          side.width = p.width;
+          side.aspect = p.aspect;
+          side.rim = p.rim;
+          // update numeric inputs too
+          syncSideInputs(sideKey);
+          renderAll();
+        }
+      }));
+
+      // width/aspect/rim
+      el.appendChild(row3(
+        "Tyre width (mm)", `${sideKey}-width`, side.width, (v)=>{ side.width = Number(v); renderAll(); },
+        "Aspect ratio", `${sideKey}-aspect`, side.aspect, (v)=>{ side.aspect = Number(v); renderAll(); },
+        "Rim diameter (in)", `${sideKey}-rim`, side.rim, (v)=>{ side.rim = Number(v); renderAll(); },
+      ));
+
+      // final drive
+      el.appendChild(rowNumberWithDatalist("Final drive (CWP)", `${sideKey}-finalDrive`, side.finalDrive, FINAL_DRIVES_COMMON, (v)=>{ side.finalDrive = Number(v); renderAll(); }));
+
+      // drop gear
+      el.appendChild(rowSelectWithInfo("Drop gear option", `${sideKey}-dropGear`, DROP_GEARS.map(d=>d.name), side.dropGear, () => dropRatioByName(side.dropGear), (v)=>{ side.dropGear = v; renderAll(); }));
+
+      // gear kit
+      el.appendChild(rowSelect("Gear kit selection", `${sideKey}-gearKit`, Object.keys(GEAR_KITS), side.gearKit, (v)=>{
+        side.gearKit = v;
+        const kit = GEAR_KITS[v];
+        side.gears = [kit.g1, kit.g2, kit.g3, kit.g4, kit.g5];
+        syncSideInputs(sideKey);
+        renderAll();
+      }));
+
+      // gears
+      el.appendChild(document.createElement("hr")).style.cssText = "border:none;border-top:1px solid rgba(35,48,64,.55);margin:12px 0;";
+      el.appendChild(makeSmallTitle("Gear ratios (override)"));
+
+      const gearsWrap = document.createElement("div");
+      gearsWrap.innerHTML = `
+        <div class="row small">
+          <label>1st</label>
+          <label>2nd</label>
+          <label>3rd</label>
+        </div>
+        <div class="row small">
+          <input id="${sideKey}-g1" type="number" step="0.001" />
+          <input id="${sideKey}-g2" type="number" step="0.001" />
+          <input id="${sideKey}-g3" type="number" step="0.001" />
+        </div>
+        <div class="row small">
+          <label>4th</label>
+          <label>5th (valfritt)</label>
+          <span></span>
+        </div>
+        <div class="row small">
+          <input id="${sideKey}-g4" type="number" step="0.001" />
+          <input id="${sideKey}-g5" type="number" step="0.001" placeholder="tom = ingen 5:e" />
+          <span></span>
+        </div>
+      `;
+      el.appendChild(gearsWrap);
+
+      // rpm settings
+      el.appendChild(document.createElement("hr")).style.cssText = "border:none;border-top:1px solid rgba(35,48,64,.55);margin:12px 0;";
+      el.appendChild(makeSmallTitle("Engine RPM markers"));
+
+      el.appendChild(rowNumber("Power comes in (RPM)", `${sideKey}-rpmIn`, side.rpmIn, 100, (v)=>{ side.rpmIn = Number(v); renderAll(); }));
+      el.appendChild(rowNumber("Peak power (RPM)", `${sideKey}-rpmPeak`, side.rpmPeak, 100, (v)=>{ side.rpmPeak = Number(v); renderAll(); }));
+      el.appendChild(rowNumber("Max RPM / limiter", `${sideKey}-rpmLim`, side.rpmLim, 100, (v)=>{ side.rpmLim = Number(v); renderAll(); }));
+
+      // computed pills
+      const pills = document.createElement("div");
+      pills.className = "pillbar";
+      pills.id = `${sideKey}-pills`;
+      el.appendChild(pills);
+
+      container.replaceChildren(el);
+
+      // Wire gear overrides
+      ["g1","g2","g3","g4","g5"].forEach((g, idx) => {
+        const inp = document.getElementById(`${sideKey}-${g}`);
+        inp.value = side.gears[idx] ?? "";
+        inp.addEventListener("input", () => {
+          const raw = inp.value.trim();
+          side.gears[idx] = raw === "" ? null : Number(raw);
+          renderAll();
+        });
+      });
+    }
+
+    function makeSmallTitle(text){
+      const d = document.createElement("div");
+      d.style.cssText = "font-size:12px;color:#cfe1ff;font-weight:800;letter-spacing:.3px;text-transform:uppercase;margin:0 0 6px;";
+      d.textContent = text;
+      return d;
+    }
+
+    function rowSelect(labelText, id, options, value, onChange){
+      const wrap = document.createElement("div");
+      wrap.className = "row";
+      const lab = document.createElement("label");
+      lab.textContent = labelText;
+      const sel = document.createElement("select");
+      sel.id = id;
+      options.forEach(o => sel.appendChild(makeOptionEl(o,o)));
+      sel.value = value;
+      sel.addEventListener("change", () => onChange(sel.value));
+      wrap.append(lab, sel);
+      return wrap;
+    }
+
+    function rowSelectWithInfo(labelText, id, options, value, infoFn, onChange){
+      const wrap = document.createElement("div");
+      wrap.className = "row";
+      const lab = document.createElement("label");
+      lab.textContent = labelText;
+
+      const right = document.createElement("div");
+      right.style.display = "grid";
+      right.style.gridTemplateColumns = "1fr";
+      right.style.gap = "6px";
+
+      const sel = document.createElement("select");
+      sel.id = id;
+      options.forEach(o => sel.appendChild(makeOptionEl(o,o)));
+      sel.value = value;
+      sel.addEventListener("change", () => onChange(sel.value));
+
+      const info = document.createElement("div");
+      info.className = "hint";
+      info.style.marginTop = "0";
+      info.textContent = `Ratio: ${infoFn()}`;
+
+      sel.addEventListener("change", () => info.textContent = `Ratio: ${infoFn()}`);
+
+      right.append(sel, info);
+      wrap.append(lab, right);
+      return wrap;
+    }
+
+    function rowNumber(labelText, id, value, step, onInput){
+      const wrap = document.createElement("div");
+      wrap.className = "row";
+      const lab = document.createElement("label");
+      lab.textContent = labelText;
+      const inp = document.createElement("input");
+      inp.id = id;
+      inp.type = "number";
+      inp.step = step ?? "1";
+      inp.value = value;
+      inp.addEventListener("input", () => onInput(inp.value));
+      wrap.append(lab, inp);
+      return wrap;
+    }
+
+    function rowNumberWithDatalist(labelText, id, value, list, onInput){
+      const wrap = document.createElement("div");
+      wrap.className = "row";
+      const lab = document.createElement("label");
+      lab.textContent = labelText;
+
+      const box = document.createElement("div");
+      box.style.position = "relative";
+
+      const inp = document.createElement("input");
+      inp.id = id;
+      inp.type = "number";
+      inp.step = "0.01";
+      inp.value = value;
+
+      const dlId = `${id}-list`;
+      const dl = document.createElement("datalist");
+      dl.id = dlId;
+      list.forEach(x => {
+        const o = document.createElement("option");
+        o.value = x;
+        dl.appendChild(o);
+      });
+      inp.setAttribute("list", dlId);
+
+      inp.addEventListener("input", () => onInput(inp.value));
+
+      box.append(inp, dl);
+      wrap.append(lab, box);
+      return wrap;
+    }
+
+    function row3(l1, id1, v1, on1, l2, id2, v2, on2, l3, id3, v3, on3){
+      const outer = document.createElement("div");
+      outer.style.display = "grid";
+      outer.style.gap = "8px";
+
+      const labels = document.createElement("div");
+      labels.className = "row small";
+      labels.innerHTML = `<label>${l1}</label><label>${l2}</label><label>${l3}</label>`;
+
+      const inputs = document.createElement("div");
+      inputs.className = "row small";
+      inputs.innerHTML = `
+        <input id="${id1}" type="number" step="1" />
+        <input id="${id2}" type="number" step="0.01" />
+        <input id="${id3}" type="number" step="1" />
+      `;
+
+      outer.append(labels, inputs);
+
+      // wire
+      setTimeout(()=>{ // ensure inserted
+        const i1 = document.getElementById(id1);
+        const i2 = document.getElementById(id2);
+        const i3 = document.getElementById(id3);
+        i1.value = v1; i2.value = v2; i3.value = v3;
+        i1.addEventListener("input", ()=>on1(i1.value));
+        i2.addEventListener("input", ()=>on2(i2.value));
+        i3.addEventListener("input", ()=>on3(i3.value));
+      },0);
+
+      return outer;
+    }
+
+    function syncSideInputs(sideKey){
+      const side = state[sideKey];
+
+      const setIf = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = (val ?? "");
+      };
+
+      setIf(`${sideKey}-width`, side.width);
+      setIf(`${sideKey}-aspect`, side.aspect);
+      setIf(`${sideKey}-rim`, side.rim);
+      setIf(`${sideKey}-finalDrive`, side.finalDrive);
+      setIf(`${sideKey}-dropGear`, side.dropGear);
+      setIf(`${sideKey}-tyrePreset`, side.tyrePreset);
+      setIf(`${sideKey}-gearKit`, side.gearKit);
+
+      ["g1","g2","g3","g4","g5"].forEach((g, idx)=> setIf(`${sideKey}-${g}`, side.gears[idx]));
+      setIf(`${sideKey}-rpmIn`, side.rpmIn);
+      setIf(`${sideKey}-rpmPeak`, side.rpmPeak);
+      setIf(`${sideKey}-rpmLim`, side.rpmLim);
+    }
+
+    /** ===== Table rendering ===== */
+    function renderAutoscalePills(){
+      const pills = document.getElementById("autoscalePills");
+      const step = Number(state.speedStep);
+      const leftMax = maxSpeedAtLimiterKmH(state.left);
+      const rightMax = maxSpeedAtLimiterKmH(state.right);
+      const overall = Math.ceil(Math.max(leftMax, rightMax) / step) * step;
+
+      pills.innerHTML = "";
+      const mk = (label, val) => {
+        const p = document.createElement("div");
+        p.className = "pill";
+        p.innerHTML = `<b>${label}:</b> ${val}`;
+        return p;
+      };
+
+      pills.appendChild(mk("Left max @ limiter", `${formatKmH(leftMax)} km/h`));
+      pills.appendChild(mk("Right max @ limiter", `${formatKmH(rightMax)} km/h`));
+      pills.appendChild(mk("Auto max speed", `${formatKmH(overall)} km/h`));
+    }
+
+    function renderSidePills(sideKey){
+      const side = state[sideKey];
+      const pills = document.getElementById(`${sideKey}-pills`);
+      if (!pills) return;
+
+      const circ = tyreCircumferenceMeters(side.width, side.aspect, side.rim);
+      const drop = dropRatioByName(side.dropGear);
+      const effFD = Number(side.finalDrive) * drop;
+      const top = topGearRatio(side.gears);
+      const vmax = maxSpeedAtLimiterKmH(side);
+
+      pills.innerHTML = "";
+      const mk = (label, val) => {
+        const p = document.createElement("div");
+        p.className = "pill";
+        p.innerHTML = `<b>${label}:</b> ${val}`;
+        return p;
+      };
+
+      pills.appendChild(mk("Tyre circ", `${circ.toFixed(3)} m`));
+      pills.appendChild(mk("Drop ratio", drop.toFixed(3)));
+      pills.appendChild(mk("Eff. final", effFD.toFixed(3)));
+      pills.appendChild(mk("Top gear", top.toFixed(3)));
+      pills.appendChild(mk("Vmax@lim", `${formatKmH(vmax)} km/h`));
+    }
+
+    function renderTable(){
+      const table = document.getElementById("rpmTable");
+      const step = Math.max(1, Number(state.speedStep) || 5);
+
+      const leftMax = maxSpeedAtLimiterKmH(state.left);
+      const rightMax = maxSpeedAtLimiterKmH(state.right);
+      const overall = Math.ceil(Math.max(leftMax, rightMax) / step) * step;
+
+      const speeds = [];
+      for (let s = overall; s >= 0; s -= step){
+        speeds.push(s);
+      }
+
+      const gearLabels = ["1st","2nd","3rd","4th","5th"];
+
+      // Build THEAD
+      const thead = document.createElement("thead");
+      const tr1 = document.createElement("tr");
+      tr1.appendChild(th("LEFT RPM by gear", 5, "groupL"));
+      tr1.appendChild(th("Speed (km/h)", 1, "speedCol"));
+      tr1.appendChild(th("RIGHT RPM by gear", 5, "groupR"));
+      thead.appendChild(tr1);
+
+      const tr2 = document.createElement("tr");
+      for (let i=0;i<5;i++) tr2.appendChild(th(`${gearLabels[i]} RPM`, 1, "groupL"));
+      tr2.appendChild(th("km/h", 1, "speedCol"));
+      for (let i=0;i<5;i++) tr2.appendChild(th(`${gearLabels[i]} RPM`, 1, "groupR"));
+      thead.appendChild(tr2);
+
+      // Build TBODY
+      const tbody = document.createElement("tbody");
+      speeds.forEach(speed => {
+        const tr = document.createElement("tr");
+
+        // Left 5 gears
+        for (let gi=0; gi<5; gi++){
+          tr.appendChild(rpmCell(speed, state.left.gears[gi], state.left, gi === 4 ? "groupL" : ""));
+        }
+
+        // Speed center
+        const tdS = document.createElement("td");
+        tdS.className = "speedCol";
+        tdS.textContent = formatKmH(speed);
+        tr.appendChild(tdS);
+
+        // Right 5 gears
+        for (let gi=0; gi<5; gi++){
+          tr.appendChild(rpmCell(speed, state.right.gears[gi], state.right, gi === 0 ? "groupR" : ""));
+        }
+
+        tbody.appendChild(tr);
+      });
+
+      table.replaceChildren(thead, tbody);
+
+      function th(text, colspan=1, className=""){
+        const x = document.createElement("th");
+        x.textContent = text;
+        if (colspan > 1) x.colSpan = colspan;
+        if (className) x.className = className + (className.includes("speedCol") ? "" : "");
+        if (className === "speedCol") x.classList.add("speedCol");
+        return x;
+      }
+
+      function rpmCell(speed, gearRatio, side, extraClass=""){
+        const td = document.createElement("td");
+        if (extraClass) td.classList.add(extraClass);
+
+        const rpm = rpmAtSpeedKmH(speed, gearRatio, side);
+        if (rpm == null || rpm > Number(side.rpmLim) || !Number.isFinite(rpm)){
+          td.textContent = "";
+          td.classList.add("mutedCell");
+          td.style.background = "transparent";
+          return td;
+        }
+
+        td.textContent = formatRPM(rpm);
+
+        const c = colorForRPM(rpm, Number(side.rpmIn), Number(side.rpmPeak), Number(side.rpmLim));
+        if (c){
+          td.style.backgroundColor = rgb(c.r,c.g,c.b);
+          const lum = luminance(c.r,c.g,c.b);
+          td.style.color = (lum < 140) ? "#ffffff" : "#0b0d10";
+          td.style.fontWeight = "700";
+        }
+
+        return td;
+      }
+    }
+
+    let rafPending = false;
+    function renderAll(){
+      if (rafPending) return;
+      rafPending = true;
+      requestAnimationFrame(() => {
+        rafPending = false;
+        renderAutoscalePills();
+        renderSidePills("left");
+        renderSidePills("right");
+        renderTable();
+      });
+    }
+
+    /** ===== Persistence ===== */
+    function saveState(){
+      localStorage.setItem("miniGearboxState_v1", JSON.stringify(state));
+    }
+    function loadState(){
+      const raw = localStorage.getItem("miniGearboxState_v1");
+      if (!raw) return false;
+      try{
+        const s = JSON.parse(raw);
+        if (!s || !s.left || !s.right) return false;
+        state = s;
+        return true;
+      }catch(e){
+        return false;
+      }
+    }
+    function resetState(){
+      state = {
+        speedStep: 5,
+        left: structuredClone(DEFAULT_SIDE),
+        right: structuredClone(DEFAULT_SIDE),
+      };
+    }
+
+    /** ===== Boot ===== */
+    function boot(){
+      buildSideForm(document.getElementById("leftForm"), "left");
+      buildSideForm(document.getElementById("rightForm"), "right");
+
+      const stepInput = document.getElementById("speedStep");
+      stepInput.value = state.speedStep;
+      stepInput.addEventListener("input", () => {
+        state.speedStep = Math.max(1, Number(stepInput.value) || 5);
+        renderAll();
+      });
+
+      document.getElementById("btnSave").addEventListener("click", () => {
+        saveState();
+        flash("Sparat ✔");
+      });
+      document.getElementById("btnLoad").addEventListener("click", () => {
+        if (loadState()){
+          document.getElementById("speedStep").value = state.speedStep;
+          buildSideForm(document.getElementById("leftForm"), "left");
+          buildSideForm(document.getElementById("rightForm"), "right");
+          renderAll();
+          flash("Laddat ✔");
+        }else{
+          flash("Inget sparat hittades", true);
+        }
+      });
+      document.getElementById("btnReset").addEventListener("click", () => {
+        resetState();
+        document.getElementById("speedStep").value = state.speedStep;
+        buildSideForm(document.getElementById("leftForm"), "left");
+        buildSideForm(document.getElementById("rightForm"), "right");
+        renderAll();
+        flash("Återställt ✔");
+      });
+
+      renderAll();
+    }
+
+    function flash(msg, isBad=false){
+      const b = document.createElement("div");
+      b.textContent = msg;
+      b.style.cssText = `
+        position: fixed; right: 16px; bottom: 16px;
+        padding: 10px 12px; border-radius: 12px;
+        border: 1px solid rgba(35,48,64,.85);
+        background: rgba(10,13,17,.85);
+        color: ${isBad ? "#ffd0d0" : "#d7ffe6"};
+        box-shadow: 0 10px 30px rgba(0,0,0,.35);
+        z-index: 999;
+        font-size: 13px;
+      `;
+      document.body.appendChild(b);
+      setTimeout(()=> b.remove(), 1800);
+    }
+
+    boot();
+  </script>
+</body>
+</html>
