@@ -23,27 +23,15 @@
   <link rel="alternate" href="https://www.innovatio-brutalis.se/en/engineering/" hreflang="en">
   <link rel="alternate" href="https://www.innovatio-brutalis.se/engineering/" hreflang="x-default">
 
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 
 <body>
   <div class="container">
 
-    <div class="topbar">
-      <nav class="site-nav" aria-label="Site">
-        <a href="../">Start</a>
-        <a href="../cnc/">CNC &amp; Laser</a>
-        <a href="../print/">3D-print</a>
-        <a href="../scan/">3D-scanning</a>
-        <a class="active" href="./">Engineering</a>
-        <a href="../automotive/">Automotive</a>
-      </nav>
-
-      <nav class="lang" aria-label="Language">
-        <a class="active" href="./">SV</a>
-        <a href="../en/engineering/">EN</a>
-      </nav>
-    </div>
+    <!-- GLOBAL NAVIGATION -->
+    <div id="site-topbar"></div>
+    <script defer src="/assets/site.js"></script>
 
     <section class="hero" style="text-align:left;">
       <h1>Ingenjörskompetens &amp; teknisk analys</h1>
@@ -100,6 +88,5 @@
 
   </div>
 
-  <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
 </body>
 </html>

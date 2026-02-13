@@ -15,24 +15,14 @@
   <title>Innovatio Brutalis — Industrial design & product development</title>
   <meta name="description" content="Innovatio Brutalis works early in the development chain — from needs analysis and problem framing to concept development, CAD design, prototyping and low-volume manufacturing.">
   <meta name="theme-color" content="#0E0E0E">
-  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <div class="container">
-    <div class="topbar">
-      <nav class="site-nav" aria-label="Site">
-        <a class="active" href="../">Home</a>
-        <a class="" href="cnc/">CNC & Laser</a>
-        <a class="" href="print/">3D Printing</a>
-        <a class="" href="scan/">3D Scanning</a>
-        <a href="engineering/">Engineering</a>
-        <a href="automotive/">Automotive</a>
-        
-      </nav>
-      <nav class="lang" aria-label="Language">
-        <a href="../">SV</a><a class="active" href="./">EN</a>
-      </nav>
-    </div>
+
+    <!-- GLOBAL NAVIGATION (injectas av site.js) -->
+    <div id="site-topbar"></div>
+    <script defer src="/assets/site.js"></script>
 
     <section class="hero">
       <div class="brand-hero"><picture>
@@ -99,6 +89,5 @@
       <div style="margin-top:6px">© <span id="y"></span> Innovatio Brutalis</div>
     </footer>
   </div>
-  <script>document.getElementById('y').textContent = new Date().getFullYear();</script>
 </body>
 </html>
