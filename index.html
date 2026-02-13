@@ -1,30 +1,32 @@
 <!doctype html>
 <html lang="sv">
 <head>
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
 
-  gtag('config', 'G-LGJK9XKDZB');
-</script>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-LGJK9XKDZB');
+  </script>
+
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
   <title>Innovatio Brutalis | CNC, 3D-print & produktutveckling i Malmö</title>
+
   <meta name="description" content="Utvecklingspartner i Malmö inom CNC-fräsning, lasergravyr, 3D-print i PPA-CF och PVC samt 3D-scanning. Från behovsanalys och CAD till prototyp och småserieproduktion.">
 
   <link rel="canonical" href="https://www.innovatio-brutalis.se/">
   <meta name="theme-color" content="#0E0E0E">
 
-  <!-- Hreflang (behåll även om EN är placeholder) -->
+  <!-- Hreflang -->
   <link rel="alternate" href="https://www.innovatio-brutalis.se/" hreflang="sv-se">
   <link rel="alternate" href="https://www.innovatio-brutalis.se/en/" hreflang="en">
   <link rel="alternate" href="https://www.innovatio-brutalis.se/" hreflang="x-default">
 
-  <!-- Open Graph (LinkedIn/Facebook) -->
+  <!-- Open Graph -->
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Innovatio Brutalis">
   <meta property="og:locale" content="sv_SE">
@@ -36,16 +38,16 @@
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
 
-  <!-- Twitter / X cards -->
+  <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="Innovatio Brutalis | CNC, 3D-print & produktutveckling i Malmö">
-  <meta name="twitter:description" content="Utvecklingspartner i Malmö inom CNC-fräsning, lasergravyr, 3D-print i PPA-CF och PVC samt 3D-scanning. Från behovsanalys och CAD till prototyp och småserieproduktion.">
+  <meta name="twitter:description" content="Utvecklingspartner i Malmö inom CNC-fräsning, lasergravyr, 3D-print i PPA-CF och PVC samt 3D-scanning.">
   <meta name="twitter:image" content="https://www.innovatio-brutalis.se/assets/og-image.jpg">
 
-  <!-- Styles -->
-  <link rel="stylesheet" href="css/style.css">
+  <!-- CSS (absolut sökväg = fungerar överallt) -->
+  <link rel="stylesheet" href="/css/style.css">
 
-  <!-- Structured Data: Organization + Person -->
+  <!-- Structured Data -->
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -80,30 +82,7 @@
           "addressCountry": "SE"
         },
         "areaServed": "SE",
-        "description": "Innovatio Brutalis arbetar tidigt i utvecklingskedjan — från analys av behov och problemformulering till konceptutveckling, konstruktion (CAD), prototypframtagning och lågvolymproduktion.",
-        "knowsAbout": [
-          "Industridesign",
-          "Teknisk produktutveckling",
-          "CAD",
-          "Prototypframtagning",
-          "CNC-fräsning (4-axlig)",
-          "Lasergravyr",
-          "3D-print (engineering-grade polymerer)",
-          "PPA-CF",
-          "PVC/Vinyl",
-          "3D-scanning",
-          "Reverse engineering",
-          "Småserietillverkning"
-        ],
-        "contactPoint": [
-          {
-            "@type": "ContactPoint",
-            "contactType": "sales",
-            "email": "m.arlemark@innovatio-brutalis.se",
-            "areaServed": "SE",
-            "availableLanguage": ["sv", "en"]
-          }
-        ],
+        "description": "Innovatio Brutalis arbetar tidigt i utvecklingskedjan — från analys av behov till verifierad komponent.",
         "sameAs": [
           "https://www.linkedin.com/in/malkus-arlemark-2b996311/"
         ]
@@ -111,36 +90,25 @@
     ]
   }
   </script>
+
 </head>
 
 <body>
   <div class="container">
-    <div class="topbar">
-      <nav class="site-nav" aria-label="Site">
-        <a class="active" href="./">Start</a>
-        <a href="cnc/">CNC &amp; Laser</a>
-        <a href="print/">3D-print</a>
-        <a href="scan/">3D-scanning</a>
-        <a href="engineering/">Engineering</a>
-        <a href="automotive/">Automotive</a>
 
-      </nav>
-
-      <nav class="lang" aria-label="Language">
-        <a class="active" href="./">SV</a>
-        <a href="en/">EN</a>
-      </nav>
-    </div>
+    <!-- GLOBAL NAVIGATION (injectas av site.js) -->
+    <div id="site-topbar"></div>
+    <script defer src="/assets/site.js"></script>
 
     <section class="hero">
       <div class="brand-hero">
         <picture>
-          <source srcset="assets/logo.webp" type="image/webp">
-          <img src="assets/logo.png" alt="Innovatio Brutalis logo">
+          <source srcset="/assets/logo.webp" type="image/webp">
+          <img src="/assets/logo.png" alt="Innovatio Brutalis logo">
         </picture>
       </div>
 
-      <h1>Industridesign &amp; teknisk produktutveckling</h1>
+      <h1>Industridesign & teknisk produktutveckling</h1>
 
       <p class="tagline">
         Innovatio Brutalis arbetar tidigt i utvecklingskedjan — från analys av behov och problemformulering till konceptutveckling,
@@ -149,9 +117,9 @@
 
       <div class="cta-row" style="justify-content:center">
         <a class="btn" href="#kontakt">Kontakt</a>
-        <a class="btn secondary" href="cnc/">CNC &amp; Laser</a>
-        <a class="btn secondary" href="print/">3D-print</a>
-        <a class="btn secondary" href="scan/">3D-scanning</a>
+        <a class="btn secondary" href="/cnc/">CNC & Laser</a>
+        <a class="btn secondary" href="/print/">3D-print</a>
+        <a class="btn secondary" href="/scan/">3D-scanning</a>
       </div>
     </section>
 
@@ -159,54 +127,40 @@
       <article class="card">
         <h2>Utvecklingskedja</h2>
         <p>
-          Innovatio Brutalis arbetar tidigt i utvecklingskedjan — från analys av behov och problemformulering till konceptutveckling,
-          konstruktion (CAD), prototypframtagning och lågvolymproduktion.
+          Från behovsanalys och kravbild till verifierad komponent i metall eller avancerade polymerer.
         </p>
+
         <ul>
-          <li>Behovsanalys, kravbild och risker</li>
-          <li>Problemformulering &amp; funktionsnedbrytning</li>
-          <li>Konceptutveckling, utvärdering och beslut</li>
-          <li>Konstruktion (CAD) med DFM i åtanke</li>
-          <li>Prototyp &amp; verifiering</li>
-          <li>Enstyck &amp; småserier (metall och tekniska polymerer)</li>
+          <li>Problemanalys & funktionsnedbrytning</li>
+          <li>Konstruktion (CAD) med DFM</li>
+          <li>Prototyp & verifiering</li>
+          <li>Enstyck & småserier</li>
         </ul>
 
         <hr class="sep">
 
         <h2>Snabblänkar</h2>
         <ul>
-          <li><a href="cnc/">CNC &amp; lasergravyr</a></li>
-          <li><a href="print/">3D-print (engineering grade + PVC/Vinyl)</a></li>
-          <li><a href="scan/">3D-scanning &amp; reverse engineering</a></li>
+          <li><a href="/engineering/">Engineering & analys</a></li>
+          <li><a href="/automotive/">Automotive</a></li>
+          <li><a href="/cnc/">CNC & lasergravyr</a></li>
+          <li><a href="/print/">3D-print</a></li>
+          <li><a href="/scan/">3D-scanning</a></li>
         </ul>
       </article>
 
       <aside class="card">
         <h2>Press</h2>
         <p>
-          Innovatio Brutalis uppmärksammades i Sydsvenskan för utveckling av slagtåliga 3D-printade glasögonbågar.
+          Uppmärksammad i Sydsvenskan för utveckling av slagtåliga 3D-printade glasögonbågar.
         </p>
-        <p>
-          <a href="https://www.sydsvenskan.se/malmo/han-gor-okrossbara-glasogonbagar-till-sonen-i-en-3d-skrivare/" target="_blank" rel="noopener">
-            Läs artikeln
-          </a>
-        </p>
-
-        <hr class="sep">
-
-        <h2>Kvalitet &amp; arbetssätt</h2>
-        <ul>
-          <li>Spårbar projektstruktur och versionshantering av CAD</li>
-          <li>Mätverifiering och dokumentation vid behov</li>
-          <li>Snabb iteration med tydliga beslutspunkter</li>
-        </ul>
 
         <hr class="sep">
 
         <h2>LinkedIn</h2>
         <p>
           <a href="https://www.linkedin.com/in/malkus-arlemark-2b996311/" target="_blank" rel="noopener">
-            Profil: Malkus Arlemark
+            Malkus Arlemark
           </a>
         </p>
       </aside>
@@ -214,19 +168,16 @@
 
     <section class="card" id="kontakt" style="margin-top:28px;">
       <h2>Kontakt</h2>
-      <p>För förfrågningar, samarbeten eller offertunderlag:</p>
+      <p>För förfrågningar eller offertunderlag:</p>
 
-      <div class="kv" role="list">
-        <div role="listitem">E-post</div>
+      <div class="kv">
+        <div>E-post</div>
         <div><a href="mailto:m.arlemark@innovatio-brutalis.se">m.arlemark@innovatio-brutalis.se</a></div>
 
-        <div role="listitem">Plats</div>
+        <div>Plats</div>
         <div>Malmö, Sverige</div>
 
-        <div role="listitem">Företag</div>
-        <div>Innovatio Brutalis</div>
-
-        <div role="listitem">Org.nr</div>
+        <div>Org.nr</div>
         <div>770314-3516</div>
       </div>
     </section>
@@ -235,10 +186,7 @@
       <div>Innovatio Brutalis™ — Varumärket är föremål för registrering hos PRV (Sverige).</div>
       <div style="margin-top:6px">© <span id="y"></span> Innovatio Brutalis</div>
     </footer>
-  </div>
 
-  <script>
-    document.getElementById('y').textContent = new Date().getFullYear();
-  </script>
+  </div>
 </body>
 </html>
