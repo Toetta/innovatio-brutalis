@@ -67,10 +67,72 @@
 
         <hr class="sep">
 
-        <h2>Projekt jag byggt</h2>
-        <p>
-          Här fyller vi på med dina fordon och byggda system (med bilder/årtal/roll). Skicka en lista så skriver jag in dem som “case cards”.
+        <h2>Projekt</h2>
+        <p style="margin-top:0;">
+          Här samlar jag både riktiga kundcase (på väg in) och egna fordonsexperiment.
+          Vissa börjar seriöst. Andra börjar med “det här är en dålig idé” och slutar i Haparanda.
         </p>
+
+        <!-- PROJECT CARDS -->
+        <div class="project-grid" style="margin-top:18px;">
+
+          <!-- PROJECT 1 -->
+          <article class="project-card">
+            <div class="project-thumb">
+              <a href="/assets/haparanda-small-pdf" target="_blank" rel="noopener">
+                <img src="/assets/haparanda-thumbnail.jpg" alt="Lambretta Cometa 75 – äventyr till Haparanda">
+              </a>
+              <span class="project-tag hobby">Exploration</span>
+            </div>
+
+            <div class="project-content">
+              <h3 style="margin-top:0;">Lambretta Cometa 75 — Haparanda</h3>
+
+              <p>
+                Två personer. 75cc. Långt norrut. Ett hobbyprojekt som mest gick ut på att se
+                om det ens var möjligt — och hur många gånger man kan säga “vi löser det” innan man faktiskt måste lösa det.
+              </p>
+
+              <ul class="project-meta">
+                <li><strong>Fordon:</strong> Lambretta Cometa 75</li>
+                <li><strong>Modifieringar:</strong> däck/slangar, elsystem 12V, GPS, vajrar, stötdämpare, packningar, service, svetsning, koppling</li>
+                <li><strong>Lastlösning:</strong> minimal packning, spännband + dunkar, liten korg bak, ryggsäckar</li>
+                <li><strong>3D-print:</strong> GPS-hållare</li>
+                <li><strong>Testade:</strong> strategi, problemlösning, relationsdynamik (ja, det räknas)</li>
+              </ul>
+
+              <a class="btn small" href="/assets/haparanda-small-pdf" target="_blank" rel="noopener">
+                Läs äventyret (PDF)
+              </a>
+            </div>
+          </article>
+
+          <!-- UPCOMING -->
+          <article class="project-card upcoming">
+            <div class="project-thumb placeholder">
+              <span>Fler kommer</span>
+            </div>
+            <div class="project-content">
+              <h3 style="margin-top:0;">Kundprojekt (på väg in)</h3>
+              <p>
+                Mer professionella case och byggda system publiceras löpande — med tydlig roll, scope, resultat och teknikval.
+              </p>
+            </div>
+          </article>
+
+          <article class="project-card upcoming">
+            <div class="project-thumb placeholder">
+              <span>Fler kommer</span>
+            </div>
+            <div class="project-content">
+              <h3 style="margin-top:0;">Reverse engineering &amp; specialdelar</h3>
+              <p>
+                När delen är utgången, omöjlig att få tag på eller behöver bli bättre än originalet.
+              </p>
+            </div>
+          </article>
+
+        </div>
       </article>
 
       <aside class="card">
@@ -79,6 +141,13 @@
           <li><a href="../cnc/">CNC &amp; lasergravyr</a></li>
           <li><a href="../print/">3D-print</a></li>
           <li><a href="../scan/">3D-scanning</a></li>
+        </ul>
+
+        <hr class="sep">
+
+        <h2>Länkar</h2>
+        <ul>
+          <li><a href="/assets/haparanda-small-pdf" target="_blank" rel="noopener">Haparanda (PDF)</a></li>
         </ul>
       </aside>
     </section>
@@ -90,5 +159,8 @@
 
   </div>
 
+  <script>
+    document.getElementById('y').textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
