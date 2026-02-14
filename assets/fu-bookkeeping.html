@@ -1,56 +1,9 @@
 <!doctype html>
-<!--
-  FU-BOOKKEEPING – offline i webbläsaren
-
-  Copyright (c) 2026 Innovatio Brutalis
-  All rights reserved.
-
-  License: Proprietary.
-  Permission is NOT granted to use, copy, modify, merge, publish, distribute,
-  sublicense, and/or sell copies of this software or its associated files,
-  except with explicit prior written permission from the copyright holder.
--->
 <html lang="sv">
 <head>
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-LGJK9XKDZB');
-  </script>
-
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FU-BOOKKEEPING – Bokföring (BAS) offline | Innovatio Brutalis</title>
-
-  <meta name="description" content="FU-BOOKKEEPING: Bokföring (BAS) som kör offline i webbläsaren (localStorage). Skapad av Innovatio Brutalis." />
-  <link rel="canonical" href="https://www.innovatio-brutalis.se/assets/fu-bookkeeping.html" />
-
-  <link rel="icon" href="/favicon.ico" sizes="any" />
-  <link rel="icon" type="image/png" href="/logo-square-48x48.png" sizes="48x48" />
-  <link rel="apple-touch-icon" href="/logo-square-180x180.png" sizes="180x180" />
-  <link rel="manifest" href="/site.webmanifest" />
-  <meta name="theme-color" content="#262425" />
-
-  <!-- Open Graph (LinkedIn, etc) -->
-  <meta property="og:type" content="website" />
-  <meta property="og:site_name" content="Innovatio Brutalis" />
-  <meta property="og:locale" content="sv_SE" />
-  <meta property="og:title" content="FU-BOOKKEEPING – Bokföring (BAS) offline | Innovatio Brutalis" />
-  <meta property="og:description" content="Bokföring (BAS) som kör offline i webbläsaren (localStorage)." />
-  <meta property="og:url" content="https://www.innovatio-brutalis.se/assets/fu-bookkeeping.html" />
-  <meta property="og:image" content="https://www.innovatio-brutalis.se/assets/og-image.jpg" />
-  <meta property="og:image:type" content="image/jpeg" />
-  <meta property="og:image:width" content="1200" />
-  <meta property="og:image:height" content="630" />
-
-  <!-- Twitter -->
-  <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="FU-BOOKKEEPING – Bokföring (BAS) offline | Innovatio Brutalis" />
-  <meta name="twitter:description" content="Bokföring (BAS) som kör offline i webbläsaren (localStorage)." />
-  <meta name="twitter:image" content="https://www.innovatio-brutalis.se/assets/og-image.jpg" />
+  <title>Mini-bokföring (BAS) – offline i webbläsaren</title>
   <style>
     html{ font-size: clamp(14px, 1.05vw, 16px); }
     :root{ --bg:#0b0f14; --card:#111826; --muted:#94a3b8; --text:#e5e7eb; --line:#223044; --ok:#22c55e; --bad:#ef4444; --accent:#60a5fa; }
@@ -145,61 +98,27 @@
     .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas; font-size:12px; color:var(--muted); }
     .small{ font-size:12px; }
 
-    /* Direct-link / popup CTA */
-    .ib-direct{
-      position:sticky;
-      top:0;
-      z-index:6;
-      border-bottom:1px solid var(--line);
-      background:rgba(17,24,38,.96);
+    /* SRU (locked option) */
+    .lockbox{ border:1px dashed rgba(148,163,184,.5); border-radius:16px; padding:12px; background:rgba(11,18,32,.55); }
+    .lockbox .row{ justify-content:space-between; align-items:center; }
+    .badge.lock{ display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(148,163,184,.35); color:var(--muted); background:rgba(148,163,184,.08);
     }
-    .ib-direct .wrap{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
-      flex-wrap:wrap;
-      padding-top:12px;
-      padding-bottom:12px;
-    }
-    .ib-direct .title{ font-weight:800; letter-spacing:.02em; }
-    .ib-direct .hint{ max-width: 70ch; }
-    .btn.ib-direct-btn{
-      padding:10px 16px;
-      border-radius:999px;
-      background:rgba(96,165,250,.22);
-      border:1px solid rgba(96,165,250,.55);
-      box-shadow:0 0 0 4px rgba(96,165,250,.12);
-      font-weight:800;
-      text-decoration:none;
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-    }
-    .btn.ib-direct-btn:hover{ background:rgba(96,165,250,.28); }
+    .badge.lock b{ color:var(--text); }
+
   </style>
 </head>
 <body>
 <header>
   <div class="wrap">
     <div class="row">
-      <h1 id="companyName">FU-BOOKKEEPING</h1>
+      <h1 id="companyName">Mini-bokföring</h1>
       <select class="pill" id="yearPillSelect" aria-label="Aktivt räkenskapsår"></select>
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill">Lagring: localStorage (offline)</span>
     </div>
   </div>
 </header>
-
-<div id="ibDirectBanner" class="ib-direct" hidden>
-  <div class="wrap">
-    <div>
-      <div class="title">Öppnad direkt</div>
-      <div class="muted small hint">Om du kom hit via en direktlänk eller en popup: gå till Innovatio Brutalis för senaste versionen och mer information.</div>
-    </div>
-    <a id="ibDirectHomeLink" class="btn ib-direct-btn" href="https://www.innovatio-brutalis.se/" rel="noopener">Till Innovatio Brutalis</a>
-  </div>
-</div>
 
 <main>
   <div class="wrap">
@@ -210,7 +129,8 @@
                 <button type="button" class="tab" data-tab="customers">Kunder</button>
         <button type="button" class="tab" data-tab="suppliers">Leverantörer</button>
 <button type="button" class="tab" data-tab="invoices">Fakturor</button>
-<button type="button" class="tab" data-tab="export">Import/Export</button>
+<button type="button" class="tab" data-tab="sru">SRU / Deklaration</button>
+        <button type="button" class="tab" data-tab="export">Import/Export</button>
         <button type="button" class="tab" data-tab="settings">Inställningar</button>
       </aside>
       <div class="content">
@@ -650,7 +570,81 @@
     </section>
 
 
-    <section id="tab-export" hidden>
+    
+    
+    <!-- SRU / DEKLARATION -->
+    <section id="tab-sru" hidden>
+      <div class="grid two">
+        <div class="card">
+          <h2>SRU-export (NE) <span class="badge lock" id="sruLockBadge">🔒 <b>Låst</b> · beta</span></h2>
+
+          <div class="lockbox" id="sruLockedBox" style="margin-top:10px;">
+            <div class="row">
+              <div class="muted small">
+                SRU är förberett för <b>blankettstyrd</b> export (börjar med <b>NE</b>).
+                Funktionen syns alltid – men är låst tills du aktiverar den.
+              </div>
+              <button class="btn" type="button" id="btnEnableSRU">Aktivera SRU (beta)</button>
+            </div>
+            <div class="muted small" style="margin-top:10px;">
+              När SRU är aktiv kan du mappa BAS-konton till SRU-fältkoder och exportera <span class="kbd">INFO.SRU</span> + <span class="kbd">BLANKETTER.SRU</span>.
+            </div>
+          </div>
+
+          <div id="sruUnlockedBox" hidden style="margin-top:10px;">
+            <div class="row" style="gap:10px; align-items:end;">
+              <div class="field" style="min-width:220px;">
+                <label>Räkenskapsår</label>
+                <select id="sruYearSelect"></select>
+              </div>
+              <div class="field" style="min-width:220px;">
+                <label>Blankettperiod (suffix)</label>
+                <input id="sruPeriodSuffix" placeholder="t.ex. P4" />
+              </div>
+              <button class="btn" type="button" id="btnExportSRUNE">Exportera INFO.SRU + BLANKETTER.SRU</button>
+            </div>
+            <div class="muted small" style="margin-top:10px;">
+              Exporten bygger på din <b>NE-mappning</b> nedan. Belopp hämtas från verifikationsrader i valt år.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+            <h2>NE-mappning</h2>
+            <div class="row">
+              <button class="btn secondary" type="button" id="btnSruAddMap">+ Rad</button>
+              <button class="btn" type="button" id="btnSruSaveMap">Spara mappning</button>
+            </div>
+          </div>
+          <div class="muted small" style="margin-bottom:10px;">
+            Ange SRU-fältkod (t.ex. <span class="kbd">R1</span>), och vilka konton som ska summeras.
+            Kontofilter kan vara: <span class="kbd">1930</span>, <span class="kbd">30*</span>, eller intervall <span class="kbd">3000-3099</span>. Separera flera med komma.
+          </div>
+
+          <div style="overflow:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:120px;">Fältkod</th>
+                  <th style="width:220px;">Kontofilter</th>
+                  <th style="width:140px;">Tecken</th>
+                  <th>Kommentar</th>
+                  <th style="width:70px;"></th>
+                </tr>
+              </thead>
+              <tbody id="sruMapTbody"></tbody>
+            </table>
+          </div>
+
+          <div class="muted small" style="margin-top:10px;">
+            Tips: Om du vill att ett konto ska minska värdet i fältet, välj <b>Invertera</b> på den raden.
+          </div>
+        </div>
+      </div>
+    </section>
+
+<section id="tab-export" hidden>
       <div class="grid two">
         <div class="card">
           <h2>Backup (JSON)</h2>
@@ -842,6 +836,17 @@
               </div>
             </div>
 
+            
+              <div style="height:1px; background:rgba(34,48,68,.8); margin:12px 0;"></div>
+              <h2>SRU / Deklaration</h2>
+              <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap;">
+                <label class="muted small" style="display:flex; align-items:center; gap:8px;">
+                  <input id="sSruEnabled" type="checkbox" />
+                  Aktivera SRU (NE) – avancerat (kräver mappning)
+                </label>
+                <span class="muted small">Visas alltid i menyn, men är låst om du inte aktiverar här.</span>
+              </div>
+
             <div class="row" style="justify-content:flex-end;">
               <button class="btn" id="btnSaveSettings">Spara</button>
             </div>
@@ -894,15 +899,6 @@
   </div>
 </main>
 
-<footer style="border-top:1px solid var(--line); background:rgba(11,15,20,.98);">
-  <div class="wrap" style="padding-top:12px; padding-bottom:12px;">
-    <div class="muted small">
-      © 2026 Innovatio Brutalis. All rights reserved. Licens: Proprietär – ingen användning, kopiering,
-      modifiering eller distribution är tillåten utan skriftligt tillstånd.
-    </div>
-  </div>
-</footer>
-
 <script>
 (function(){
  
@@ -915,29 +911,6 @@
   setBoot("JS: OK");
   window.addEventListener("error", () => setBoot("JS: fel (konsol)"));
   window.addEventListener("unhandledrejection", () => setBoot("JS: fel (konsol)"));
-
-  // Show a visible CTA when opened directly / in a popup
-  (function(){
-    const banner = document.getElementById("ibDirectBanner");
-    if (!banner) return;
-
-    const openedAsPopup = !!window.opener;
-    let openedDirectly = false;
-
-    const ref = document.referrer;
-    if (!ref) {
-      openedDirectly = true;
-    } else {
-      try {
-        const refHost = new URL(ref).host;
-        openedDirectly = refHost !== location.host;
-      } catch {
-        openedDirectly = true;
-      }
-    }
-
-    if (openedAsPopup || openedDirectly) banner.hidden = false;
-  })();
 
 
   // --- Utilities ---
@@ -1009,7 +982,8 @@
     const now = new Date();
     const y = now.getFullYear();
     return {
-      company: { name: "FU-BOOKKEEPING", orgnr: "", currency: "SEK", defaultSign: "", addr:"", zip:"", city:"", country:"", email:"", phone:"", web:"", vat:"", payDays:30, bankgiro:"", plusgiro:"", iban:"", swift:"", invoiceNote:"", invoiceFooter:"", logoDataUrl:"" },
+      company: { name: "Mini-bokföring", orgnr: "", currency: "SEK", defaultSign: "", addr:"", zip:"", city:"", country:"", email:"", phone:"", web:"", vat:"", payDays:30, bankgiro:"", plusgiro:"", iban:"", swift:"", invoiceNote:"", invoiceFooter:"", logoDataUrl:"" },
+      features: { sruEnabled: false },
       fileSync: { autosave: true, requireFile: false },
       fiscalYears: [
         { id: String(y-1), start: `${y-1}-01-01`, end: `${y-1}-12-31` },
@@ -1020,9 +994,11 @@
       vouchers: [],
       customers: {},
       suppliers: {},
-      invoices: []
+      invoices: [],
+      sru: { enabled: false, periodSuffix: "P4", neMappings: [] }
     };
   }
+
   function demoAccounts(){
     // Minimal BAS-ish set (du kan lägga fler i Kontoplan)
     return {
@@ -1051,7 +1027,9 @@
       const cdef = defaultData().company;
       d.company = d.company || {};
       for (const k of Object.keys(cdef)) if (d.company[k] == null) d.company[k] = cdef[k];
-if (!d.fileSync) d.fileSync = { autosave: true, requireFile: false };
+if (!d.features) d.features = { sruEnabled: false };
+      if (typeof d.features.sruEnabled !== "boolean") d.features.sruEnabled = false;
+      if (!d.fileSync) d.fileSync = { autosave: true, requireFile: false };
       if (typeof d.fileSync.requireFile !== "boolean") d.fileSync.requireFile = false;
       if (!d.fiscalYears) d.fiscalYears = defaultData().fiscalYears;
       if (!d.accounts) d.accounts = demoAccounts();
@@ -1059,6 +1037,10 @@ if (!d.fileSync) d.fileSync = { autosave: true, requireFile: false };
       if (!d.customers) d.customers = {};
       if (!d.suppliers) d.suppliers = {};
       if (!d.invoices) d.invoices = [];
+      if (!d.sru) d.sru = { enabled:false, periodSuffix:"P4", neMappings: [] };
+      if (typeof d.sru.enabled !== "boolean") d.sru.enabled = false;
+      if (!d.sru.periodSuffix) d.sru.periodSuffix = "P4";
+      if (!Array.isArray(d.sru.neMappings)) d.sru.neMappings = [];
       if (!d.activeYearId) d.activeYearId = d.fiscalYears[0]?.id ?? String(new Date().getFullYear());
       return d;
     } catch {
@@ -1200,7 +1182,9 @@ if (!d.fileSync) d.fileSync = { autosave: true, requireFile: false };
     // migration defaults
     if (!state.company) state.company = defaultData().company;
         { const cdef = defaultData().company; state.company = state.company || {}; for (const k of Object.keys(cdef)) if (state.company[k] == null) state.company[k] = cdef[k]; }
-if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
+if (!state.features) state.features = { sruEnabled: false };
+    if (typeof state.features.sruEnabled !== "boolean") state.features.sruEnabled = false;
+    if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
     if (typeof state.fileSync.requireFile !== "boolean") state.fileSync.requireFile = true;
 
     save();
@@ -1310,12 +1294,13 @@ if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
   const sections = {
     vouchers: document.getElementById("tab-vouchers"),
     accounts: document.getElementById("tab-accounts"),
-        customers: document.getElementById("tab-customers"),
+    reports: document.getElementById("tab-reports"),
+    customers: document.getElementById("tab-customers"),
     suppliers: document.getElementById("tab-suppliers"),
-reports: document.getElementById("tab-reports"),
     invoices: document.getElementById("tab-invoices"),
     export: document.getElementById("tab-export"),
     settings: document.getElementById("tab-settings"),
+    sru: document.getElementById("tab-sru"),
   };
 
   const companyNameEl = document.getElementById("companyName");
@@ -1383,6 +1368,7 @@ reports: document.getElementById("tab-reports"),
   const sSwift = document.getElementById("sSwift");
   const sInvNote = document.getElementById("sInvNote");
   const sInvFooter = document.getElementById("sInvFooter");
+  const sSruEnabled = document.getElementById("sSruEnabled");
   const sLogo = document.getElementById("sLogo");
   const btnRemoveLogo = document.getElementById("btnRemoveLogo");
   const logoPreview = document.getElementById("logoPreview");
@@ -1390,6 +1376,11 @@ reports: document.getElementById("tab-reports"),
   const fyStart = document.getElementById("fyStart");
   const fyEnd = document.getElementById("fyEnd");
   const yearsTbody = document.getElementById("yearsTbody");
+
+  // SRU tab
+  const sruLockedBox = document.getElementById("sruLockedBox");
+  const sruStatusText = document.getElementById("sruStatusText");
+  const btnSruExport = document.getElementById("btnSruExport");
   const carryFrom = document.getElementById("carryFrom");
   const carryTo = document.getElementById("carryTo");
 
@@ -1411,6 +1402,7 @@ reports: document.getElementById("tab-reports"),
     if (t === "customers") renderCustomers();
     if (t === "suppliers") renderSuppliers();
     if (t === "settings") renderSettings();
+    if (t === "sru") renderSru();
     if (t === "accounts") renderAccounts();
   }
 
@@ -2652,6 +2644,38 @@ reports: document.getElementById("tab-reports"),
     return ({asset:"Tillgång", liability:"EK/Skuld", income:"Intäkt", expense:"Kostnad", other:"Övrigt"})[t] || "Övrigt";
   }
 
+  
+  // --- SRU (låst/valfritt) ---
+  function renderSru(){
+    const enabled = !!(state.features && state.features.sruEnabled);
+
+    if (sruLockedBox){
+      if (!enabled){
+        sruLockedBox.innerHTML = `
+          <div style="font-weight:900; margin-bottom:6px;">Låst: SRU-export</div>
+          <div class="muted small">
+            SRU är en <b>valfri</b> funktion. Aktivera den under <b>Inställningar → SRU / Deklaration</b>.
+            Därefter bygger vi mappning för blankett <b>NE</b> (konto/beräkningar → fält).
+          </div>
+        `;
+      } else {
+        sruLockedBox.innerHTML = `
+          <div style="font-weight:900; margin-bottom:6px;">SRU är aktiverat</div>
+          <div class="muted small">
+            Nästa steg: SRU-mappning för NE (fältlista + regler). Exportknappen är tillfälligt avstängd tills mappningen är klar.
+          </div>
+        `;
+      }
+    }
+    if (sruStatusText){
+      sruStatusText.textContent = enabled
+        ? "Aktiverat · NE-mappning: ej implementerad ännu"
+        : "Avstängt · visas i menyn men är låst";
+    }
+    if (btnSruExport) btnSruExport.disabled = true; // keep disabled for now
+  }
+
+
   // --- Settings ---
   function renderSettings(){
     sCompany.value = state.company.name || "";
@@ -2674,6 +2698,7 @@ reports: document.getElementById("tab-reports"),
     if (sSwift) sSwift.value = state.company.swift || "";
     if (sInvNote) sInvNote.value = state.company.invoiceNote || "";
     if (sInvFooter) sInvFooter.value = state.company.invoiceFooter || "";
+    if (sSruEnabled) sSruEnabled.checked = !!(state.features && state.features.sruEnabled);
     if (logoPreview){
       const has = !!(state.company.logoDataUrl && String(state.company.logoDataUrl).startsWith("data:"));
       logoPreview.innerHTML = has ? `<img alt="Logo" src="${state.company.logoDataUrl}" style="max-height:44px; max-width:220px; object-fit:contain; border:1px solid rgba(34,48,68,.8); border-radius:10px; padding:6px; background:rgba(11,18,32,.4);">` : `<span class="muted small">Ingen logotyp vald.</span>`;
@@ -2713,7 +2738,7 @@ reports: document.getElementById("tab-reports"),
   function fillYearSelectors(){
     const ys = state.fiscalYears.slice().sort((a,b)=>a.id.localeCompare(b.id,"sv"));
 
-    const selects = [yearSelect, reportsYearSelect, trialYearSelect, sieYearSelect, carryFrom, carryTo];
+    const selects = [yearSelect, reportsYearSelect, trialYearSelect, sieYearSelect, carryFrom, carryTo, sruYearSelect];
     selects.forEach(sel => {
       const prev = sel.value;
       sel.innerHTML = "";
@@ -2726,7 +2751,7 @@ reports: document.getElementById("tab-reports"),
       sel.value = ys.find(y=>y.id===prev)?.id || state.activeYearId || ys[0]?.id || "";
     });
 
-    companyNameEl.textContent = state.company.name || "FU-BOOKKEEPING";
+    companyNameEl.textContent = state.company.name || "Mini-bokföring";
 
     // Header dropdown (active fiscal year)
     if (yearPillSelect){
@@ -2892,7 +2917,7 @@ reports: document.getElementById("tab-reports"),
 
     const lines = [];
     lines.push("#FLAGGA 0");
-    lines.push(`#PROGRAM ${sieQuote("FU-BOOKKEEPING (HTML)")} ${sieQuote("1.0")}`);
+    lines.push(`#PROGRAM ${sieQuote("Mini-bokföring (HTML)")} ${sieQuote("1.0")}`);
     lines.push("#FORMAT PC8");
     lines.push(`#GEN ${ymd(todayISO())} ${sieQuote(state.company.defaultSign || "")}`);
     lines.push(`#FNAMN ${sieQuote(state.company.name || "")}`);
@@ -3205,7 +3230,7 @@ reports: document.getElementById("tab-reports"),
     }
 
     // Company
-    if (parsed.company?.name && (!state.company.name || state.company.name === "FU-BOOKKEEPING")) state.company.name = parsed.company.name;
+    if (parsed.company?.name && (!state.company.name || state.company.name === "Mini-bokföring")) state.company.name = parsed.company.name;
     if (parsed.company?.orgnr && !state.company.orgnr) state.company.orgnr = parsed.company.orgnr;
     if (parsed.company?.currency) state.company.currency = parsed.company.currency;
 
@@ -3261,6 +3286,237 @@ reports: document.getElementById("tab-reports"),
     const csv = ["Konto;Namn;Saldo"].concat(rows.map(r => r.map(x=>String(x).replaceAll(";", ",")).join(";"))).join("\n") + "\n";
     downloadText(`saldolista_${yearId}.csv`, csv, "text/csv");
   }
+
+  
+  // --- SRU (NE) ---
+  function ensureSruDefaults(){
+    if (!state.sru) state.sru = { enabled:false, periodSuffix:"P4", neMappings: [] };
+    if (typeof state.sru.enabled !== "boolean") state.sru.enabled = false;
+    if (!state.sru.periodSuffix) state.sru.periodSuffix = "P4";
+    if (!Array.isArray(state.sru.neMappings)) state.sru.neMappings = [];
+  }
+
+  function renderSRU(){
+    ensureSruDefaults();
+    // sync year select
+    fillYearSelectors();
+    const ys = state.fiscalYears.slice().sort((a,b)=>a.id.localeCompare(b.id,"sv"));
+
+    if (sruYearSelect){
+      const prev = sruYearSelect.value;
+      sruYearSelect.innerHTML = "";
+      ys.forEach(y=>{
+        const opt = document.createElement("option");
+        opt.value = y.id;
+        opt.textContent = `${y.id} (${y.start} – ${y.end})`;
+        sruYearSelect.appendChild(opt);
+      });
+      sruYearSelect.value = ys.find(y=>y.id===prev)?.id || state.activeYearId || ys[0]?.id || "";
+    }
+
+    if (sruPeriodSuffix) sruPeriodSuffix.value = state.sru.periodSuffix || "P4";
+
+    const enabled = !!state.sru.enabled;
+    if (sruLockedBox) sruLockedBox.hidden = enabled;
+    if (sruUnlockedBox) sruUnlockedBox.hidden = !enabled;
+    if (sruLockBadge){
+      sruLockBadge.innerHTML = enabled ? "✅ <b>Aktiv</b> · beta" : "🔒 <b>Låst</b> · beta";
+    }
+
+    renderSruMapTable();
+  }
+
+  function normalizeFilterToken(tok){
+    return String(tok||"").trim();
+  }
+
+  function accountMatchesFilter(acc, filterStr){
+    const a = String(acc||"").trim();
+    if (!a) return false;
+    const parts = String(filterStr||"").split(",").map(normalizeFilterToken).filter(Boolean);
+    if (!parts.length) return false;
+
+    for (const p of parts){
+      // range 3000-3099
+      const mRange = p.match(/^(\d{1,4})\s*-\s*(\d{1,4})$/);
+      if (mRange){
+        const lo = mRange[1].padStart(4,"0");
+        const hi = mRange[2].padStart(4,"0");
+        if (a >= lo && a <= hi) return true;
+        continue;
+      }
+      // wildcard prefix 30*
+      if (p.endsWith("*")){
+        const pre = p.slice(0,-1);
+        if (a.startsWith(pre)) return true;
+        continue;
+      }
+      // exact
+      if (p === a) return true;
+    }
+    return false;
+  }
+
+  function sumForFilter(yearId, filterStr){
+    let sum = 0;
+    for (const v of yearVouchers(yearId)){
+      for (const l of (v.lines||[])){
+        if (accountMatchesFilter(l.account, filterStr)){
+          sum += Number(l.amount)||0;
+        }
+      }
+    }
+    return Math.round(sum*100)/100;
+  }
+
+  function renderSruMapTable(){
+    ensureSruDefaults();
+    if (!sruMapTbody) return;
+    sruMapTbody.innerHTML = "";
+
+    if (!state.sru.neMappings.length){
+      // seed with a few common placeholders (user edits field codes)
+      state.sru.neMappings = [
+        { id: crypto.randomUUID(), code:"", filter:"30*", invert:true, note:"Intäkter (konto 3xxx) – ange rätt fältkod" },
+        { id: crypto.randomUUID(), code:"", filter:"4*", invert:false, note:"Kostnader (konto 4xxx) – ange rätt fältkod" }
+      ];
+    }
+
+    state.sru.neMappings.forEach((m, idx)=>{
+      const tr = document.createElement("tr");
+
+      const tdCode = document.createElement("td");
+      const inpCode = document.createElement("input");
+      inpCode.value = m.code || "";
+      inpCode.placeholder = "t.ex. R1";
+      inpCode.addEventListener("input", ()=>{ m.code = inpCode.value.trim(); });
+      tdCode.appendChild(inpCode);
+
+      const tdFilter = document.createElement("td");
+      const inpFilter = document.createElement("input");
+      inpFilter.value = m.filter || "";
+      inpFilter.placeholder = "t.ex. 3000-3099, 3010";
+      inpFilter.addEventListener("input", ()=>{ m.filter = inpFilter.value; });
+      tdFilter.appendChild(inpFilter);
+
+      const tdSign = document.createElement("td");
+      const sel = document.createElement("select");
+      sel.innerHTML = `
+        <option value="normal">Normal</option>
+        <option value="invert">Invertera</option>
+      `;
+      sel.value = m.invert ? "invert" : "normal";
+      sel.addEventListener("change", ()=>{ m.invert = (sel.value === "invert"); });
+      tdSign.appendChild(sel);
+
+      const tdNote = document.createElement("td");
+      const inpNote = document.createElement("input");
+      inpNote.value = m.note || "";
+      inpNote.placeholder = "Valfritt";
+      inpNote.addEventListener("input", ()=>{ m.note = inpNote.value; });
+      tdNote.appendChild(inpNote);
+
+      const tdX = document.createElement("td");
+      const bx = document.createElement("button");
+      bx.className = "btn danger";
+      bx.textContent = "✕";
+      bx.title = "Ta bort rad";
+      bx.addEventListener("click", ()=>{
+        state.sru.neMappings.splice(idx,1);
+        save();
+        renderSRU();
+      });
+      tdX.appendChild(bx);
+
+      tr.appendChild(tdCode);
+      tr.appendChild(tdFilter);
+      tr.appendChild(tdSign);
+      tr.appendChild(tdNote);
+      tr.appendChild(tdX);
+      sruMapTbody.appendChild(tr);
+    });
+  }
+
+  function validateNeMapping(){
+    ensureSruDefaults();
+    const rows = state.sru.neMappings || [];
+    const okRows = rows.filter(r => (r.code||"").trim() && (r.filter||"").trim());
+    if (!okRows.length) return { ok:false, msg:"Lägg till minst en rad med fältkod + kontofilter." };
+    // check duplicates
+    const seen = new Set();
+    for (const r of okRows){
+      const c = (r.code||"").trim().toUpperCase();
+      if (seen.has(c)) return { ok:false, msg:`Fältkod ${c} finns flera gånger. Slå ihop eller ändra.` };
+      seen.add(c);
+    }
+    return { ok:true, rows: okRows.map(r=>({ ...r, code:(r.code||"").trim().toUpperCase() })) };
+  }
+
+  function exportSRUNE(){
+    ensureSruDefaults();
+    if (!state.sru.enabled) return alert("SRU är låst. Aktivera först.");
+    const yearId = (sruYearSelect && sruYearSelect.value) || state.activeYearId;
+    const periodSuffix = (sruPeriodSuffix?.value || state.sru.periodSuffix || "P4").trim() || "P4";
+    state.sru.periodSuffix = periodSuffix;
+
+    const v = validateNeMapping();
+    if (!v.ok) return alert(v.msg);
+
+    const orgnr = (state.company.orgnr || "").trim();
+    if (!orgnr) return alert("Fyll i Org.nr under Inställningar först (behövs i SRU).");
+
+    // Calculate field values
+    const fields = [];
+    for (const r of v.rows){
+      let val = sumForFilter(yearId, r.filter || "");
+      if (r.invert) val = -val;
+      val = Math.round(val*100)/100;
+      if (Math.abs(val) < 0.00001) continue;
+      fields.push({ code: r.code, value: val });
+    }
+    if (!fields.length) return alert("Alla fält blev 0. Kontrollera att du har verifikationer i året och att kontofiltren matchar.");
+
+    // SRU file content (simple, line-based)
+    const now = new Date();
+    const tsDate = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}`;
+    const tsTime = `${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}${String(now.getSeconds()).padStart(2,"0")}`;
+    const ident = `${orgnr.replaceAll("-","")}${tsDate}${tsTime}`;
+
+    const blankettKod = `NE-${yearId}${periodSuffix}`;
+
+    // INFO.SRU (minimal but practical)
+    const info = [
+      "#DATABESKRIVNING_START",
+      "#PRODUKT SRU",
+      `#IDENTITET ${ident}`,
+      `#NAMN ${sieQuote(state.company.name || "")}`,
+      state.company.addr ? `#ADRESS ${sieQuote(state.company.addr)}` : "",
+      (state.company.zip || state.company.city) ? `#POST ${sieQuote((state.company.zip||"").trim())} ${sieQuote((state.company.city||"").trim())}` : "",
+      "#FILNAMN BLANKETTER.SRU",
+      "#DATABESKRIVNING_SLUT",
+      "#FIL_SLUT"
+    ].filter(Boolean).join("\n") + "\n";
+
+    // BLANKETTER.SRU
+    const bl = [];
+    bl.push(`#BLANKETT ${blankettKod}`);
+    bl.push(`#IDENTITET ${orgnr.replaceAll("-","")}`);
+    bl.push(`#NAMN ${sieQuote(state.company.name || "")}`);
+    fields.forEach(f=>{
+      // values as integer? SRU typically uses whole kronor; but some accept decimals. We round to whole kronor for safety.
+      const kronor = Math.round(f.value);
+      bl.push(`#UPPGIFT ${f.code} ${kronor}`);
+    });
+    bl.push("#BLANKETTSLUT");
+    bl.push("#FIL_SLUT");
+
+    const blanketter = bl.join("\n") + "\n";
+
+    downloadText("INFO.SRU", info, "text/plain");
+    downloadText("BLANKETTER.SRU", blanketter, "text/plain");
+    alert("SRU-export skapad (INFO.SRU + BLANKETTER.SRU). OBS: Detta är beta – verifiera mot Skatteverkets validering innan skarp inlämning.");
+  }
+
 
   // --- Event wiring ---
   document.getElementById("btnNewVoucher").addEventListener("click", newVoucher);
@@ -3374,12 +3630,16 @@ reports: document.getElementById("tab-reports"),
   });
 
   if (fsAutosave) fsAutosave.addEventListener("change", ()=>{
+    if (!state.features) state.features = { sruEnabled: false };
+    if (typeof state.features.sruEnabled !== "boolean") state.features.sruEnabled = false;
     if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
     state.fileSync.autosave = !!fsAutosave.checked;
     save();
   });
 
   if (fsRequireFile) fsRequireFile.addEventListener("change", ()=>{
+    if (!state.features) state.features = { sruEnabled: false };
+    if (typeof state.features.sruEnabled !== "boolean") state.features.sruEnabled = false;
     if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
     state.fileSync.requireFile = !!fsRequireFile.checked;
     save();
@@ -3415,10 +3675,34 @@ Verifikationer: ${stats.before.vouchers} → ${stats.after.vouchers}`);
   }
   document.getElementById("btnExportTrialCsv").addEventListener("click", ()=> exportTrialCsv(trialYearSelect.value));
 
+  // SRU (NE)
+  if (btnEnableSRU) btnEnableSRU.addEventListener("click", ()=>{
+    ensureSruDefaults();
+    const msg = "Aktivera SRU (beta)?\n\nDetta är en tidig funktion. Du ansvarar för att mappning och filformat stämmer innan inlämning.";
+    if (!confirm(msg)) return;
+    state.sru.enabled = true;
+    save();
+    renderSRU();
+  });
+  if (btnSruAddMap) btnSruAddMap.addEventListener("click", ()=>{
+    ensureSruDefaults();
+    state.sru.neMappings.push({ id: crypto.randomUUID(), code:"", filter:"", invert:false, note:"" });
+    save();
+    renderSRU();
+  });
+  if (btnSruSaveMap) btnSruSaveMap.addEventListener("click", ()=>{
+    ensureSruDefaults();
+    state.sru.periodSuffix = (sruPeriodSuffix?.value || state.sru.periodSuffix || "P4").trim() || "P4";
+    save();
+    alert("NE-mappning sparad.");
+  });
+  if (btnExportSRUNE) btnExportSRUNE.addEventListener("click", exportSRUNE);
+
+
   
   function handleSaveSettings(){
     // Företagsuppgifter
-    state.company.name = (sCompany?.value || "").trim() || "FU-BOOKKEEPING";
+    state.company.name = (sCompany?.value || "").trim() || "Mini-bokföring";
     state.company.orgnr = (sOrgnr?.value || "").trim();
     state.company.currency = (sCurrency?.value || "SEK");
     state.company.defaultSign = (sSign?.value || "").trim();
@@ -3576,6 +3860,8 @@ function renderAll(){
   if (inv && !inv.hidden) renderInvoices();
   if (cus && !cus.hidden) renderCustomers();
   if (sup && !sup.hidden) renderSuppliers();
+  const sru = document.getElementById("tab-sru");
+  if (sru && !sru.hidden) renderSru();
 }
 
 // --- Init ---
@@ -3590,6 +3876,7 @@ newVoucher();
 state.customers = state.customers || {};
 state.suppliers = state.suppliers || {};
 state.invoices = state.invoices || [];
+state.features = state.features || { sruEnabled: false };
 
 if (invYearSelect) invYearSelect.value = state.activeYearId;
 if (invDate) invDate.value = todayISO();
