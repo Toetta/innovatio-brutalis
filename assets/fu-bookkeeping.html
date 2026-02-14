@@ -108,6 +108,39 @@
     .item .meta{ font-size:12px; color:var(--muted); }
     .kbd{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas; font-size:12px; color:var(--muted); }
     .small{ font-size:12px; }
+
+    /* Direct-link / popup CTA */
+    .ib-direct{
+      position:sticky;
+      top:0;
+      z-index:6;
+      border-bottom:1px solid var(--line);
+      background:rgba(17,24,38,.96);
+    }
+    .ib-direct .wrap{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+      flex-wrap:wrap;
+      padding-top:12px;
+      padding-bottom:12px;
+    }
+    .ib-direct .title{ font-weight:800; letter-spacing:.02em; }
+    .ib-direct .hint{ max-width: 70ch; }
+    .btn.ib-direct-btn{
+      padding:10px 16px;
+      border-radius:999px;
+      background:rgba(96,165,250,.22);
+      border:1px solid rgba(96,165,250,.55);
+      box-shadow:0 0 0 4px rgba(96,165,250,.12);
+      font-weight:800;
+      text-decoration:none;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+    }
+    .btn.ib-direct-btn:hover{ background:rgba(96,165,250,.28); }
   </style>
 </head>
 <body>
@@ -121,6 +154,16 @@
     </div>
   </div>
 </header>
+
+<div id="ibDirectBanner" class="ib-direct" hidden>
+  <div class="wrap">
+    <div>
+      <div class="title">Öppnad direkt</div>
+      <div class="muted small hint">Om du kom hit via en direktlänk eller en popup: gå till Innovatio Brutalis för senaste versionen och mer information.</div>
+    </div>
+    <a id="ibDirectHomeLink" class="btn ib-direct-btn" href="https://www.innovatio-brutalis.se/" rel="noopener">Till Innovatio Brutalis</a>
+  </div>
+</div>
 
 <main>
   <div class="wrap">
@@ -836,6 +879,29 @@
   setBoot("JS: OK");
   window.addEventListener("error", () => setBoot("JS: fel (konsol)"));
   window.addEventListener("unhandledrejection", () => setBoot("JS: fel (konsol)"));
+
+  // Show a visible CTA when opened directly / in a popup
+  (function(){
+    const banner = document.getElementById("ibDirectBanner");
+    if (!banner) return;
+
+    const openedAsPopup = !!window.opener;
+    let openedDirectly = false;
+
+    const ref = document.referrer;
+    if (!ref) {
+      openedDirectly = true;
+    } else {
+      try {
+        const refHost = new URL(ref).host;
+        openedDirectly = refHost !== location.host;
+      } catch {
+        openedDirectly = true;
+      }
+    }
+
+    if (openedAsPopup || openedDirectly) banner.hidden = false;
+  })();
 
 
   // --- Utilities ---
