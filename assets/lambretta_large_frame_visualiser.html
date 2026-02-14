@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-LGJK9XKDZB');
+  </script>
+
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Lambretta Large Frame Gearbox Visualiser</title>
@@ -54,19 +63,20 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      overflow: hidden;
-    }
+      overflow: visible;
+      }
 
     .controls {
       padding: 14px 14px 10px;
       border-bottom: 1px solid var(--line);
       display: grid;
       gap: 12px;
-      grid-template-columns: 1.1fr 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
       align-items: start;
     }
     @media (max-width: 980px) {
-      .controls { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
+      .row { grid-template-columns: 1fr; }
     }
 
     .card {
@@ -151,6 +161,8 @@
 
     .table-wrap {
       overflow: auto;
+      min-height: 220px;
+      -webkit-overflow-scrolling: touch;
       max-height: 75vh;
       background: rgba(0,0,0,0.12);
     }
@@ -218,11 +230,222 @@
       font-size: 12px;
       color: var(--muted);
     }
-  </style>
+  
+    .infoBox{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.14);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .infoBox h4{
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.82);
+    }
+    .kv{
+      display:grid;
+      grid-template-columns: 140px 1fr;
+      gap: 6px 10px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.86);
+      margin-bottom: 8px;
+    }
+    .kv .k{ color: rgba(255,255,255,0.62); }
+    .miniTable{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .miniTable th, .miniTable td{
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      padding: 6px 6px;
+      white-space: nowrap;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .miniTable th:first-child, .miniTable td:first-child{ text-align:left; }
+    .miniTable thead th{
+      color: rgba(255,255,255,0.70);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: .4px;
+    }
+    .muted{
+      color: rgba(255,255,255,0.62);
+    }
+
+  
+    /* --- Layout fixes: allow grid children to shrink (prevents crazy compression) --- */
+    .controls > * { min-width: 0; }
+    .row > * { min-width: 0; }
+    .detailsGrid > * { min-width: 0; }
+
+    /* Keep gearbox details from forcing huge min-content widths */
+    .infoBox { overflow: auto; }
+    .miniTableWrap { overflow-x: auto; }
+    .miniTable { min-width: 520px; }
+
+  
+
+    /* FINAL3 layout + scroll reliability */
+    .panel{ overflow: visible; }
+    .controls > *{ min-width: 0; }
+    .row > *{ min-width: 0; }
+    select, input{ min-width: 0; }
+
+    /* Make the RPM table area an obvious scroll region */
+    .table-wrap{
+      height: clamp(320px, 60vh, 78vh);
+      overflow: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Sticky headers can break scrolling on some browsers; keep it simple */
+    thead th{ position: static; }
+
+    /* Details panels: don't trap vertical scrolling; only allow horizontal for the table */
+    .infoBox{ overflow: visible; }
+    .miniTableWrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+
+    /* Details layout: stack A/B so it stays readable inside the Setup panel */
+    .detailsGrid{
+      display:grid;
+      grid-template-columns: 1fr; /* default: stacked */
+      gap: 12px;
+      margin-top: 12px;
+    }
+    /* Only show side-by-side on truly wide screens */
+    @media (min-width: 1400px){
+      .detailsGrid{ grid-template-columns: 1fr 1fr; }
+    }
+
+    .infoBox{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.14);
+      border-radius: 14px;
+      padding: 12px;
+      overflow: visible;
+    }
+    .infoBox h4{
+      margin: 0 0 10px;
+      font-size: 12px;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.82);
+    }
+
+    /* Key/value list: allow values to wrap instead of crushing columns */
+    .kv{
+      display:grid;
+      grid-template-columns: 140px minmax(0, 1fr);
+      gap: 6px 12px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.86);
+      margin-bottom: 10px;
+      align-items: start;
+    }
+    .kv .k{
+      color: rgba(255,255,255,0.62);
+      white-space: nowrap;
+    }
+    .kv > div{
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+
+    /* Keep gearbox detail table from messing up layout */
+    .miniTableWrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .miniTable{
+      width: 100%;
+      min-width: 560px;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .miniTable th, .miniTable td{
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      padding: 6px 8px;
+      white-space: nowrap;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .miniTable th:first-child, .miniTable td:first-child{ text-align:left; }
+    .miniTable thead th{
+      color: rgba(255,255,255,0.70);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: .4px;
+    }
+
+
+    /* Collapsible gearbox details (prevents huge empty space under shorter cards) */
+    .detailsToggle{
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(0,0,0,0.14);
+      padding: 10px 12px;
+    }
+    .detailsToggle > summary{
+      cursor: pointer;
+      list-style: none;
+      font-weight: 800;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: rgba(255,255,255,0.86);
+      user-select: none;
+      outline: none;
+    }
+    .detailsToggle > summary::-webkit-details-marker{ display:none; }
+    .detailsToggle > summary:after{
+      content: "▾";
+      float: right;
+      opacity: .7;
+    }
+    .detailsToggle[open] > summary:after{ content:"▴"; }
+    .detailsToggle .detailsGrid{ margin-top: 10px; }
+
+    /* Details layout */
+    .detailsGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 1400px){
+      .detailsGrid{ grid-template-columns: 1fr 1fr; }
+    }
+
+
+    /* Details under RPM table: always visible, A left / B right */
+    .detailsBelow{
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(0,0,0,0.14);
+      padding: 12px;
+    }
+    .detailsRow{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(420px, 1fr));
+      gap: 12px;
+      overflow-x: auto;              /* if screen too narrow, scroll sideways instead of crushing */
+      -webkit-overflow-scrolling: touch;
+    }
+    .detailsRow > .infoBox{ min-width: 420px; }
+</style>
 </head>
 <body>
   <header>
     <h1>Lambretta Large Frame Gearbox Visualiser</h1>
+    <div id="errorBanner" style="display:none;margin:12px 0;padding:10px 12px;border:1px solid rgba(255,90,90,0.5);border-radius:12px;background:rgba(255,90,90,0.10);color:rgba(255,255,255,0.92);font-size:13px;"></div>
   </header>
 
   <div class="wrap">
@@ -337,14 +560,15 @@
           <datalist id="cwList"></datalist>
         </div>
       </div>
+</div>
+      </div>
 
       <div class="pillbar" id="pills">
         <span class="pill" id="maxA">A max @ max rpm: —</span>
         <span class="pill" id="maxB">B max @ max rpm: —</span>
         <span class="pill" id="maxAuto">Auto max speed: —</span>
       </div>
-
-      <div class="table-wrap" id="tableWrap">
+<div class="table-wrap" id="tableWrap">
         <table id="tbl">
           <thead>
             <tr>
@@ -361,11 +585,73 @@
           <tbody id="tbody"></tbody>
         </table>
       </div>
+
+    <section class="detailsBelow" aria-label="Gearbox and chain details">
+      <div class="detailsRow">
+        <div class="infoBox">
+          <h4>Setup A</h4>
+          <div id="infoA"></div>
+        </div>
+        <div class="infoBox">
+          <h4>Setup B</h4>
+          <div id="infoB"></div>
+        </div>
+      </div>
+    </section>
+
     </div>
   </div>
 
+<script type="application/json" id="DATA_JSON">{"gearboxes": [{"label": "Lambretta OEM", "items": [{"id": 2, "name": "Factory LI125 S1 (Italian & Spanish)", "gears": [[51, 9], [42, 12], [39, 16], [35, 19], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 3, "name": "Factory Li125 S2 (Italian & Spanish)", "gears": [[51, 9], [42, 12], [39, 16], [35, 19], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 4, "name": "Factory Li125 Early S3 (Italian & Spanish)", "gears": [[51, 9], [42, 12], [39, 16], [35, 19], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 5, "name": "Factory LI 150 Rallymaster Special", "gears": [[51, 9], [42, 12], [37, 17], [34, 20], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 6, "name": "Factory LI125 Special", "gears": [[50, 10], [42, 12], [39, 15], [36, 18], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 7, "name": "Factory GP125", "gears": [[50, 10], [42, 12], [39, 15], [36, 18], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 8, "name": "Factory GP200 (Italian)", "gears": [[50, 10], [42, 12], [39, 15], [36, 18], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 9, "name": "Factory Li150 Special (Late)", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 10, "name": "Factory SX150", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 11, "name": "Factory GP150", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 12, "name": "Factory GP200 (Late Indian)", "gears": [[50, 10], [42, 12], [38, 16], [36, 18], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nSome UK dealers are still showing new stock available (July 2020), otherwise examples are available second hand."}, {"id": 13, "name": "Factory Vijay Mk.1", "gears": [[50, 10], [42, 12], [38, 16], [35, 19], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 14, "name": "Factory LI150 Special/Pacemaker", "gears": [[50, 11], [41, 13], [39, 17], [35, 19], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 15, "name": "Factory Li125 (Late Italian)", "gears": [[50, 11], [41, 13], [39, 17], [35, 19], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 16, "name": "Factory Li150 S3 (Spanish)", "gears": [[50, 11], [41, 13], [39, 17], [34, 20], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 17, "name": "Factory LI150 (Italian)", "gears": [[50, 11], [41, 14], [37, 17], [34, 20], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 18, "name": "Factory Vijay Mk.2", "gears": [[50, 10], [41, 13], [37, 17], [33, 21], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 19, "name": "Factory TV175 S2", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 20, "name": "Factory TV175 S3", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 21, "name": "Factory SX200", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 22, "name": "Factory Jet 200", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}, {"id": 23, "name": "Factory TV200/GT200", "gears": [[47, 13], [39, 15], [36, 19], [32, 22], [null, null], [null, null]], "note": "This was a factory fitted OEM gearbox.\nIt's no longer available new, however you may find used examples second hand"}]}, {"label": "Rimini Lambretta Centre", "items": [{"id": 26, "name": "5-Speed RLC Cyclone 5 Pro V2", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]], "note": "The latest high end version of RLC’s Cyclone 5 gearboxes.\nStronger, quieter and smoother full width gears with greatly improved lubrication.\nUsed by the BSSO championship winning Casa Racing Team and high power Casa Performance SSR engines."}, {"id": 27, "name": "5-Speed RLC Cyclone 5 Pro V1", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 28, "name": "5-Speed RLC Cyclone V2 Standard", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 29, "name": "5-Speed RLC Cyclone V2 low 1st", "gears": [[46, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 30, "name": "5-Speed RLC Cyclone V2 Tall 1st & Close 5th", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 31, "name": "5-Speed RLC Cyclone V2 Tall 5th", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 32, "name": "5-Speed RLC Cyclone V2 Close 5th", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [36, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 33, "name": "5-Speed RLC Cyclone V2 low 1st & tall 5th", "gears": [[46, 9], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 34, "name": "5-Speed 5-Speed RLC Cyclone V2 low 1st & Close 5th", "gears": [[46, 9], [41, 12], [38, 14], [36, 16], [36, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 35, "name": "5-Speed RLC Cyclone V2 Tall 1st & 5th", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 36, "name": "5-Speed RLC Cyclone V2 Tall 1st & Close 5th", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [36, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 37, "name": "5-Speed RLC Cyclone V1 Standard", "gears": [[50, 10], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 38, "name": "5-Speed RLC Cyclone V1 Tall 1st", "gears": [[49, 10], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 39, "name": "5-Speed RLC Cyclone V1 Tall 5th", "gears": [[50, 10], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}, {"id": 40, "name": "5-Speed RLC Cyclone V1 Tall 1st & 5th", "gears": [[49, 10], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]], "note": "Discontinued in favour of Cyclone 5 Pro V2 though spares are still available as of July 2020"}]}, {"label": "MB Scooters", "items": [{"id": 43, "name": "5-Speed MB Scooters Ltd MB-5 (Late)", "gears": [[50, 10], [41, 12], [38, 15], [37, 18], [36, 20], [null, null]], "note": "A 5 speed billet gearset designed exclusively for MB Scooters. \nManufactured by Nova from high grade certified motorsport steel for improved durability even in highly tuned engines and superfinished as standard."}, {"id": 44, "name": "5-Speed MB Scooters Ltd MB-5 (Early)", "gears": [[50, 10], [41, 12], [38, 15], [37, 18], [34, 19], [null, null]], "note": "Discontinued"}, {"id": 45, "name": "MB Scooters Ltd Li150 CR", "gears": [[50, 11], [41, 14], [37, 16], [34, 18], [null, null], [null, null]], "note": "Discontinued"}, {"id": 46, "name": "MB Scooters Ltd Li150/SX200 CR MkI", "gears": [[49, 12], [40, 14], [37, 16], [34, 18], [null, null], [null, null]], "note": "Discontinued"}, {"id": 47, "name": "MB Scooters Ltd Li150/SX200 CR MkII", "gears": [[49, 12], [40, 14], [37, 17], [34, 20], [null, null], [null, null]], "note": "Discontinued"}]}, {"label": "AF Rayspeed", "items": [{"id": 50, "name": "5-Speed AF Clo5e Ratio (35 Tooth 5th)", "gears": [[45, 10], [41, 13], [38, 16], [36, 18], [35, 19], [null, null]], "note": "AF Rayspeeds offering in the 5-speed market. A choice of 5th gear loose gears enables different options on top gear."}, {"id": 51, "name": "5-Speed AF Clo5e Ratio (34 Tooth 5th)", "gears": [[45, 10], [41, 13], [38, 16], [36, 18], [34, 19], [null, null]], "note": "AF Rayspeeds offering in the 5-speed market. A choice of 5th gear loose gears enables different options on top gear."}, {"id": 52, "name": "AF 4-Speed Close Ratio", "gears": [[50, 11], [41, 13], [38, 16], [36, 18], [null, null], [null, null]], "note": "Currently showing as out of stock with AF Rayspeed. No plans currently (2020) for new batch, but may be available elsewhere second hand."}]}, {"label": "Charlie Edmonds/Performance Tuning", "items": [{"id": 55, "name": "PT 6-Speed (Ultra Close Top Gear)", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [34, 20], [33, 20]], "note": "Premium 6-Speed conversion designed by Charlie Edmonds. UK made in Bohler Austrian Aerospace grade E108 steel.\nWidened gearcase (20mm), shaft, selector, sprocket holder and modified endplate - exchange basis"}, {"id": 56, "name": "PT 6-Speed (Very Close Top Gear)", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [34, 20], [32, 20]], "note": "Premium 6-Speed conversion designed by Charlie Edmonds. UK made in Bohler Austrian Aerospace grade E108 steel.\nWidened gearcase (20mm), shaft, selector, sprocket holder and modified endplate - exchange basis"}, {"id": 57, "name": "PT 5-Speed High Torque/Low RPM \"A\"", "gears": [[46, 13], [38, 15], [34, 18], [33, 20], [33, 22], [null, null]], "note": "Premium conversion designed by Charlie Edmonds using an 18mm widened casing, with special shaft, selector, sprocket holder and modified endplate. Optional loose gears: 1st/47t, 2nd/39t, 4th/34t."}, {"id": 58, "name": "PT 5-Speed Low Torque/High RPM \"B\"", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [34, 20], [null, null]], "note": "Premium conversion designed by Charlie Edmonds using an 18mm widened casing, with special shaft, selector, sprocket holder and modified endplate. Optional loose gears: 1st/47t, 2nd/38t, 3rd/36t, 4th/34t, 5th/33t."}, {"id": 59, "name": "PT 4-Speed 50/50 (Li150 based)", "gears": [[50, 11], [41, 14], [35, 16], [33, 18], [null, null], [null, null]], "note": "Based on an Li150 gearbox, this is on an exchange basis.\nThe cluster and gears are crack tested and inspected, and then 3rd and 4th removed off cluster and special PT 3rd and 4th gears are pressed on."}, {"id": 60, "name": "PT 4-Speed 50/50 (SX200 based)", "gears": [[49, 12], [40, 14], [35, 16], [33, 18], [null, null], [null, null]], "note": "Based on an SX200 gearbox, this is on an exchange basis.\nThe cluster and gears are crack tested and inspected, and then 3rd and 4th removed off cluster and special PT 3rd and 4th gears are pressed on."}, {"id": 61, "name": "PT 4-Speed High Torque (Standard)", "gears": [[46, 13], [38, 15], [34, 18], [33, 22], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st and 2nd gears"}, {"id": 62, "name": "PT 4-Speed High Torque (Opt. 47t 1st)", "gears": [[47, 13], [38, 15], [34, 18], [33, 22], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st and 2nd gears"}, {"id": 63, "name": "PT 4-Speed High Torque (Opt. 39t 2nd)", "gears": [[46, 13], [39, 15], [34, 18], [33, 22], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st and 2nd gears"}, {"id": 64, "name": "PT 4-Speed High Torque (Opt. 47t 1st & 39t 2nd)", "gears": [[47, 13], [39, 15], [34, 18], [33, 22], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st and 2nd gears"}, {"id": 65, "name": "PT 4-Speed Low Torque (Race) (Standard)", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st (47t), 2nd (38t), 3rd (36t)& 4th (34t) gears\nExplore further combinations using the custom gearbox function"}, {"id": 66, "name": "PT 4-Speed Low Torque (Race) (Opt. 1st)", "gears": [[47, 12], [39, 15], [35, 16], [33, 18], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st (47t), 2nd (38t), 3rd (36t)& 4th (34t) gears\nExplore further combinations using the custom gearbox function"}, {"id": 67, "name": "PT 4-Speed Low Torque (Race) (Opt. 2nd)", "gears": [[46, 12], [38, 15], [35, 16], [33, 18], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st (47t), 2nd (38t), 3rd (36t)& 4th (34t) gears\nExplore further combinations using the custom gearbox function"}, {"id": 68, "name": "PT 4-Speed Low Torque (Race) (Opt. 3rd)", "gears": [[46, 12], [39, 15], [36, 16], [33, 18], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st (47t), 2nd (38t), 3rd (36t)& 4th (34t) gears\nExplore further combinations using the custom gearbox function"}, {"id": 69, "name": "PT 4-Speed Low Torque (Race) (Opt. 4th)", "gears": [[46, 12], [39, 15], [35, 16], [34, 18], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st (47t), 2nd (38t), 3rd (36t)& 4th (34t) gears\nExplore further combinations using the custom gearbox function"}, {"id": 70, "name": "PT 4-Speed Low Torque (Race) (Opt. 1,2)", "gears": [[47, 12], [38, 15], [35, 16], [33, 18], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st (47t), 2nd (38t), 3rd (36t)& 4th (34t) gears\nExplore further combinations using the custom gearbox function"}, {"id": 71, "name": "PT 4-Speed Low Torque (Race) (Opt. 1,2,3)", "gears": [[47, 12], [38, 15], [36, 16], [33, 18], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st (47t), 2nd (38t), 3rd (36t)& 4th (34t) gears\nExplore further combinations using the custom gearbox function"}, {"id": 72, "name": "PT 4-Speed Low Torque (Race) (Opt. 1,2,3,4)", "gears": [[47, 12], [38, 15], [36, 16], [34, 18], [null, null], [null, null]], "note": "PT designed, UK made gearbox made from Bohler Austrian top grade racing specification M121 steel with optional 1st (47t), 2nd (38t), 3rd (36t)& 4th (34t) gears\nExplore further combinations using the custom gearbox function"}]}, {"label": "Other Dealer 5-Speed Specials", "items": [{"id": 76, "name": "5- Speed Crimaz CML5", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]], "note": "Batch rejected by RLC as too weak - AVOID"}, {"id": 77, "name": "5-Speed Omega", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [33, 21], [null, null]], "note": "An early attempt at producing a 5-speed gearbox. Very fragile so AVOID."}, {"id": 78, "name": "5-Speed Tino Sacchi", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [33, 21], [null, null]], "note": "No trace of new examples for sale - contact me if you know better"}]}, {"label": "Other Dealer 4-Specials", "items": [{"id": 80, "name": "4-Speed Casa Performance Close Ratio", "gears": [[50, 11], [41, 14], [39, 16], [36, 18], [null, null], [null, null]], "note": "This is the latest version of the Casa Lambretta close ratio gearbox for Lambrettas. The ratios were chosen by Vittorio Tessera to offer a cheaper, sporting (non-race) 4 speed gearset."}, {"id": 81, "name": "4-Speed Ricambio Rapido", "gears": [[49, 12], [40, 14], [37, 17], [34, 20], [null, null], [null, null]], "note": "An Italian 4-speed close ratio gearbox with the same ratios as MB's and DRT's discontinued Li150/SX200 hybrids"}, {"id": 82, "name": "4-Speed BGM Pro", "gears": [[51, 11], [43, 14], [41, 17], [36, 18], [null, null], [null, null]], "note": "No trace of new examples for sale - contact me if you know better"}, {"id": 83, "name": "4-Speed DGB Pacemaker", "gears": [[50, 11], [41, 13], [37, 17], [35, 19], [null, null], [null, null]], "note": "As far as I can tell this was a stillborn attempt, though a \"one off\" box for Stuart Owen was made and tested.\nManufactured in EN24 steel which proved to be too soft, and never developed any further."}, {"id": 84, "name": "4-Speed DRT \"Monza Super Speed\"", "gears": [[50, 10], [42, 12], [37, 14], [35, 17], [null, null], [null, null]], "note": "No trace of new examples for sale - contact me if you know better"}, {"id": 85, "name": "4-Speed DRT \"Gran Tour\"", "gears": [[50, 10], [42, 12], [38, 15], [36, 18], [null, null], [null, null]], "note": "No trace of new examples for sale - contact me if you know better"}, {"id": 86, "name": "4-Speed DRT", "gears": [[50, 10], [42, 12], [37, 14], [36, 17], [null, null], [null, null]], "note": "No trace of new examples for sale - contact me if you know better"}, {"id": 87, "name": "4-Speed DRT Li150/SX200 CR", "gears": [[49, 12], [40, 14], [37, 17], [34, 20], [null, null], [null, null]], "note": "No trace of new examples for sale - contact me if you know better"}, {"id": 88, "name": "4-Speed Cortina Close Ratio", "gears": [[50, 10], [41, 12], [38, 15], [36, 17], [null, null], [null, null]], "note": "Produced for Scooteritaliano and tvscootergarage in Italy, but no trace of available examples"}, {"id": 89, "name": "4-Speed Pro Porting SX150/GP200 CR", "gears": [[50, 11], [41, 13], [39, 16], [36, 18], [null, null], [null, null]], "note": "No trace of new examples for sale - contact me if you know better"}, {"id": 90, "name": "4-Speed Gori RV4S Close Ratio", "gears": [[47, 14], [40, 15], [37, 17], [35, 19], [null, null], [null, null]], "note": "Designed by Gori Elaborazioni and made by the Micozzi\nMade of 18 nc 05 nickel-chromium-molybdenum alloy steel and case hardened\nA close ratio box with a high first gear developed with hillclimbs and sidecar combinations"}, {"id": 91, "name": "4-Speed MSC/Dave Webster Close Ratio", "gears": [[50, 11], [41, 13], [39, 16], [36, 18], [null, null], [null, null]], "note": "A historic gearbox, long discontinued"}, {"id": 92, "name": "4-Speed Pinasco Close Ratio", "gears": [[50, 10], [42, 12], [38, 15], [36, 17], [null, null], [null, null]], "note": "This conversion consists of the cluster gear only , and is used with your Indian GP200 loose gears\nWhen compared to the GP200, it shortens the ratio on top gear, and reduces the jump between 2nd and 3rd."}]}, {"label": "Lambretta 3-Wheeler", "items": [{"id": 95, "name": "4-Speed FLi175", "gears": [[51, 10], [42, 14], [39, 19], [36, 24], [null, null], [null, null]], "note": null}, {"id": 96, "name": "4-Speed Lambro 200", "gears": [[51, 9], [41, 14], [35, 19], [30, 24], [null, null], [null, null]], "note": null}, {"id": 97, "name": "4-Speed Lambro 550", "gears": [[51, 9], [41, 14], [35, 19], [29, 26], [null, null], [null, null]], "note": null}]}, {"label": "Custom Gearboxes", "items": [{"id": 100, "name": "Custom 1", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 101, "name": "Custom 2", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 102, "name": "Custom 3", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 103, "name": "Custom 4", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 104, "name": "Custom 5", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 105, "name": "Custom 6", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 106, "name": "Custom 7", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 107, "name": "Custom 8", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 108, "name": "Custom 9", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 109, "name": "Custom 10", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 110, "name": "Custom 11", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 111, "name": "Custom 12", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 112, "name": "Custom 13", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 113, "name": "Custom 14", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 114, "name": "Custom 15", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 115, "name": "Custom 16", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 116, "name": "Custom 17", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 117, "name": "Custom 18", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 118, "name": "Custom 19", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}, {"id": 119, "name": "Custom 20", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], "note": null}]}], "tyres": [{"label": "Default", "items": [{"id": 1, "name": "Default 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 2, "name": "Default 3.00-10 (126.9 cm)", "circ_cm": 126.9, "circ_m": 1.2690000000000001}]}, {"label": "Popular tyres", "items": [{"id": 4, "name": "Dunlop TT92GP 3.50-10 (137.3)", "circ_cm": 137.3, "circ_m": 1.3730000000000002}, {"id": 5, "name": "SAVA MC20 3.50-10 (135.0)", "circ_cm": 135.0, "circ_m": 1.35}, {"id": 6, "name": "Michelin S1 3.50-10 (136.2)", "circ_cm": 136.2, "circ_m": 1.3619999999999999}]}, {"label": "Custom tyres", "items": [{"id": 8, "name": "Custom 1 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 9, "name": "Custom 2 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 10, "name": "Custom 3 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 11, "name": "Custom 4 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 12, "name": "Custom 5 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 13, "name": "Custom 6 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 14, "name": "Custom 7 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 15, "name": "Custom 8 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 16, "name": "Custom 9 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 17, "name": "Custom 10 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 18, "name": "Custom 11 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 19, "name": "Custom 12 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 20, "name": "Custom 13 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 21, "name": "Custom 14 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 22, "name": "Custom 15 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 23, "name": "Custom 16 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 24, "name": "Custom 17 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 25, "name": "Custom 18 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 26, "name": "Custom 19 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 27, "name": "Custom 20 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}]}, {"label": "More tyres", "items": [{"id": 29, "name": "Schwalbe Classic 3.00-10 (127.7 cm)", "circ_cm": 127.7, "circ_m": 1.2770000000000001}, {"id": 30, "name": "Schwalbe Classic 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 31, "name": "Schwalbe Paceman 3.00-10 (127.7 cm)", "circ_cm": 127.7, "circ_m": 1.2770000000000001}, {"id": 32, "name": "Schwalbe Paceman 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 33, "name": "Schwalbe Powertrack 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 34, "name": "Schwalbe Powertrack 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 35, "name": "Schwalbe Powertrack 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 36, "name": "Schwalbe Powertrack 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 37, "name": "Schwalbe Powertrack 130/70-10 (137.0 cm)", "circ_cm": 137.0, "circ_m": 1.37}, {"id": 38, "name": "Schwalbe Powertrack 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 39, "name": "Schwalbe Powertrack 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}, {"id": 40, "name": "Schwalbe Raceman 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 41, "name": "Schwalbe Raceman 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 42, "name": "Schwalbe Raceman 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 43, "name": "Schwalbe Raceman 120/70-10 (132.6 cm)", "circ_cm": 132.6, "circ_m": 1.3259999999999998}, {"id": 44, "name": "Schwalbe Raceman 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 45, "name": "Schwalbe Raceman 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 46, "name": "Schwalbe Raceman 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 47, "name": "Schwalbe Raceman 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}, {"id": 48, "name": "Schwalbe Weatherman 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 49, "name": "Schwalbe Weatherman 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 50, "name": "Schwalbe Weatherman 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 51, "name": "Schwalbe Weatherman 120/70-10 (132.6 cm)", "circ_cm": 132.6, "circ_m": 1.3259999999999998}, {"id": 52, "name": "Schwalbe Weatherman 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 53, "name": "Schwalbe Weatherman 130/70-10 (137.0 cm)", "circ_cm": 137.0, "circ_m": 1.37}, {"id": 54, "name": "Schwalbe Weatherman 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 55, "name": "Schwalbe Weatherman 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}]}], "sprockets": [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25], "crowns": [46, 47, 48, 49], "chainLookup": {"46": {"14": "80 with chain tensioner", "15": "80 link chain", "16": "81 with chain tensioner", "17": "81 link chain", "18": "82 with chain tensioner", "19": "82 link chain", "20": "83 with chain tensioner", "21": "83 link chain", "22": "84 with chain tensioner"}, "47": {"14": "80 link chain", "15": "81 with chain tensioner", "16": "81 link chain", "17": "82 with chain tensioner", "18": "82 link chain", "19": "83 with chain tensioner", "20": "83 link chain", "21": "84 with chain tensioner", "22": "84 link chain"}, "48": {"14": "81 with chain tensioner", "15": "81 link chain", "16": "82 with chain tensioner", "17": "82 link chain", "18": "83 with chain tensioner", "19": "83 link chain", "20": "84 with chain tensioner", "21": "84 link chain", "22": "85 with chain tensioner"}, "49": {"14": "81 link chain", "15": "82 with chain tensioner", "16": "82 link chain", "17": "83 with chain tensioner", "18": "83 link chain", "19": "84 with chain tensioner", "20": "84 link chain", "21": "85 with chain tensioner", "22": "85 link chain"}}}</script>
 <script>
-const DATA = {"gearboxes": [{"label": "Lambretta OEM", "items": [{"id": 2, "name": "Factory LI125 S1 (Italian & Spanish)", "gears": [[51, 9], [42, 12], [39, 16], [35, 19], [null, null], [null, null]]}, {"id": 3, "name": "Factory Li125 S2 (Italian & Spanish)", "gears": [[51, 9], [42, 12], [39, 16], [35, 19], [null, null], [null, null]]}, {"id": 4, "name": "Factory Li125 Early S3 (Italian & Spanish)", "gears": [[51, 9], [42, 12], [39, 16], [35, 19], [null, null], [null, null]]}, {"id": 5, "name": "Factory LI 150 Rallymaster Special", "gears": [[51, 9], [42, 12], [37, 17], [34, 20], [null, null], [null, null]]}, {"id": 6, "name": "Factory LI125 Special", "gears": [[50, 10], [42, 12], [39, 15], [36, 18], [null, null], [null, null]]}, {"id": 7, "name": "Factory GP125", "gears": [[50, 10], [42, 12], [39, 15], [36, 18], [null, null], [null, null]]}, {"id": 8, "name": "Factory GP200 (Italian)", "gears": [[50, 10], [42, 12], [39, 15], [36, 18], [null, null], [null, null]]}, {"id": 9, "name": "Factory Li150 Special (Late)", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [null, null], [null, null]]}, {"id": 10, "name": "Factory SX150", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [null, null], [null, null]]}, {"id": 11, "name": "Factory GP150", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [null, null], [null, null]]}, {"id": 12, "name": "Factory GP200 (Late Indian)", "gears": [[50, 10], [42, 12], [38, 16], [36, 18], [null, null], [null, null]]}, {"id": 13, "name": "Factory Vijay Mk.1", "gears": [[50, 10], [42, 12], [38, 16], [35, 19], [null, null], [null, null]]}, {"id": 14, "name": "Factory LI150 Special/Pacemaker", "gears": [[50, 11], [41, 13], [39, 17], [35, 19], [null, null], [null, null]]}, {"id": 15, "name": "Factory Li125 (Late Italian)", "gears": [[50, 11], [41, 13], [39, 17], [35, 19], [null, null], [null, null]]}, {"id": 16, "name": "Factory Li150 S3 (Spanish)", "gears": [[50, 11], [41, 13], [39, 17], [34, 20], [null, null], [null, null]]}, {"id": 17, "name": "Factory LI150 (Italian)", "gears": [[50, 11], [41, 14], [37, 17], [34, 20], [null, null], [null, null]]}, {"id": 18, "name": "Factory Vijay Mk.2", "gears": [[50, 10], [41, 13], [37, 17], [33, 21], [null, null], [null, null]]}, {"id": 19, "name": "Factory TV175 S2", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]]}, {"id": 20, "name": "Factory TV175 S3", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]]}, {"id": 21, "name": "Factory SX200", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]]}, {"id": 22, "name": "Factory Jet 200", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]]}, {"id": 23, "name": "Factory TV200/GT200", "gears": [[47, 13], [39, 15], [36, 19], [32, 22], [null, null], [null, null]]}]}, {"label": "Rimini Lambretta Centre", "items": [{"id": 26, "name": "5-Speed RLC Cyclone 5 Pro V2", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 27, "name": "5-Speed RLC Cyclone 5 Pro V1", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 28, "name": "5-Speed RLC Cyclone V2 Standard", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 29, "name": "5-Speed RLC Cyclone V2 low 1st", "gears": [[46, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 30, "name": "5-Speed RLC Cyclone V2 Tall 1st & Close 5th", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 31, "name": "5-Speed RLC Cyclone V2 Tall 5th", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]]}, {"id": 32, "name": "5-Speed RLC Cyclone V2 Close 5th", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [36, 18], [null, null]]}, {"id": 33, "name": "5-Speed RLC Cyclone V2 low 1st & tall 5th", "gears": [[46, 9], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]]}, {"id": 34, "name": "5-Speed 5-Speed RLC Cyclone V2 low 1st & Close 5th", "gears": [[46, 9], [41, 12], [38, 14], [36, 16], [36, 18], [null, null]]}, {"id": 35, "name": "5-Speed RLC Cyclone V2 Tall 1st & 5th", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]]}, {"id": 36, "name": "5-Speed RLC Cyclone V2 Tall 1st & Close 5th", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [36, 18], [null, null]]}, {"id": 37, "name": "5-Speed RLC Cyclone V1 Standard", "gears": [[50, 10], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 38, "name": "5-Speed RLC Cyclone V1 Tall 1st", "gears": [[49, 10], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 39, "name": "5-Speed RLC Cyclone V1 Tall 5th", "gears": [[50, 10], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]]}, {"id": 40, "name": "5-Speed RLC Cyclone V1 Tall 1st & 5th", "gears": [[49, 10], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]]}]}, {"label": "MB Scooters", "items": [{"id": 43, "name": "5-Speed MB Scooters Ltd MB-5 (Late)", "gears": [[50, 10], [41, 12], [38, 15], [37, 18], [36, 20], [null, null]]}, {"id": 44, "name": "5-Speed MB Scooters Ltd MB-5 (Early)", "gears": [[50, 10], [41, 12], [38, 15], [37, 18], [34, 19], [null, null]]}, {"id": 45, "name": "MB Scooters Ltd Li150 CR", "gears": [[50, 11], [41, 14], [37, 16], [34, 18], [null, null], [null, null]]}, {"id": 46, "name": "MB Scooters Ltd Li150/SX200 CR MkI", "gears": [[49, 12], [40, 14], [37, 16], [34, 18], [null, null], [null, null]]}, {"id": 47, "name": "MB Scooters Ltd Li150/SX200 CR MkII", "gears": [[49, 12], [40, 14], [37, 17], [34, 20], [null, null], [null, null]]}]}, {"label": "AF Rayspeed", "items": [{"id": 50, "name": "5-Speed AF Clo5e Ratio (35 Tooth 5th)", "gears": [[45, 10], [41, 13], [38, 16], [36, 18], [35, 19], [null, null]]}, {"id": 51, "name": "5-Speed AF Clo5e Ratio (34 Tooth 5th)", "gears": [[45, 10], [41, 13], [38, 16], [36, 18], [34, 19], [null, null]]}, {"id": 52, "name": "AF 4-Speed Close Ratio", "gears": [[50, 11], [41, 13], [38, 16], [36, 18], [null, null], [null, null]]}]}, {"label": "Charlie Edmonds/Performance Tuning", "items": [{"id": 55, "name": "PT 6-Speed (Ultra Close Top Gear)", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [34, 20], [33, 20]]}, {"id": 56, "name": "PT 6-Speed (Very Close Top Gear)", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [34, 20], [32, 20]]}, {"id": 57, "name": "PT 5-Speed High Torque/Low RPM \"A\"", "gears": [[46, 13], [38, 15], [34, 18], [33, 20], [33, 22], [null, null]]}, {"id": 58, "name": "PT 5-Speed Low Torque/High RPM \"B\"", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [34, 20], [null, null]]}, {"id": 59, "name": "PT 4-Speed 50/50 (Li150 based)", "gears": [[50, 11], [41, 14], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 60, "name": "PT 4-Speed 50/50 (SX200 based)", "gears": [[49, 12], [40, 14], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 61, "name": "PT 4-Speed High Torque (Standard)", "gears": [[46, 13], [38, 15], [34, 18], [33, 22], [null, null], [null, null]]}, {"id": 62, "name": "PT 4-Speed High Torque (Opt. 47t 1st)", "gears": [[47, 13], [38, 15], [34, 18], [33, 22], [null, null], [null, null]]}, {"id": 63, "name": "PT 4-Speed High Torque (Opt. 39t 2nd)", "gears": [[46, 13], [39, 15], [34, 18], [33, 22], [null, null], [null, null]]}, {"id": 64, "name": "PT 4-Speed High Torque (Opt. 47t 1st & 39t 2nd)", "gears": [[47, 13], [39, 15], [34, 18], [33, 22], [null, null], [null, null]]}, {"id": 65, "name": "PT 4-Speed Low Torque (Race) (Standard)", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 66, "name": "PT 4-Speed Low Torque (Race) (Opt. 1st)", "gears": [[47, 12], [39, 15], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 67, "name": "PT 4-Speed Low Torque (Race) (Opt. 2nd)", "gears": [[46, 12], [38, 15], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 68, "name": "PT 4-Speed Low Torque (Race) (Opt. 3rd)", "gears": [[46, 12], [39, 15], [36, 16], [33, 18], [null, null], [null, null]]}, {"id": 69, "name": "PT 4-Speed Low Torque (Race) (Opt. 4th)", "gears": [[46, 12], [39, 15], [35, 16], [34, 18], [null, null], [null, null]]}, {"id": 70, "name": "PT 4-Speed Low Torque (Race) (Opt. 1,2)", "gears": [[47, 12], [38, 15], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 71, "name": "PT 4-Speed Low Torque (Race) (Opt. 1,2,3)", "gears": [[47, 12], [38, 15], [36, 16], [33, 18], [null, null], [null, null]]}, {"id": 72, "name": "PT 4-Speed Low Torque (Race) (Opt. 1,2,3,4)", "gears": [[47, 12], [38, 15], [36, 16], [34, 18], [null, null], [null, null]]}]}, {"label": "Other Dealer 5-Speed Specials", "items": [{"id": 76, "name": "5- Speed Crimaz CML5", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 77, "name": "5-Speed Omega", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [33, 21], [null, null]]}, {"id": 78, "name": "5-Speed Tino Sacchi", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [33, 21], [null, null]]}]}, {"label": "Other Dealer 4-Specials", "items": [{"id": 80, "name": "4-Speed Casa Performance Close Ratio", "gears": [[50, 11], [41, 14], [39, 16], [36, 18], [null, null], [null, null]]}, {"id": 81, "name": "4-Speed Ricambio Rapido", "gears": [[49, 12], [40, 14], [37, 17], [34, 20], [null, null], [null, null]]}, {"id": 82, "name": "4-Speed BGM Pro", "gears": [[51, 11], [43, 14], [41, 17], [36, 18], [null, null], [null, null]]}, {"id": 83, "name": "4-Speed DGB Pacemaker", "gears": [[50, 11], [41, 13], [37, 17], [35, 19], [null, null], [null, null]]}, {"id": 84, "name": "4-Speed DRT \"Monza Super Speed\"", "gears": [[50, 10], [42, 12], [37, 14], [35, 17], [null, null], [null, null]]}, {"id": 85, "name": "4-Speed DRT \"Gran Tour\"", "gears": [[50, 10], [42, 12], [38, 15], [36, 18], [null, null], [null, null]]}, {"id": 86, "name": "4-Speed DRT", "gears": [[50, 10], [42, 12], [37, 14], [36, 17], [null, null], [null, null]]}, {"id": 87, "name": "4-Speed DRT Li150/SX200 CR", "gears": [[49, 12], [40, 14], [37, 17], [34, 20], [null, null], [null, null]]}, {"id": 88, "name": "4-Speed Cortina Close Ratio", "gears": [[50, 10], [41, 12], [38, 15], [36, 17], [null, null], [null, null]]}, {"id": 89, "name": "4-Speed Pro Porting SX150/GP200 CR", "gears": [[50, 11], [41, 13], [39, 16], [36, 18], [null, null], [null, null]]}, {"id": 90, "name": "4-Speed Gori RV4S Close Ratio", "gears": [[47, 14], [40, 15], [37, 17], [35, 19], [null, null], [null, null]]}, {"id": 91, "name": "4-Speed MSC/Dave Webster Close Ratio", "gears": [[50, 11], [41, 13], [39, 16], [36, 18], [null, null], [null, null]]}, {"id": 92, "name": "4-Speed Pinasco Close Ratio", "gears": [[50, 10], [42, 12], [38, 15], [36, 17], [null, null], [null, null]]}]}, {"label": "Lambretta 3-Wheeler", "items": [{"id": 95, "name": "4-Speed FLi175", "gears": [[51, 10], [42, 14], [39, 19], [36, 24], [null, null], [null, null]]}, {"id": 96, "name": "4-Speed Lambro 200", "gears": [[51, 9], [41, 14], [35, 19], [30, 24], [null, null], [null, null]]}, {"id": 97, "name": "4-Speed Lambro 550", "gears": [[51, 9], [41, 14], [35, 19], [29, 26], [null, null], [null, null]]}]}, {"label": "Custom Gearboxes", "items": [{"id": 100, "name": "Custom 1", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 101, "name": "Custom 2", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 102, "name": "Custom 3", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 103, "name": "Custom 4", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 104, "name": "Custom 5", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 105, "name": "Custom 6", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 106, "name": "Custom 7", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 107, "name": "Custom 8", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 108, "name": "Custom 9", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 109, "name": "Custom 10", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 110, "name": "Custom 11", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 111, "name": "Custom 12", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 112, "name": "Custom 13", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 113, "name": "Custom 14", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 114, "name": "Custom 15", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 115, "name": "Custom 16", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 116, "name": "Custom 17", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 117, "name": "Custom 18", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 118, "name": "Custom 19", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 119, "name": "Custom 20", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}]}], "tyres": [{"label": "Default", "items": [{"id": 1, "name": "Default 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 2, "name": "Default 3.00-10 (126.9 cm)", "circ_cm": 126.9, "circ_m": 1.2690000000000001}]}, {"label": "Popular tyres", "items": [{"id": 4, "name": "Dunlop TT92GP 3.50-10 (137.3)", "circ_cm": 137.3, "circ_m": 1.3730000000000002}, {"id": 5, "name": "SAVA MC20 3.50-10 (135.0)", "circ_cm": 135.0, "circ_m": 1.35}, {"id": 6, "name": "Michelin S1 3.50-10 (136.2)", "circ_cm": 136.2, "circ_m": 1.3619999999999999}]}, {"label": "Custom tyres", "items": [{"id": 8, "name": "Custom 1 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 9, "name": "Custom 2 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 10, "name": "Custom 3 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 11, "name": "Custom 4 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 12, "name": "Custom 5 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 13, "name": "Custom 6 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 14, "name": "Custom 7 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 15, "name": "Custom 8 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 16, "name": "Custom 9 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 17, "name": "Custom 10 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 18, "name": "Custom 11 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 19, "name": "Custom 12 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 20, "name": "Custom 13 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 21, "name": "Custom 14 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 22, "name": "Custom 15 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 23, "name": "Custom 16 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 24, "name": "Custom 17 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 25, "name": "Custom 18 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 26, "name": "Custom 19 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 27, "name": "Custom 20 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}]}, {"label": "More tyres", "items": [{"id": 29, "name": "Schwalbe Classic 3.00-10 (127.7 cm)", "circ_cm": 127.7, "circ_m": 1.2770000000000001}, {"id": 30, "name": "Schwalbe Classic 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 31, "name": "Schwalbe Paceman 3.00-10 (127.7 cm)", "circ_cm": 127.7, "circ_m": 1.2770000000000001}, {"id": 32, "name": "Schwalbe Paceman 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 33, "name": "Schwalbe Powertrack 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 34, "name": "Schwalbe Powertrack 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 35, "name": "Schwalbe Powertrack 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 36, "name": "Schwalbe Powertrack 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 37, "name": "Schwalbe Powertrack 130/70-10 (137.0 cm)", "circ_cm": 137.0, "circ_m": 1.37}, {"id": 38, "name": "Schwalbe Powertrack 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 39, "name": "Schwalbe Powertrack 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}, {"id": 40, "name": "Schwalbe Raceman 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 41, "name": "Schwalbe Raceman 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 42, "name": "Schwalbe Raceman 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 43, "name": "Schwalbe Raceman 120/70-10 (132.6 cm)", "circ_cm": 132.6, "circ_m": 1.3259999999999998}, {"id": 44, "name": "Schwalbe Raceman 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 45, "name": "Schwalbe Raceman 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 46, "name": "Schwalbe Raceman 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 47, "name": "Schwalbe Raceman 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}, {"id": 48, "name": "Schwalbe Weatherman 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 49, "name": "Schwalbe Weatherman 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 50, "name": "Schwalbe Weatherman 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 51, "name": "Schwalbe Weatherman 120/70-10 (132.6 cm)", "circ_cm": 132.6, "circ_m": 1.3259999999999998}, {"id": 52, "name": "Schwalbe Weatherman 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 53, "name": "Schwalbe Weatherman 130/70-10 (137.0 cm)", "circ_cm": 137.0, "circ_m": 1.37}, {"id": 54, "name": "Schwalbe Weatherman 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 55, "name": "Schwalbe Weatherman 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}]}], "sprockets": [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25], "crowns": [46, 47, 48, 49]};
+const DATA = JSON.parse(document.getElementById("DATA_JSON").textContent);
+
+function firstGearboxId(){
+  for (const g of (DATA.gearboxes || [])){
+    for (const it of (g.items || [])){
+      if (it && typeof it.id === "number") return it.id;
+    }
+  }
+  return null;
+}
+function firstTyreId(){
+  for (const g of (DATA.tyres || [])){
+    for (const it of (g.items || [])){
+      if (it && typeof it.id === "number") return it.id;
+    }
+  }
+  return null;
+}
+function normalizeState(){
+  // fill missing keys for older saved states
+  state.unit = (state.unit === "mph" || state.unit === "kmh") ? state.unit : DEFAULTS.unit;
+  state.speedStep = (isFinite(state.speedStep) && state.speedStep > 0) ? state.speedStep : DEFAULTS.speedStep;
+
+  state.rpmIn = (isFinite(state.rpmIn) && state.rpmIn > 0) ? state.rpmIn : DEFAULTS.rpmIn;
+  state.rpmPeak = (isFinite(state.rpmPeak) && state.rpmPeak > 0) ? state.rpmPeak : DEFAULTS.rpmPeak;
+  state.rpmShift = (isFinite(state.rpmShift) && state.rpmShift > 0) ? state.rpmShift : DEFAULTS.rpmShift;
+  state.rpmMax = (isFinite(state.rpmMax) && state.rpmMax > 0) ? state.rpmMax : DEFAULTS.rpmMax;
+  state.rpmIdle = (isFinite(state.rpmIdle) && state.rpmIdle >= 0) ? state.rpmIdle : (DEFAULTS.rpmIdle || 1000);
+
+  const fg = firstGearboxId();
+  const ft = firstTyreId();
+
+  state.gearboxA = isFinite(state.gearboxA) ? state.gearboxA : (DEFAULTS.gearboxA ?? fg);
+  state.gearboxB = isFinite(state.gearboxB) ? state.gearboxB : (DEFAULTS.gearboxB ?? fg);
+
+  state.tyreA = isFinite(state.tyreA) ? state.tyreA : (DEFAULTS.tyreA ?? ft);
+  state.tyreB = isFinite(state.tyreB) ? state.tyreB : (DEFAULTS.tyreB ?? ft);
+
+  state.sprocketA = isFinite(state.sprocketA) ? state.sprocketA : DEFAULTS.sprocketA;
+  state.crownA = isFinite(state.crownA) ? state.crownA : DEFAULTS.crownA;
+  state.sprocketB = isFinite(state.sprocketB) ? state.sprocketB : DEFAULTS.sprocketB;
+  state.crownB = isFinite(state.crownB) ? state.crownB : DEFAULTS.crownB;
+
+  state.rowHeightPct = (isFinite(state.rowHeightPct) && state.rowHeightPct >= 30 && state.rowHeightPct <= 140)
+    ? state.rowHeightPct
+    : 100;
+}
+
 const DEFAULTS = {"gearboxA": 11, "gearboxB": 11, "tyreA": 1, "tyreB": 1, "sprocketA": 16, "crownA": 46, "sprocketB": 16, "crownB": 47, "rpmIn": 3800, "rpmPeak": 6000, "rpmShift": 6800, "rpmMax": 7500, "unit": "mph", "speedStep": 2, "rpmIdle": 1000};
 const STORAGE_KEY = "lambretta_large_frame_visualiser_v1";
 
@@ -488,6 +774,89 @@ function overallRatio(pair, sprocket, crown){
   return (driven/drive) * (crown/sprocket);
 }
 
+
+function chainText(crown, sprocket){
+  if (!crown || !sprocket) return "—";
+  const row = DATA.chainLookup?.[crown];
+  if (!row) return "Data unavailable";
+  const v = row[sprocket];
+  return v || "Data unavailable";
+}
+
+function fmt(x, digits=3){
+  return (isFinite(x) ? x.toFixed(digits) : "—");
+}
+
+function renderSetupInfo(targetEl, tag, gb, tyre, sprocket, crown){
+  if (!targetEl){
+    return;
+  }
+
+  const tyreName = tyre?.name || "—";
+  const tyreCirc = tyre?.circ_m;
+  const primary = (crown && sprocket) ? (crown / sprocket) : NaN;
+  const chain = chainText(crown, sprocket);
+
+  const gbName = gb?.name || "—";
+  const gbId = gb?.id ?? "—";
+  const gbNote = gb?.note || "";
+  const pairs = gb?.gears || [];
+
+  // overall ratios for drop calculation (use only gears with valid pairs)
+  const overall = pairs.map(p => (p && p[0] && p[1]) ? overallRatio(p, sprocket, crown) : NaN);
+
+  function nextValidIndex(i){
+    for (let j=i+1;j<overall.length;j++){
+      if (isFinite(overall[j]) && overall[j]>0) return j;
+    }
+    return -1;
+  }
+
+  let rowsHtml = "";
+  for (let i=0;i<pairs.length;i++){
+    const p = pairs[i];
+    if (!(p && p[0] && p[1])) continue;
+
+    const gearNo = i+1;
+    const teeth = `${p[0]}/${p[1]}`;
+    const gearRatio = p[0]/p[1];
+    const ovr = overall[i];
+
+    const j = nextValidIndex(i);
+    const drop = (j >= 0) ? (1 - (overall[j] / overall[i])) * 100 : NaN;
+
+    rowsHtml += `
+      <tr>
+        <td>${ordinal(gearNo)}</td>
+        <td>${teeth}</td>
+        <td>${fmt(gearRatio,3)}</td>
+        <td>${fmt(ovr,3)}</td>
+        <td class="muted">${isFinite(drop) ? drop.toFixed(1) + "%" : "—"}</td>
+      </tr>`;
+  }
+
+  targetEl.innerHTML = `
+    <div class="kv">
+      <div class="k">Gearbox</div><div><b>${gbName}</b> <span class="muted">(#${gbId})</span></div>
+      ${gbNote ? `<div class="k">Note</div><div>${gbNote.replace(/\n/g,'<br>')}</div>` : ``}
+      <div class="k">Tyre</div><div>${tyreName} <span class="muted">(${isFinite(tyreCirc)?tyreCirc.toFixed(3)+" m":"—"})</span></div>
+      <div class="k">Primary ratio</div><div>${fmt(primary,3)} <span class="muted">(${crown}/${sprocket})</span></div>
+      <div class="k">Chain</div><div>${chain}</div>
+    </div>
+
+    <div class="miniTableWrap"><table class="miniTable" aria-label="${tag} gearbox details">
+      <thead>
+        <tr>
+          <th>Gear</th><th>Teeth</th><th>Gear</th><th>Overall</th><th>Drop</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml || `<tr><td colspan="5" class="muted">No gearbox data</td></tr>`}
+      </tbody>
+    </table></div>
+  `;
+}
+
 function speedKmhAtRPM(rpm, pair, tyreCircM, sprocket, crown){
   const ratio = overallRatio(pair, sprocket, crown);
   if (!isFinite(ratio) || ratio<=0) return NaN;
@@ -555,6 +924,8 @@ const els = {
   sprList: document.getElementById("sprList"),
   cwList: document.getElementById("cwList"),
 
+  infoA: document.getElementById("infoA"),
+  infoB: document.getElementById("infoB"),
   tbody: document.getElementById("tbody"),
   speedHead: document.getElementById("speedHead"),
   tableWrap: document.getElementById("tableWrap"),
@@ -707,6 +1078,10 @@ function renderTable(){
   const pairsA = gbA?.gears || [];
   const pairsB = gbB?.gears || [];
 
+  // extra info panels (gearbox data + chain length)
+  renderSetupInfo(els.infoA, "A", gbA, tyreA, state.A.sprocket, state.A.crown);
+  renderSetupInfo(els.infoB, "B", gbB, tyreB, state.B.sprocket, state.B.crown);
+
   els.tbody.innerHTML = "";
   for (const s of speeds) {
     const tr = document.createElement("tr");
@@ -779,7 +1154,8 @@ function loadState(){
     state.A = state.A || {};
     state.B = state.B || {};
     state.rowHeightPct = state.rowHeightPct ?? 100;
-    writeStateToUI();
+    normalizeState();
+  writeStateToUI();
     renderTable();
     return true;
   } catch(e) {
@@ -864,7 +1240,11 @@ function init(){
   els.reset.addEventListener("click", ()=>{ localStorage.removeItem(STORAGE_KEY); resetState(); });
 }
 
-init();
+try { init(); } catch (e) {
+  console.error(e);
+  const b = document.getElementById('errorBanner');
+  if (b) { b.style.display='block'; b.textContent = 'Script error: ' + (e && e.message ? e.message : String(e)); }
+}
 </script>
 </body>
 </html>

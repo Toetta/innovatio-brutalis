@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-LGJK9XKDZB');
+  </script>
+
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Lambretta Small Frame Gearbox Visualiser</title>
@@ -54,19 +63,20 @@
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      overflow: hidden;
-    }
+      overflow: visible;
+      }
 
     .controls {
       padding: 14px 14px 10px;
       border-bottom: 1px solid var(--line);
       display: grid;
       gap: 12px;
-      grid-template-columns: 1.1fr 1fr 1fr;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
       align-items: start;
     }
     @media (max-width: 980px) {
-      .controls { grid-template-columns: 1fr; }
+      .controls { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
+      .row { grid-template-columns: 1fr; }
     }
 
     .card {
@@ -151,6 +161,8 @@
 
     .table-wrap {
       overflow: auto;
+      min-height: 220px;
+      -webkit-overflow-scrolling: touch;
       max-height: 75vh;
       background: rgba(0,0,0,0.12);
     }
@@ -218,11 +230,222 @@
       font-size: 12px;
       color: var(--muted);
     }
-  </style>
+  
+    .infoBox{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.14);
+      border-radius: 14px;
+      padding: 10px;
+    }
+    .infoBox h4{
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.82);
+    }
+    .kv{
+      display:grid;
+      grid-template-columns: 140px 1fr;
+      gap: 6px 10px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.86);
+      margin-bottom: 8px;
+    }
+    .kv .k{ color: rgba(255,255,255,0.62); }
+    .miniTable{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .miniTable th, .miniTable td{
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      padding: 6px 6px;
+      white-space: nowrap;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .miniTable th:first-child, .miniTable td:first-child{ text-align:left; }
+    .miniTable thead th{
+      color: rgba(255,255,255,0.70);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: .4px;
+    }
+    .muted{
+      color: rgba(255,255,255,0.62);
+    }
+
+  
+    /* --- Layout fixes: allow grid children to shrink (prevents crazy compression) --- */
+    .controls > * { min-width: 0; }
+    .row > * { min-width: 0; }
+    .detailsGrid > * { min-width: 0; }
+
+    /* Keep gearbox details from forcing huge min-content widths */
+    .infoBox { overflow: auto; }
+    .miniTableWrap { overflow-x: auto; }
+    .miniTable { min-width: 520px; }
+
+  
+
+    /* FINAL3 layout + scroll reliability */
+    .panel{ overflow: visible; }
+    .controls > *{ min-width: 0; }
+    .row > *{ min-width: 0; }
+    select, input{ min-width: 0; }
+
+    /* Make the RPM table area an obvious scroll region */
+    .table-wrap{
+      height: clamp(320px, 60vh, 78vh);
+      overflow: auto;
+      overscroll-behavior: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    /* Sticky headers can break scrolling on some browsers; keep it simple */
+    thead th{ position: static; }
+
+    /* Details panels: don't trap vertical scrolling; only allow horizontal for the table */
+    .infoBox{ overflow: visible; }
+    .miniTableWrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+
+    /* Details layout: stack A/B so it stays readable inside the Setup panel */
+    .detailsGrid{
+      display:grid;
+      grid-template-columns: 1fr; /* default: stacked */
+      gap: 12px;
+      margin-top: 12px;
+    }
+    /* Only show side-by-side on truly wide screens */
+    @media (min-width: 1400px){
+      .detailsGrid{ grid-template-columns: 1fr 1fr; }
+    }
+
+    .infoBox{
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.14);
+      border-radius: 14px;
+      padding: 12px;
+      overflow: visible;
+    }
+    .infoBox h4{
+      margin: 0 0 10px;
+      font-size: 12px;
+      letter-spacing: .5px;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.82);
+    }
+
+    /* Key/value list: allow values to wrap instead of crushing columns */
+    .kv{
+      display:grid;
+      grid-template-columns: 140px minmax(0, 1fr);
+      gap: 6px 12px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.86);
+      margin-bottom: 10px;
+      align-items: start;
+    }
+    .kv .k{
+      color: rgba(255,255,255,0.62);
+      white-space: nowrap;
+    }
+    .kv > div{
+      min-width: 0;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      line-height: 1.35;
+    }
+
+    /* Keep gearbox detail table from messing up layout */
+    .miniTableWrap{ overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .miniTable{
+      width: 100%;
+      min-width: 560px;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .miniTable th, .miniTable td{
+      border-bottom: 1px solid rgba(255,255,255,0.10);
+      padding: 6px 8px;
+      white-space: nowrap;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    .miniTable th:first-child, .miniTable td:first-child{ text-align:left; }
+    .miniTable thead th{
+      color: rgba(255,255,255,0.70);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: .4px;
+    }
+
+
+    /* Collapsible gearbox details (prevents huge empty space under shorter cards) */
+    .detailsToggle{
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(0,0,0,0.14);
+      padding: 10px 12px;
+    }
+    .detailsToggle > summary{
+      cursor: pointer;
+      list-style: none;
+      font-weight: 800;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: rgba(255,255,255,0.86);
+      user-select: none;
+      outline: none;
+    }
+    .detailsToggle > summary::-webkit-details-marker{ display:none; }
+    .detailsToggle > summary:after{
+      content: "▾";
+      float: right;
+      opacity: .7;
+    }
+    .detailsToggle[open] > summary:after{ content:"▴"; }
+    .detailsToggle .detailsGrid{ margin-top: 10px; }
+
+    /* Details layout */
+    .detailsGrid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 1400px){
+      .detailsGrid{ grid-template-columns: 1fr 1fr; }
+    }
+
+
+    /* Details under RPM table: always visible, A left / B right */
+    .detailsBelow{
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(0,0,0,0.14);
+      padding: 12px;
+    }
+    .detailsRow{
+      display: grid;
+      grid-template-columns: repeat(2, minmax(420px, 1fr));
+      gap: 12px;
+      overflow-x: auto;              /* if screen too narrow, scroll sideways instead of crushing */
+      -webkit-overflow-scrolling: touch;
+    }
+    .detailsRow > .infoBox{ min-width: 420px; }
+</style>
 </head>
 <body>
   <header>
     <h1>Lambretta Small Frame Gearbox Visualiser</h1>
+    <div id="errorBanner" style="display:none;margin:12px 0;padding:10px 12px;border:1px solid rgba(255,90,90,0.5);border-radius:12px;background:rgba(255,90,90,0.10);color:rgba(255,255,255,0.92);font-size:13px;"></div>
   </header>
 
   <div class="wrap">
@@ -337,14 +560,15 @@
           <datalist id="cwList"></datalist>
         </div>
       </div>
+</div>
+      </div>
 
       <div class="pillbar" id="pills">
         <span class="pill" id="maxA">A max @ max rpm: —</span>
         <span class="pill" id="maxB">B max @ max rpm: —</span>
         <span class="pill" id="maxAuto">Auto max speed: —</span>
       </div>
-
-      <div class="table-wrap" id="tableWrap">
+<div class="table-wrap" id="tableWrap">
         <table id="tbl">
           <thead>
             <tr>
@@ -361,11 +585,73 @@
           <tbody id="tbody"></tbody>
         </table>
       </div>
+
+    <section class="detailsBelow" aria-label="Gearbox and chain details">
+      <div class="detailsRow">
+        <div class="infoBox">
+          <h4>Setup A</h4>
+          <div id="infoA"></div>
+        </div>
+        <div class="infoBox">
+          <h4>Setup B</h4>
+          <div id="infoB"></div>
+        </div>
+      </div>
+    </section>
+
     </div>
   </div>
 
+<script type="application/json" id="DATA_JSON">{"gearboxes": [{"label": "FACTORY SMALL FRAME", "items": [{"id": 2, "name": "J50 Early production", "gears": [[69, 10], [64, 16], [56, 22], [null, null], [null, null], [null, null]], "note": null}, {"id": 3, "name": "J50 Mid Production", "gears": [[53, 9], [54, 14], [47, 19], [null, null], [null, null], [null, null]], "note": null}, {"id": 4, "name": "J50 Deluxe + J50 Special + Lui 50C / CL", "gears": [[58, 9], [53, 15], [46, 20], [null, null], [null, null], [null, null]], "note": null}, {"id": 5, "name": "Lui Vega Cometa 75cc", "gears": [[49, 9], [46, 13], [42, 16], [39, 20], [null, null], [null, null]], "note": null}, {"id": 6, "name": "Cento 100cc", "gears": [[48, 10], [43, 15], [39, 21], [null, null], [null, null], [null, null]], "note": null}, {"id": 7, "name": "J125 3-Speed", "gears": [[48, 11], [42, 16], [37, 21], [null, null], [null, null], [null, null]], "note": null}, {"id": 8, "name": "J125 4-Speed Starstream + Super Starstream", "gears": [[48, 11], [44, 14], [37, 16], [34, 19], [null, null], [null, null]], "note": null}, {"id": 9, "name": "Indian Sunny FR / Cento 100", "gears": [[49, 9], [43, 15], [39, 21], [null, null], [null, null], [null, null]], "note": null}]}, {"label": "RLC Vega5", "items": [{"id": 12, "name": "RLC Vega5 for J Range + Lui (all models)", "gears": [[44, 10], [41, 13], [37, 16], [33, 18], [31, 20], [null, null]], "note": null}]}, {"label": "CUSTOM GEARBOXES", "items": [{"id": 15, "name": "Luna SE", "gears": [[58, 9], [55, 13], [51, 17], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 16, "name": "LUNA PERFECT", "gears": [[58, 10], [53, 15], [46, 19], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 17, "name": "Custom 3", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 18, "name": "Custom 4", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 19, "name": "Custom 5", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 20, "name": "Custom 6", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 21, "name": "Custom 7", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 22, "name": "Custom 8", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 23, "name": "Custom 9", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 24, "name": "Custom 10", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 25, "name": "Custom 11", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 26, "name": "Custom 12", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 27, "name": "Custom 13", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 28, "name": "Custom 14", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 29, "name": "Custom 15", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 30, "name": "Custom 16", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 31, "name": "Custom 17", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 32, "name": "Custom 18", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 33, "name": "Custom 19", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}, {"id": 34, "name": "Custom 20", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]], "note": null}]}], "tyres": [{"label": "Default", "items": [{"id": 1, "name": "Default 3.00-10 (126.9 cm)", "circ_cm": 126.9, "circ_m": 1.2690000000000001}, {"id": 2, "name": "Default 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 3, "name": "Default 3.00-12 (143.0 cm)", "circ_cm": 143.0, "circ_m": 1.43}]}, {"label": "Popular tyres", "items": [{"id": 5, "name": "Dunlop TT92GP 3.50-10 (137.3)", "circ_cm": 137.3, "circ_m": 1.3730000000000002}, {"id": 6, "name": "SAVA MC20 3.50-10 (135.0)", "circ_cm": 135.0, "circ_m": 1.35}, {"id": 7, "name": "Michelin S1 3.50-10 (136.2)", "circ_cm": 136.2, "circ_m": 1.3619999999999999}]}, {"label": "Custom tyres", "items": [{"id": 9, "name": "Custom 1 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 10, "name": "Custom 2 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 11, "name": "Custom 3 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 12, "name": "Custom 4 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 13, "name": "Custom 5 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 14, "name": "Custom 6 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 15, "name": "Custom 7 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 16, "name": "Custom 8 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 17, "name": "Custom 9 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 18, "name": "Custom 10 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 19, "name": "Custom 11 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 20, "name": "Custom 12 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 21, "name": "Custom 13 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 22, "name": "Custom 14 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 23, "name": "Custom 15 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 24, "name": "Custom 16 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 25, "name": "Custom 17 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 26, "name": "Custom 18 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 27, "name": "Custom 19 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 28, "name": "Custom 20 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}]}, {"label": "More tyres", "items": [{"id": 30, "name": "Schwalbe Classic 3.00-10 (127.7 cm)", "circ_cm": 127.7, "circ_m": 1.2770000000000001}, {"id": 31, "name": "Schwalbe Classic 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 32, "name": "Schwalbe Paceman 3.00-10 (127.7 cm)", "circ_cm": 127.7, "circ_m": 1.2770000000000001}, {"id": 33, "name": "Schwalbe Paceman 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 34, "name": "Schwalbe Powertrack 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 35, "name": "Schwalbe Powertrack 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 36, "name": "Schwalbe Powertrack 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 37, "name": "Schwalbe Powertrack 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 38, "name": "Schwalbe Powertrack 130/70-10 (137.0 cm)", "circ_cm": 137.0, "circ_m": 1.37}, {"id": 39, "name": "Schwalbe Powertrack 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 40, "name": "Schwalbe Powertrack 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}, {"id": 41, "name": "Schwalbe Raceman 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 42, "name": "Schwalbe Raceman 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 43, "name": "Schwalbe Raceman 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 44, "name": "Schwalbe Raceman 120/70-10 (132.6 cm)", "circ_cm": 132.6, "circ_m": 1.3259999999999998}, {"id": 45, "name": "Schwalbe Raceman 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 46, "name": "Schwalbe Raceman 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 47, "name": "Schwalbe Raceman 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 48, "name": "Schwalbe Raceman 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}, {"id": 49, "name": "Schwalbe Weatherman 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 50, "name": "Schwalbe Weatherman 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 51, "name": "Schwalbe Weatherman 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 52, "name": "Schwalbe Weatherman 120/70-10 (132.6 cm)", "circ_cm": 132.6, "circ_m": 1.3259999999999998}, {"id": 53, "name": "Schwalbe Weatherman 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 54, "name": "Schwalbe Weatherman 130/70-10 (137.0 cm)", "circ_cm": 137.0, "circ_m": 1.37}, {"id": 55, "name": "Schwalbe Weatherman 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 56, "name": "Schwalbe Weatherman 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}]}], "sprockets": [11, 12, 13, 14, 15, 16], "crowns": [45, 46, 47], "chainLookup": {"45": {"11": "73 link", "12": "No viable chain available for this combination", "13": "74 link", "14": "74 link", "15": "75 link", "16": "75 link"}, "46": {"11": "No viable chain available for this combination", "12": "74 link", "13": "Stretched 74 link", "14": "75 link", "15": "75 link", "16": "76 link"}, "47": {"11": "74 link", "12": "Stretched 74 link", "13": "75 link", "14": "No viable chain available for this combination", "15": "No viable chain available for this combination", "16": "76 link"}}}</script>
 <script>
-const DATA = {"gearboxes": [{"label": "FACTORY SMALL FRAME", "items": [{"id": 2, "name": "J50 Early production", "gears": [[69, 10], [64, 16], [56, 22], [null, null], [null, null], [null, null]]}, {"id": 3, "name": "J50 Mid Production", "gears": [[53, 9], [54, 14], [47, 19], [null, null], [null, null], [null, null]]}, {"id": 4, "name": "J50 Deluxe + J50 Special + Lui 50C / CL", "gears": [[58, 9], [53, 15], [46, 20], [null, null], [null, null], [null, null]]}, {"id": 5, "name": "Lui Vega Cometa 75cc", "gears": [[49, 9], [46, 13], [42, 16], [39, 20], [null, null], [null, null]]}, {"id": 6, "name": "Cento 100cc", "gears": [[48, 10], [43, 15], [39, 21], [null, null], [null, null], [null, null]]}, {"id": 7, "name": "J125 3-Speed", "gears": [[48, 11], [42, 16], [37, 21], [null, null], [null, null], [null, null]]}, {"id": 8, "name": "J125 4-Speed Starstream + Super Starstream", "gears": [[48, 11], [44, 14], [37, 16], [34, 19], [null, null], [null, null]]}, {"id": 9, "name": "Indian Sunny FR / Cento 100", "gears": [[49, 9], [43, 15], [39, 21], [null, null], [null, null], [null, null]]}]}, {"label": "RLC Vega5", "items": [{"id": 12, "name": "RLC Vega5 for J Range + Lui (all models)", "gears": [[44, 10], [41, 13], [37, 16], [33, 18], [31, 20], [null, null]]}]}, {"label": "CUSTOM GEARBOXES", "items": [{"id": 15, "name": "Custom 1", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 16, "name": "Custom 2", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 17, "name": "Custom 3", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 18, "name": "Custom 4", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 19, "name": "Custom 5", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 20, "name": "Custom 6", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 21, "name": "Custom 7", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 22, "name": "Custom 8", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 23, "name": "Custom 9", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 24, "name": "Custom 10", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 25, "name": "Custom 11", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 26, "name": "Custom 12", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 27, "name": "Custom 13", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 28, "name": "Custom 14", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 29, "name": "Custom 15", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 30, "name": "Custom 16", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 31, "name": "Custom 17", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 32, "name": "Custom 18", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 33, "name": "Custom 19", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}, {"id": 34, "name": "Custom 20", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [null, null]]}]}], "tyres": [{"label": "Default", "items": [{"id": 1, "name": "Default 3.00-10 (126.9 cm)", "circ_cm": 126.9, "circ_m": 1.2690000000000001}, {"id": 2, "name": "Default 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 3, "name": "Default 3.00-12 (143.0 cm)", "circ_cm": 143.0, "circ_m": 1.43}]}, {"label": "Popular tyres", "items": [{"id": 5, "name": "Dunlop TT92GP 3.50-10 (137.3)", "circ_cm": 137.3, "circ_m": 1.3730000000000002}, {"id": 6, "name": "SAVA MC20 3.50-10 (135.0)", "circ_cm": 135.0, "circ_m": 1.35}, {"id": 7, "name": "Michelin S1 3.50-10 (136.2)", "circ_cm": 136.2, "circ_m": 1.3619999999999999}]}, {"label": "Custom tyres", "items": [{"id": 9, "name": "Custom 1 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 10, "name": "Custom 2 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 11, "name": "Custom 3 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 12, "name": "Custom 4 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 13, "name": "Custom 5 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 14, "name": "Custom 6 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 15, "name": "Custom 7 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 16, "name": "Custom 8 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 17, "name": "Custom 9 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 18, "name": "Custom 10 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 19, "name": "Custom 11 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 20, "name": "Custom 12 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 21, "name": "Custom 13 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 22, "name": "Custom 14 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 23, "name": "Custom 15 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 24, "name": "Custom 16 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 25, "name": "Custom 17 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 26, "name": "Custom 18 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 27, "name": "Custom 19 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 28, "name": "Custom 20 (0 cm)", "circ_cm": 0.0, "circ_m": 0.0}]}, {"label": "More tyres", "items": [{"id": 30, "name": "Schwalbe Classic 3.00-10 (127.7 cm)", "circ_cm": 127.7, "circ_m": 1.2770000000000001}, {"id": 31, "name": "Schwalbe Classic 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 32, "name": "Schwalbe Paceman 3.00-10 (127.7 cm)", "circ_cm": 127.7, "circ_m": 1.2770000000000001}, {"id": 33, "name": "Schwalbe Paceman 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 34, "name": "Schwalbe Powertrack 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 35, "name": "Schwalbe Powertrack 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 36, "name": "Schwalbe Powertrack 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 37, "name": "Schwalbe Powertrack 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 38, "name": "Schwalbe Powertrack 130/70-10 (137.0 cm)", "circ_cm": 137.0, "circ_m": 1.37}, {"id": 39, "name": "Schwalbe Powertrack 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 40, "name": "Schwalbe Powertrack 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}, {"id": 41, "name": "Schwalbe Raceman 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 42, "name": "Schwalbe Raceman 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 43, "name": "Schwalbe Raceman 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 44, "name": "Schwalbe Raceman 120/70-10 (132.6 cm)", "circ_cm": 132.6, "circ_m": 1.3259999999999998}, {"id": 45, "name": "Schwalbe Raceman 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 46, "name": "Schwalbe Raceman 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 47, "name": "Schwalbe Raceman 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 48, "name": "Schwalbe Raceman 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}, {"id": 49, "name": "Schwalbe Weatherman 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 50, "name": "Schwalbe Weatherman 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 51, "name": "Schwalbe Weatherman 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 52, "name": "Schwalbe Weatherman 120/70-10 (132.6 cm)", "circ_cm": 132.6, "circ_m": 1.3259999999999998}, {"id": 53, "name": "Schwalbe Weatherman 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 54, "name": "Schwalbe Weatherman 130/70-10 (137.0 cm)", "circ_cm": 137.0, "circ_m": 1.37}, {"id": 55, "name": "Schwalbe Weatherman 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 56, "name": "Schwalbe Weatherman 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}]}], "sprockets": [11, 12, 13, 14, 15, 16], "crowns": [45, 46, 47]};
+const DATA = JSON.parse(document.getElementById("DATA_JSON").textContent);
+
+function firstGearboxId(){
+  for (const g of (DATA.gearboxes || [])){
+    for (const it of (g.items || [])){
+      if (it && typeof it.id === "number") return it.id;
+    }
+  }
+  return null;
+}
+function firstTyreId(){
+  for (const g of (DATA.tyres || [])){
+    for (const it of (g.items || [])){
+      if (it && typeof it.id === "number") return it.id;
+    }
+  }
+  return null;
+}
+function normalizeState(){
+  // fill missing keys for older saved states
+  state.unit = (state.unit === "mph" || state.unit === "kmh") ? state.unit : DEFAULTS.unit;
+  state.speedStep = (isFinite(state.speedStep) && state.speedStep > 0) ? state.speedStep : DEFAULTS.speedStep;
+
+  state.rpmIn = (isFinite(state.rpmIn) && state.rpmIn > 0) ? state.rpmIn : DEFAULTS.rpmIn;
+  state.rpmPeak = (isFinite(state.rpmPeak) && state.rpmPeak > 0) ? state.rpmPeak : DEFAULTS.rpmPeak;
+  state.rpmShift = (isFinite(state.rpmShift) && state.rpmShift > 0) ? state.rpmShift : DEFAULTS.rpmShift;
+  state.rpmMax = (isFinite(state.rpmMax) && state.rpmMax > 0) ? state.rpmMax : DEFAULTS.rpmMax;
+  state.rpmIdle = (isFinite(state.rpmIdle) && state.rpmIdle >= 0) ? state.rpmIdle : (DEFAULTS.rpmIdle || 1000);
+
+  const fg = firstGearboxId();
+  const ft = firstTyreId();
+
+  state.gearboxA = isFinite(state.gearboxA) ? state.gearboxA : (DEFAULTS.gearboxA ?? fg);
+  state.gearboxB = isFinite(state.gearboxB) ? state.gearboxB : (DEFAULTS.gearboxB ?? fg);
+
+  state.tyreA = isFinite(state.tyreA) ? state.tyreA : (DEFAULTS.tyreA ?? ft);
+  state.tyreB = isFinite(state.tyreB) ? state.tyreB : (DEFAULTS.tyreB ?? ft);
+
+  state.sprocketA = isFinite(state.sprocketA) ? state.sprocketA : DEFAULTS.sprocketA;
+  state.crownA = isFinite(state.crownA) ? state.crownA : DEFAULTS.crownA;
+  state.sprocketB = isFinite(state.sprocketB) ? state.sprocketB : DEFAULTS.sprocketB;
+  state.crownB = isFinite(state.crownB) ? state.crownB : DEFAULTS.crownB;
+
+  state.rowHeightPct = (isFinite(state.rowHeightPct) && state.rowHeightPct >= 30 && state.rowHeightPct <= 140)
+    ? state.rowHeightPct
+    : 100;
+}
+
 const DEFAULTS = {"gearboxA": 9, "gearboxB": 5, "tyreA": 1, "tyreB": 1, "sprocketA": 14, "crownA": 46, "sprocketB": 13, "crownB": 46, "rpmIn": 3900, "rpmPeak": 6800, "rpmShift": 7500, "rpmMax": 8000, "unit": "mph", "speedStep": 2, "rpmIdle": 1000};
 const STORAGE_KEY = "lambretta_small_frame_visualiser_v1";
 
@@ -488,6 +774,89 @@ function overallRatio(pair, sprocket, crown){
   return (driven/drive) * (crown/sprocket);
 }
 
+
+function chainText(crown, sprocket){
+  if (!crown || !sprocket) return "—";
+  const row = DATA.chainLookup?.[crown];
+  if (!row) return "Data unavailable";
+  const v = row[sprocket];
+  return v || "Data unavailable";
+}
+
+function fmt(x, digits=3){
+  return (isFinite(x) ? x.toFixed(digits) : "—");
+}
+
+function renderSetupInfo(targetEl, tag, gb, tyre, sprocket, crown){
+  if (!targetEl){
+    return;
+  }
+
+  const tyreName = tyre?.name || "—";
+  const tyreCirc = tyre?.circ_m;
+  const primary = (crown && sprocket) ? (crown / sprocket) : NaN;
+  const chain = chainText(crown, sprocket);
+
+  const gbName = gb?.name || "—";
+  const gbId = gb?.id ?? "—";
+  const gbNote = gb?.note || "";
+  const pairs = gb?.gears || [];
+
+  // overall ratios for drop calculation (use only gears with valid pairs)
+  const overall = pairs.map(p => (p && p[0] && p[1]) ? overallRatio(p, sprocket, crown) : NaN);
+
+  function nextValidIndex(i){
+    for (let j=i+1;j<overall.length;j++){
+      if (isFinite(overall[j]) && overall[j]>0) return j;
+    }
+    return -1;
+  }
+
+  let rowsHtml = "";
+  for (let i=0;i<pairs.length;i++){
+    const p = pairs[i];
+    if (!(p && p[0] && p[1])) continue;
+
+    const gearNo = i+1;
+    const teeth = `${p[0]}/${p[1]}`;
+    const gearRatio = p[0]/p[1];
+    const ovr = overall[i];
+
+    const j = nextValidIndex(i);
+    const drop = (j >= 0) ? (1 - (overall[j] / overall[i])) * 100 : NaN;
+
+    rowsHtml += `
+      <tr>
+        <td>${ordinal(gearNo)}</td>
+        <td>${teeth}</td>
+        <td>${fmt(gearRatio,3)}</td>
+        <td>${fmt(ovr,3)}</td>
+        <td class="muted">${isFinite(drop) ? drop.toFixed(1) + "%" : "—"}</td>
+      </tr>`;
+  }
+
+  targetEl.innerHTML = `
+    <div class="kv">
+      <div class="k">Gearbox</div><div><b>${gbName}</b> <span class="muted">(#${gbId})</span></div>
+      ${gbNote ? `<div class="k">Note</div><div>${gbNote.replace(/\n/g,'<br>')}</div>` : ``}
+      <div class="k">Tyre</div><div>${tyreName} <span class="muted">(${isFinite(tyreCirc)?tyreCirc.toFixed(3)+" m":"—"})</span></div>
+      <div class="k">Primary ratio</div><div>${fmt(primary,3)} <span class="muted">(${crown}/${sprocket})</span></div>
+      <div class="k">Chain</div><div>${chain}</div>
+    </div>
+
+    <div class="miniTableWrap"><table class="miniTable" aria-label="${tag} gearbox details">
+      <thead>
+        <tr>
+          <th>Gear</th><th>Teeth</th><th>Gear</th><th>Overall</th><th>Drop</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rowsHtml || `<tr><td colspan="5" class="muted">No gearbox data</td></tr>`}
+      </tbody>
+    </table></div>
+  `;
+}
+
 function speedKmhAtRPM(rpm, pair, tyreCircM, sprocket, crown){
   const ratio = overallRatio(pair, sprocket, crown);
   if (!isFinite(ratio) || ratio<=0) return NaN;
@@ -555,6 +924,8 @@ const els = {
   sprList: document.getElementById("sprList"),
   cwList: document.getElementById("cwList"),
 
+  infoA: document.getElementById("infoA"),
+  infoB: document.getElementById("infoB"),
   tbody: document.getElementById("tbody"),
   speedHead: document.getElementById("speedHead"),
   tableWrap: document.getElementById("tableWrap"),
@@ -707,6 +1078,10 @@ function renderTable(){
   const pairsA = gbA?.gears || [];
   const pairsB = gbB?.gears || [];
 
+  // extra info panels (gearbox data + chain length)
+  renderSetupInfo(els.infoA, "A", gbA, tyreA, state.A.sprocket, state.A.crown);
+  renderSetupInfo(els.infoB, "B", gbB, tyreB, state.B.sprocket, state.B.crown);
+
   els.tbody.innerHTML = "";
   for (const s of speeds) {
     const tr = document.createElement("tr");
@@ -779,7 +1154,8 @@ function loadState(){
     state.A = state.A || {};
     state.B = state.B || {};
     state.rowHeightPct = state.rowHeightPct ?? 100;
-    writeStateToUI();
+    normalizeState();
+  writeStateToUI();
     renderTable();
     return true;
   } catch(e) {
@@ -864,7 +1240,11 @@ function init(){
   els.reset.addEventListener("click", ()=>{ localStorage.removeItem(STORAGE_KEY); resetState(); });
 }
 
-init();
+try { init(); } catch (e) {
+  console.error(e);
+  const b = document.getElementById('errorBanner');
+  if (b) { b.style.display='block'; b.textContent = 'Script error: ' + (e && e.message ? e.message : String(e)); }
+}
 </script>
 </body>
 </html>
