@@ -457,8 +457,8 @@
             <div>
               <label for="unit">Units</label>
               <select id="unit">
+                <option value="kmh" selected>km/h</option>
                 <option value="mph">mph</option>
-                <option value="kmh">km/h</option>
               </select>
             </div>
             <div>
@@ -578,7 +578,7 @@
             </tr>
             <tr>
               <th>1st RPM</th><th>2nd RPM</th><th>3rd RPM</th><th>4th RPM</th><th>5th RPM</th><th>6th RPM</th>
-              <th id="speedHead">mph</th>
+              <th id="speedHead">km/h</th>
               <th>1st RPM</th><th>2nd RPM</th><th>3rd RPM</th><th>4th RPM</th><th>5th RPM</th><th>6th RPM</th>
             </tr>
           </thead>
@@ -652,7 +652,7 @@ function normalizeState(){
     : 100;
 }
 
-const DEFAULTS = {"gearboxA": 11, "gearboxB": 11, "tyreA": 1, "tyreB": 1, "sprocketA": 16, "crownA": 46, "sprocketB": 16, "crownB": 47, "rpmIn": 3800, "rpmPeak": 6000, "rpmShift": 6800, "rpmMax": 7500, "unit": "mph", "speedStep": 2, "rpmIdle": 1000};
+const DEFAULTS = {"gearboxA": 11, "gearboxB": 11, "tyreA": 1, "tyreB": 1, "sprocketA": 16, "crownA": 46, "sprocketB": 16, "crownB": 47, "rpmIn": 3800, "rpmPeak": 6000, "rpmShift": 6800, "rpmMax": 7500, "unit": "kmh", "speedStep": 2, "rpmIdle": 1000};
 const STORAGE_KEY = "lambretta_large_frame_visualiser_v1";
 
 // -------- utils
