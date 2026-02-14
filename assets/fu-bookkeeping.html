@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Mini-bokföring (BAS) – offline i webbläsaren</title>
+  <title>FU-Bookkeeping – offline i webbläsaren</title>
   <style>
     html{ font-size: clamp(14px, 1.05vw, 16px); }
     :root{ --bg:#0b0f14; --card:#111826; --muted:#94a3b8; --text:#e5e7eb; --line:#223044; --ok:#22c55e; --bad:#ef4444; --accent:#60a5fa; }
@@ -112,7 +112,7 @@
 <header>
   <div class="wrap">
     <div class="row">
-      <h1 id="companyName">Mini-bokföring</h1>
+      <h1 id="companyName">FU-Bookkeeping</h1>
       <select class="pill" id="yearPillSelect" aria-label="Aktivt räkenskapsår"></select>
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill">Lagring: localStorage (offline)</span>
@@ -982,7 +982,7 @@
     const now = new Date();
     const y = now.getFullYear();
     return {
-      company: { name: "Mini-bokföring", orgnr: "", currency: "SEK", defaultSign: "", addr:"", zip:"", city:"", country:"", email:"", phone:"", web:"", vat:"", payDays:30, bankgiro:"", plusgiro:"", iban:"", swift:"", invoiceNote:"", invoiceFooter:"", logoDataUrl:"" },
+      company: { name: "FU-Bookkeeping", orgnr: "", currency: "SEK", defaultSign: "", addr:"", zip:"", city:"", country:"", email:"", phone:"", web:"", vat:"", payDays:30, bankgiro:"", plusgiro:"", iban:"", swift:"", invoiceNote:"", invoiceFooter:"", logoDataUrl:"" },
       features: { sruEnabled: false },
       fileSync: { autosave: true, requireFile: false },
       fiscalYears: [
@@ -2751,7 +2751,7 @@ if (!state.features) state.features = { sruEnabled: false };
       sel.value = ys.find(y=>y.id===prev)?.id || state.activeYearId || ys[0]?.id || "";
     });
 
-    companyNameEl.textContent = state.company.name || "Mini-bokföring";
+    companyNameEl.textContent = state.company.name || "FU-Bookkeeping";
 
     // Header dropdown (active fiscal year)
     if (yearPillSelect){
@@ -2917,7 +2917,7 @@ if (!state.features) state.features = { sruEnabled: false };
 
     const lines = [];
     lines.push("#FLAGGA 0");
-    lines.push(`#PROGRAM ${sieQuote("Mini-bokföring (HTML)")} ${sieQuote("1.0")}`);
+    lines.push(`#PROGRAM ${sieQuote("FU-Bookkeeping (HTML)")} ${sieQuote("1.0")}`);
     lines.push("#FORMAT PC8");
     lines.push(`#GEN ${ymd(todayISO())} ${sieQuote(state.company.defaultSign || "")}`);
     lines.push(`#FNAMN ${sieQuote(state.company.name || "")}`);
@@ -3230,7 +3230,7 @@ if (!state.features) state.features = { sruEnabled: false };
     }
 
     // Company
-    if (parsed.company?.name && (!state.company.name || state.company.name === "Mini-bokföring")) state.company.name = parsed.company.name;
+    if (parsed.company?.name && (!state.company.name || state.company.name === "FU-Bookkeeping")) state.company.name = parsed.company.name;
     if (parsed.company?.orgnr && !state.company.orgnr) state.company.orgnr = parsed.company.orgnr;
     if (parsed.company?.currency) state.company.currency = parsed.company.currency;
 
@@ -3702,7 +3702,7 @@ Verifikationer: ${stats.before.vouchers} → ${stats.after.vouchers}`);
   
   function handleSaveSettings(){
     // Företagsuppgifter
-    state.company.name = (sCompany?.value || "").trim() || "Mini-bokföring";
+    state.company.name = (sCompany?.value || "").trim() || "FU-Bookkeeping";
     state.company.orgnr = (sOrgnr?.value || "").trim();
     state.company.currency = (sCurrency?.value || "SEK");
     state.company.defaultSign = (sSign?.value || "").trim();
