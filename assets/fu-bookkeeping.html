@@ -12,7 +12,7 @@
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>FU-Bookkeeping – offline i webbläsaren</title>
+  <title>FU-BOOKKEEPING (BAS) – offline i webbläsaren</title>
   <style>
     html{ font-size: clamp(14px, 1.05vw, 16px); }
     :root{ --bg:#0b0f14; --card:#111826; --muted:#94a3b8; --text:#e5e7eb; --line:#223044; --ok:#22c55e; --bad:#ef4444; --accent:#60a5fa; }
@@ -57,11 +57,18 @@
       appearance:none;
       -webkit-appearance:none;
       -moz-appearance:none;
-      background:rgba(11,15,20,.0);
-      color:var(--muted);
+      background:rgba(17,24,38,.85);
+      color:var(--text);
       cursor:pointer;
-      padding-right:28px;
-      background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+      border:1px solid rgba(96,165,250,.45);
+      padding:8px 34px 8px 12px;
+      border-radius:999px;
+      font-weight:700;
+      min-width: 340px;
+      max-width: 100%;
+      background-image:
+        linear-gradient(45deg, transparent 50%, var(--text) 50%),
+        linear-gradient(135deg, var(--text) 50%, transparent 50%);
       background-position: calc(100% - 14px) 55%, calc(100% - 9px) 55%;
       background-size:5px 5px, 5px 5px;
       background-repeat:no-repeat;
@@ -121,7 +128,7 @@
 <header>
   <div class="wrap">
     <div class="row">
-      <h1 id="companyName">FU-Bookkeeping</h1>
+      <h1 id="companyName">FU-BOOKKEEPING</h1>
       <select class="pill" id="yearPillSelect" aria-label="Aktivt räkenskapsår"></select>
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill">Lagring: localStorage (offline)</span>
@@ -135,7 +142,8 @@
       <aside class="sidebar" aria-label="Navigation">
         <button type="button" class="tab active" data-tab="vouchers">Verifikationer</button>
         <button type="button" class="tab" data-tab="accounts">Kontoplan</button>
-                <button type="button" class="tab" data-tab="customers">Kunder</button>
+                        <button type="button" class="tab" data-tab="reports">Rapporter</button>
+<button type="button" class="tab" data-tab="customers">Kunder</button>
         <button type="button" class="tab" data-tab="suppliers">Leverantörer</button>
 <button type="button" class="tab" data-tab="invoices">Fakturor</button>
 <button type="button" class="tab" data-tab="sru">SRU / Deklaration</button>
@@ -290,48 +298,51 @@
 
     <!-- RAPPORTER -->
     <section id="tab-reports" hidden>
-      <div class="grid two">
+      <div class="grid">
         <div class="card">
-          <div class="row" style="justify-content:space-between;">
-            <h2>Balans & Resultat (översikt)</h2>
-            <select id="reportsYearSelect"></select>
-          </div>
-          <div class="grid" style="gap:10px; margin-top:12px;">
-            <div class="row" style="justify-content:space-between;">
-              <div>
-                <div class="muted small">Tillgångar</div>
-                <div id="sumAssets" style="font-size:20px; font-weight:800;">–</div>
-              </div>
-              <div>
-                <div class="muted small">EK + Skulder</div>
-                <div id="sumEqLiab" style="font-size:20px; font-weight:800;">–</div>
-              </div>
-              <div>
-                <div class="muted small">Årets resultat</div>
-                <div id="sumResult" style="font-size:20px; font-weight:800;">–</div>
-              </div>
+          <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+            <h2>Rapportgenerator</h2>
+            <div class="row">
+              <button class="btn secondary" id="btnRptGenerate">Generera</button>
+              <button class="btn" id="btnRptPrint" disabled>Skriv ut</button>
+              <button class="btn secondary" id="btnRptCsv" disabled>CSV</button>
+              <button class="btn secondary" id="btnRptXls" disabled>Excel</button>
             </div>
-            <div class="muted small">Observera: detta är en förenklad rapport (bra för kontroll/avstämning, men inte en full årsredovisning).</div>
           </div>
-        </div>
 
-        <div class="card">
-          <h2>Huvudbok / Saldolista</h2>
-          <div class="row" style="gap:10px; margin-bottom:10px;">
-            <select id="trialYearSelect"></select>
-            <button class="btn secondary" id="btnExportTrialCsv">Exportera CSV</button>
+          <div class="row" style="gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:10px;">
+            <div class="field" style="min-width:260px;">
+              <label>Räkenskapsår</label>
+              <select id="rptYearSelect"></select>
+            </div>
+
+            <div class="field" style="min-width:160px;">
+              <label>Från</label>
+              <input id="rptFrom" type="date" />
+            </div>
+            <div class="field" style="min-width:160px;">
+              <label>Till</label>
+              <input id="rptTo" type="date" />
+            </div>
+
+            <div class="field" style="min-width:260px; flex:1;">
+              <label>Rapport</label>
+              <select id="rptType">
+                <option value="is">Resultaträkning (period)</option>
+                <option value="bs">Balansräkning (per datum)</option>
+                <option value="trial">Saldolista (period + ack)</option>
+                <option value="gl">Huvudbok (period)</option>
+                <option value="vj">Verifikationsjournal (period)</option>
+              </select>
+            </div>
+
+            <button class="btn secondary" id="btnRptFullYear" type="button">Hela året</button>
+            <button class="btn secondary" id="btnRptThisMonth" type="button">Denna månad</button>
+            <button class="btn secondary" id="btnRptThisQuarter" type="button">Detta kvartal</button>
           </div>
-          <div style="overflow:auto; max-height:520px;">
-            <table>
-              <thead>
-                <tr>
-                  <th style="width:110px;">Konto</th>
-                  <th>Namn</th>
-                  <th class="right" style="width:140px;">Saldo</th>
-                </tr>
-              </thead>
-              <tbody id="trialTbody"></tbody>
-            </table>
+
+          <div id="reportOutput" class="card" style="padding:12px; border-radius:14px; background:rgba(11,18,32,.90);">
+            <div class="muted small">Välj rapport + datumintervall och klicka <b>Generera</b>.</div>
           </div>
         </div>
       </div>
@@ -938,6 +949,36 @@
   const todayISO = () => new Date().toISOString().slice(0,10);
   const clampText = (s, max=120) => String(s ?? "").slice(0,max);
 
+
+  // --- Print helpers ---
+  function printHtmlDocument(title, bodyHtml){
+    const doc = `<!doctype html><html><head><meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>${title}</title>
+      <style>
+        body{ font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; padding:24px; color:#111; background:#fff; }
+        h1,h2{ margin:0 0 10px 0; }
+        .muted{ color:#555; }
+        .card{ border:1px solid #ddd; border-radius:12px; padding:12px; margin:0 0 12px 0; background:#fff; }
+        table{ width:100%; border-collapse:collapse; margin-top:10px; }
+        th,td{ border-bottom:1px solid #ddd; padding:6px 6px; text-align:left; vertical-align:top; }
+        th{ font-size:12px; color:#333; }
+        td{ font-size:12px; }
+        .right{ text-align:right; }
+        .row{ display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap; align-items:flex-start; }
+        @media print{
+          body{ padding:0; }
+          .noprint{ display:none !important; }
+          .card{ page-break-inside:avoid; }
+        }
+      </style>
+    </head><body>${bodyHtml}<script>window.onload=()=>window.print();<\/script></body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) return alert("Popup blockerad. Tillåt popup för att skriva ut.");
+    w.document.open();
+    w.document.write(doc);
+    w.document.close();
+  }
   // --- IndexedDB (för att lagra fil-handle mellan sessioner) ---
   const IDB_DB = "mini_bokforing_idb";
   const IDB_STORE = "kv";
@@ -991,7 +1032,7 @@
     const now = new Date();
     const y = now.getFullYear();
     return {
-      company: { name: "FU-Bookkeeping", orgnr: "", currency: "SEK", defaultSign: "", addr:"", zip:"", city:"", country:"", email:"", phone:"", web:"", vat:"", payDays:30, bankgiro:"", plusgiro:"", iban:"", swift:"", invoiceNote:"", invoiceFooter:"", logoDataUrl:"" },
+      company: { name: "FU-BOOKKEEPING", orgnr: "", currency: "SEK", defaultSign: "", addr:"", zip:"", city:"", country:"", email:"", phone:"", web:"", vat:"", payDays:30, bankgiro:"", plusgiro:"", iban:"", swift:"", invoiceNote:"", invoiceFooter:"", logoDataUrl:"" },
       features: { sruEnabled: false },
       fileSync: { autosave: true, requireFile: false },
       fiscalYears: [
@@ -1332,13 +1373,23 @@ if (!state.features) state.features = { sruEnabled: false };
   const aType = document.getElementById("aType");
   const accountsTbody = document.getElementById("accountsTbody");
   const accountSearch = document.getElementById("accountSearch");
+  // Reports (Rapportgenerator)
+  const rptYearSelect = document.getElementById("rptYearSelect");
+  const rptFrom = document.getElementById("rptFrom");
+  const rptTo = document.getElementById("rptTo");
+  const rptType = document.getElementById("rptType");
+  const btnRptGenerate = document.getElementById("btnRptGenerate");
+  const btnRptPrint = document.getElementById("btnRptPrint");
+  const btnRptCsv = document.getElementById("btnRptCsv");
+  const btnRptXls = document.getElementById("btnRptXls");
+  const reportOutput = document.getElementById("reportOutput");
+  const btnRptFullYear = document.getElementById("btnRptFullYear");
+  const btnRptThisMonth = document.getElementById("btnRptThisMonth");
+  const btnRptThisQuarter = document.getElementById("btnRptThisQuarter");
 
-  const reportsYearSelect = document.getElementById("reportsYearSelect");
-  const trialYearSelect = document.getElementById("trialYearSelect");
-  const trialTbody = document.getElementById("trialTbody");
-  const sumAssets = document.getElementById("sumAssets");
-  const sumEqLiab = document.getElementById("sumEqLiab");
-  const sumResult = document.getElementById("sumResult");
+  // Last generated report (HTML fragment)
+  let lastReportHtml = "";
+  let lastReportTitle = "";
 
   const sieYearSelect = document.getElementById("sieYearSelect");
 
@@ -2532,1357 +2583,626 @@ if (!state.features) state.features = { sruEnabled: false };
     return { assets, eqLiab, income, expense, profit };
   }
 
-  function renderReports(){
-    const yearId = reportsYearSelect.value || state.activeYearId;
-    const bal = accountBalances(yearId);
-    const { assets, eqLiab, profit } = splitBSIS(bal);
 
-    sumAssets.textContent = fmtSEK(assets);
-    sumEqLiab.textContent = fmtSEK(eqLiab);
-    sumResult.textContent = fmtSEK(profit);
+  // --- Reports (generator) ---
+  function pad2(n){ return String(n).padStart(2,"0"); }
 
-    // trial balance
-    const yearId2 = trialYearSelect.value || yearId;
-    const b2 = accountBalances(yearId2);
-    const rows = Object.keys(state.accounts)
-      .sort((a,b)=>a.localeCompare(b,"sv"))
-      .map(acc => ({ acc, name: state.accounts[acc]?.name || "", amt: b2[acc] || 0 }))
-      .filter(r => Math.abs(r.amt) > 0.00001);
-
-    trialTbody.innerHTML = "";
-    rows.forEach(r => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${r.acc}</td>
-        <td>${escapeHtml(r.name)}</td>
-        <td class="right">${fmtSEK(r.amt)}</td>
-      `;
-      trialTbody.appendChild(tr);
-    });
+  function isoIsValid(d){
+    return typeof d === "string" && /^\d{4}-\d{2}-\d{2}$/.test(d);
   }
 
-  // --- Render vouchers list ---
-  function renderVoucherList(){
-    const yearId = yearSelect.value || state.activeYearId;
-    const list = yearVouchers(yearId)
-      .slice()
-      .sort((a,b)=> (a.series+a.no+a.date).localeCompare(b.series+b.no+b.date, "sv"));
+  function fiscalYearStart(yearId){
+    const fy = getYear(yearId);
+    if (fy && isoIsValid(fy.start)) return fy.start;
+    return yearId + "-01-01";
+  }
+  function fiscalYearEnd(yearId){
+    const fy = getYear(yearId);
+    if (fy && isoIsValid(fy.end)) return fy.end;
+    return yearId + "-12-31";
+  }
 
-    voucherList.innerHTML = "";
-    if (list.length === 0){
-      voucherList.innerHTML = `<div class="muted small">Inga verifikationer i detta räkenskapsår ännu.</div>`;
+  function clampRangeToFY(yearId, from, to){
+    const a = fiscalYearStart(yearId);
+    const b = fiscalYearEnd(yearId);
+    let f = isoIsValid(from) ? from : a;
+    let t = isoIsValid(to) ? to : b;
+    if (f < a) f = a;
+    if (t > b) t = b;
+    if (t < f) t = f;
+    return { from:f, to:t };
+  }
+
+  function vouchersInRange(yearId, from, to){
+    return (state.vouchers||[])
+      .filter(v => v.yearId === yearId && (!from || v.date >= from) && (!to || v.date <= to))
+      .slice()
+      .sort((a,b)=> (a.date+a.series+a.no).localeCompare(b.date+b.series+b.no, "sv"));
+  }
+
+  function balancesForVouchers(vs){
+    const bal = {};
+    for (const v of vs){
+      for (const l of (v.lines||[])){
+        bal[l.account] = (bal[l.account] || 0) + (Number(l.amount)||0);
+      }
+    }
+    for (const k of Object.keys(bal)) bal[k] = Math.round(bal[k]*100)/100;
+    return bal;
+  }
+
+  function balancesInRange(yearId, from, to){
+    return balancesForVouchers(vouchersInRange(yearId, from, to));
+  }
+
+  function balancesAsOf(yearId, to){
+    const start = fiscalYearStart(yearId);
+    return balancesInRange(yearId, start, to);
+  }
+
+  function openingBalances(yearId, from){
+    const start = fiscalYearStart(yearId);
+    if (!from || from <= start) return {};
+    const prev = addDays(from, -1);
+    return balancesInRange(yearId, start, prev);
+  }
+
+  function reportMetaHtml(title, yearId, from, to){
+    const fy = getYear(yearId);
+    const rangeLabel = (from && to) ? `${from} – ${to}` : (fy ? `${fy.start} – ${fy.end}` : yearId);
+    const gen = new Date().toLocaleString("sv-SE", { hour12:false });
+    return `
+      <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; align-items:flex-end;">
+        <div>
+          <div style="font-size:18px; font-weight:900;">${escapeHtml(state.company.name || "FU-BOOKKEEPING")}</div>
+          ${state.company.orgnr?`<div style="color:#555;">Org.nr: ${escapeHtml(state.company.orgnr)}</div>`:""}
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:18px; font-weight:900;">${escapeHtml(title)}</div>
+          <div style="color:#555;">Period: ${escapeHtml(rangeLabel)}</div>
+          <div style="color:#555;">Genererad: ${escapeHtml(gen)}</div>
+        </div>
+      </div>
+      <div style="height:1px; background:#ddd; margin:12px 0;"></div>
+    `;
+  }
+
+  function buildTable(headers, rows){
+    const th = headers.map(h=>`<th style="${h.style||""}">${escapeHtml(h.label||"")}</th>`).join("");
+    const trs = rows.map(r=>{
+      return "<tr>" + r.map((cell,i)=>{
+        const style = headers[i]?.tdStyle || "";
+        return `<td style="${style}">${cell}</td>`;
+      }).join("") + "</tr>";
+    }).join("");
+    return `<table style="width:100%; border-collapse:collapse;">
+      <thead><tr>${th}</tr></thead>
+      <tbody>${trs}</tbody>
+    </table>`;
+  }
+
+  function moneyCell(n){
+    return `<span style="white-space:nowrap;">${fmtSEK(n)}</span>`;
+  }
+
+  function reportResultatrakning(yearId, from, to){
+    const bal = balancesInRange(yearId, from, to);
+    const rows = [];
+    const rawRows = [];
+    let rev = 0, cost = 0;
+
+    const keys = Object.keys(bal).sort((a,b)=>a.localeCompare(b,"sv"));
+    for (const acc of keys){
+      const amt = bal[acc] || 0;
+      const t = (state.accounts[acc]?.type) || guessTypeFromAccountNo(acc);
+      if (t !== "income" && t !== "expense") continue;
+
+      // Display as positive for income (credit) and as positive for expense (debit)
+      const shown = (t === "income") ? -amt : amt;
+      if (t === "income") rev += shown; else cost += shown;
+
+      rows.push([
+        escapeHtml(acc),
+        escapeHtml(state.accounts[acc]?.name || ""),
+        escapeHtml(t === "income" ? "Intäkt" : "Kostnad"),
+        `<div style="text-align:right;">${moneyCell(shown)}</div>`
+      ]);
+    }
+
+    rev = Math.round(rev*100)/100;
+    cost = Math.round(cost*100)/100;
+    const profit = Math.round((rev - cost)*100)/100;
+
+    const html = `
+      ${reportMetaHtml("Resultaträkning", yearId, from, to)}
+      <div style="display:flex; justify-content:flex-end; gap:24px; flex-wrap:wrap;">
+        <div><div style="color:#555; font-size:12px;">Intäkter</div><div style="font-weight:900; font-size:18px; text-align:right;">${fmtSEK(rev)}</div></div>
+        <div><div style="color:#555; font-size:12px;">Kostnader</div><div style="font-weight:900; font-size:18px; text-align:right;">${fmtSEK(cost)}</div></div>
+        <div><div style="color:#555; font-size:12px;">Resultat</div><div style="font-weight:900; font-size:18px; text-align:right;">${fmtSEK(profit)}</div></div>
+      </div>
+      <div style="margin-top:12px;"></div>
+      ${buildTable(
+        [
+          {label:"Konto", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px; width:90px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Namn", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Typ", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px; width:90px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Belopp", style:"text-align:right; border-bottom:1px solid #ddd; padding:8px 6px; width:140px;", tdStyle:"border-bottom:1px solid #eee; padding:6px; text-align:right;"}
+        ],
+        rows.length?rows:[[`<span style="color:#666;">–</span>`, "", "", `<div style="text-align:right;">${moneyCell(0)}</div>`]]
+      )}
+      <div style="margin-top:10px; color:#555; font-size:12px;">Not: Belopp visar periodens summering. Intäkter visas som positiva tal.</div>
+    `;
+    return { title:"Resultaträkning", html, columns:["Konto","Namn","Typ","Belopp"], rows: rawRows };
+  }
+
+  function reportBalansrakning(yearId, to){
+    const bal = balancesAsOf(yearId, to);
+    const assets = [];
+    const liab = [];
+    const rawRows = [];
+    let sumA = 0, sumL = 0;
+
+    const keys = Object.keys(bal).sort((a,b)=>a.localeCompare(b,"sv"));
+    for (const acc of keys){
+      const amt = bal[acc] || 0;
+      const t = (state.accounts[acc]?.type) || guessTypeFromAccountNo(acc);
+      if (t !== "asset" && t !== "liability") continue;
+
+      if (t === "asset"){
+        sumA += amt;
+        assets.push([escapeHtml(acc), escapeHtml(state.accounts[acc]?.name||""), `<div style="text-align:right;">${moneyCell(amt)}</div>`]);
+      } else {
+        // liabilities/equity are typically negative in this app (credits). Show positive.
+        const shown = -amt;
+        sumL += shown;
+        liab.push([escapeHtml(acc), escapeHtml(state.accounts[acc]?.name||""), `<div style="text-align:right;">${moneyCell(shown)}</div>`]);
+      }
+    }
+
+    sumA = Math.round(sumA*100)/100;
+    sumL = Math.round(sumL*100)/100;
+
+    const html = `
+      ${reportMetaHtml("Balansräkning", yearId, fiscalYearStart(yearId), to)}
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:18px;">
+        <div>
+          <div style="font-weight:900; margin-bottom:6px;">Tillgångar</div>
+          ${buildTable(
+            [
+              {label:"Konto", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px; width:90px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+              {label:"Namn", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+              {label:"Belopp", style:"text-align:right; border-bottom:1px solid #ddd; padding:8px 6px; width:140px;", tdStyle:"border-bottom:1px solid #eee; padding:6px; text-align:right;"}
+            ],
+            assets.length?assets:[[`<span style="color:#666;">–</span>`, "", `<div style="text-align:right;">${moneyCell(0)}</div>`]]
+          )}
+          <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:900;">
+            <div>Summa tillgångar</div><div>${fmtSEK(sumA)}</div>
+          </div>
+        </div>
+        <div>
+          <div style="font-weight:900; margin-bottom:6px;">Eget kapital & skulder</div>
+          ${buildTable(
+            [
+              {label:"Konto", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px; width:90px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+              {label:"Namn", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+              {label:"Belopp", style:"text-align:right; border-bottom:1px solid #ddd; padding:8px 6px; width:140px;", tdStyle:"border-bottom:1px solid #eee; padding:6px; text-align:right;"}
+            ],
+            liab.length?liab:[[`<span style="color:#666;">–</span>`, "", `<div style="text-align:right;">${moneyCell(0)}</div>`]]
+          )}
+          <div style="display:flex; justify-content:space-between; margin-top:10px; font-weight:900;">
+            <div>Summa EK/skulder</div><div>${fmtSEK(sumL)}</div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:10px; color:#555; font-size:12px;">Not: EK/skulder visas som positiva tal (kredit-saldo).</div>
+    `;
+    return { title:"Balansräkning", html, columns:["Sektion","Konto","Namn","Belopp"], rows: rawRows };
+  }
+
+  function reportSaldolista(yearId, from, to){
+    const period = balancesInRange(yearId, from, to);
+    const asof = balancesAsOf(yearId, to);
+    const keys = Array.from(new Set([...Object.keys(period), ...Object.keys(asof), ...Object.keys(state.accounts||{})]))
+      .sort((a,b)=>a.localeCompare(b,"sv"));
+
+    const rows = [];
+    const rawRows = [];
+    keys.forEach(acc=>{
+      const p = Math.round((period[acc]||0)*100)/100;
+      const a = Math.round((asof[acc]||0)*100)/100;
+      if (Math.abs(p) < 0.00001 && Math.abs(a) < 0.00001) return;
+      rows.push([
+        escapeHtml(acc),
+        escapeHtml(state.accounts[acc]?.name || ""),
+        `<div style="text-align:right;">${moneyCell(p)}</div>`,
+        `<div style="text-align:right;">${moneyCell(a)}</div>`
+      ]);
+    });
+
+    const html = `
+      ${reportMetaHtml("Saldolista", yearId, from, to)}
+      ${buildTable(
+        [
+          {label:"Konto", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px; width:90px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Namn", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Period", style:"text-align:right; border-bottom:1px solid #ddd; padding:8px 6px; width:140px;", tdStyle:"border-bottom:1px solid #eee; padding:6px; text-align:right;"},
+          {label:"Saldo per datum", style:"text-align:right; border-bottom:1px solid #ddd; padding:8px 6px; width:160px;", tdStyle:"border-bottom:1px solid #eee; padding:6px; text-align:right;"}
+        ],
+        rows.length?rows:[[`<span style="color:#666;">–</span>`, "", `<div style="text-align:right;">${moneyCell(0)}</div>`, `<div style="text-align:right;">${moneyCell(0)}</div>`]]
+      )}
+      <div style="margin-top:10px; color:#555; font-size:12px;">Belopp i appen visas med debet som + och kredit som −.</div>
+    `;
+    return { title:"Saldolista", html, columns:["Konto","Namn","Saldo"], rows: rawRows };
+  }
+
+  function reportVerJournal(yearId, from, to){
+    const vs = vouchersInRange(yearId, from, to);
+    const rows = [];
+    const rawRows = [];
+    vs.forEach(v=>{
+      const deb = (v.lines||[]).reduce((s,l)=> s + (l.amount>0?l.amount:0), 0);
+      const cre = (v.lines||[]).reduce((s,l)=> s + (l.amount<0?-l.amount:0), 0);
+      rawRows.push([
+        v.date,
+        (v.series || "") + String(v.no || ""),
+        v.text||"",
+        v.sign||"",
+        Math.round(deb*100)/100,
+        Math.round(cre*100)/100
+      ]);
+      rows.push([
+        escapeHtml(v.date),
+        escapeHtml(v.series + v.no),
+        escapeHtml(v.text||""),
+        escapeHtml(v.sign||""),
+        `<div style="text-align:right;">${moneyCell(deb)}</div>`,
+        `<div style="text-align:right;">${moneyCell(cre)}</div>`
+      ]);
+    });
+
+    const html = `
+      ${reportMetaHtml("Verifikationsjournal", yearId, from, to)}
+      ${buildTable(
+        [
+          {label:"Datum", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px; width:110px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Vernr", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px; width:90px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Text", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Sign", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px; width:70px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Debet", style:"text-align:right; border-bottom:1px solid #ddd; padding:8px 6px; width:140px;", tdStyle:"border-bottom:1px solid #eee; padding:6px; text-align:right;"},
+          {label:"Kredit", style:"text-align:right; border-bottom:1px solid #ddd; padding:8px 6px; width:140px;", tdStyle:"border-bottom:1px solid #eee; padding:6px; text-align:right;"}
+        ],
+        rows.length?rows:[[`<span style="color:#666;">–</span>`, "", "", "", `<div style="text-align:right;">${moneyCell(0)}</div>`, `<div style="text-align:right;">${moneyCell(0)}</div>`]]
+      )}
+    `;
+    return { title:"Verifikationsjournal", html, columns:["Datum","Vernr","Text","Sign","Debet","Kredit"], rows: rawRows };
+  }
+
+  function reportHuvudbok(yearId, from, to){
+    const vs = vouchersInRange(yearId, from, to);
+    const ob = openingBalances(yearId, from);
+    const txByAcc = {};
+
+    vs.forEach(v=>{
+      (v.lines||[]).forEach(l=>{
+        const acc = String(l.account||"");
+        if (!txByAcc[acc]) txByAcc[acc] = [];
+        txByAcc[acc].push({
+          date: v.date, ver: (v.series||"")+String(v.no||""), text: l.text||v.text||"", amount: Number(l.amount)||0
+        });
+      });
+    });
+
+    const accs = Object.keys(txByAcc).sort((a,b)=>a.localeCompare(b,"sv"));
+
+    let out = reportMetaHtml("Huvudbok", yearId, from, to);
+    const rawRows = [];
+
+    if (!accs.length){
+      out += `<div style="color:#555;">Inga transaktioner i perioden.</div>`;
+      return { title:"Huvudbok", html: out, columns:["Konto","Namn","Datum","Ver","Text","Belopp","Saldo"], rows: rawRows };
+    }
+
+    for (const acc of accs){
+      const list = txByAcc[acc].slice().sort((a,b)=> (a.date+a.ver).localeCompare(b.date+b.ver,"sv"));
+      let run = Math.round((ob[acc]||0)*100)/100;
+
+      out += `<div style="margin-top:16px; font-weight:900;">${escapeHtml(acc)} – ${escapeHtml(state.accounts[acc]?.name||"")}</div>`;
+      out += `<div style="color:#555; font-size:12px; margin-bottom:6px;">Ingående saldo (före ${escapeHtml(from)}): ${fmtSEK(run)}</div>`;
+
+      const rows = [];
+      list.forEach(t=>{
+        run = Math.round((run + t.amount)*100)/100;
+        rawRows.push([
+          acc,
+          (state.accounts[acc]?.name||""),
+          t.date,
+          t.ver,
+          t.text,
+          Math.round((t.amount||0)*100)/100,
+          Math.round(run*100)/100
+        ]);
+        rows.push([
+          escapeHtml(t.date),
+          escapeHtml(t.ver),
+          escapeHtml(t.text),
+          `<div style="text-align:right;">${moneyCell(t.amount)}</div>`,
+          `<div style="text-align:right;">${moneyCell(run)}</div>`
+        ]);
+      });
+
+      out += buildTable(
+        [
+          {label:"Datum", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px; width:110px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Vernr", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px; width:90px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Text", style:"text-align:left; border-bottom:1px solid #ddd; padding:8px 6px;", tdStyle:"border-bottom:1px solid #eee; padding:6px;"},
+          {label:"Belopp", style:"text-align:right; border-bottom:1px solid #ddd; padding:8px 6px; width:140px;", tdStyle:"border-bottom:1px solid #eee; padding:6px; text-align:right;"},
+          {label:"Saldo", style:"text-align:right; border-bottom:1px solid #ddd; padding:8px 6px; width:140px;", tdStyle:"border-bottom:1px solid #eee; padding:6px; text-align:right;"}
+        ],
+        rows
+      );
+    }
+
+    return { title:"Huvudbok", html: out };
+  }
+
+  function generateReport(){
+    if (!reportOutput) return;
+    const yearId = (rptYearSelect && rptYearSelect.value) ? rptYearSelect.value : state.activeYearId;
+    const rawFrom = rptFrom ? rptFrom.value : "";
+    const rawTo = rptTo ? rptTo.value : "";
+
+    const { from, to } = clampRangeToFY(yearId, rawFrom, rawTo);
+    if (rptFrom) rptFrom.value = from;
+    if (rptTo) rptTo.value = to;
+
+    const type = (rptType && rptType.value) ? rptType.value : "is";
+
+    let rep;
+    if (type === "is") rep = reportResultatrakning(yearId, from, to);
+    else if (type === "bs") rep = reportBalansrakning(yearId, to);
+    else if (type === "trial") rep = reportSaldolista(yearId, from, to);
+    else if (type === "gl") rep = reportHuvudbok(yearId, from, to);
+    else if (type === "vj") rep = reportVerJournal(yearId, from, to);
+    else rep = reportResultatrakning(yearId, from, to);
+
+    lastReportHtml = rep.html;
+    lastReportTitle = rep.title;
+    lastReportData = rep;
+
+    reportOutput.innerHTML = rep.html;
+    if (btnRptPrint) btnRptPrint.disabled = !rep.html;
+    if (btnRptCsv) btnRptCsv.disabled = !(rep && Array.isArray(rep.rows) && rep.rows.length);
+    if (btnRptXls) btnRptXls.disabled = !(rep && Array.isArray(rep.rows) && rep.rows.length);
+  }
+
+  function printLastReport(){
+    if (!lastReportHtml) return;
+    const title = lastReportTitle || "Rapport";
+    const html = `<!doctype html><html><head><meta charset="utf-8">
+      <title>${escapeHtml(title)}</title>
+      <style>
+        body{ font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; padding:24px; color:#111; }
+        table{ width:100%; border-collapse:collapse; }
+        th,td{ border-bottom:1px solid #ddd; padding:8px 6px; vertical-align:top; }
+        th{ background:#f7f7f7; }
+        @media print{
+          body{ padding:0; }
+          th{ background:#f0f0f0 !important; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+        }
+      </style>
+      </head><body>
+      ${lastReportHtml}
+      <script>window.onload=()=>window.print();<\/script>
+      </body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) return alert("Popup blockerad. Tillåt popup för att skriva ut.");
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  }
+
+
+  // --- Export last generated report (CSV / Excel) ---
+  function csvEscape(val){
+    const s = (val == null) ? "" : String(val);
+    // Quote if contains separator, quote or newline
+    if (/[;"\n\r]/.test(s)) return '"' + s.replaceAll('"','""') + '"';
+    return s;
+  }
+
+  function toCsvNumber(n){
+    const v = Number(n);
+    if (!Number.isFinite(v)) return "";
+    // Swedish Excel often expects comma decimal with semicolon separator
+    return v.toFixed(2).replace(".", ",");
+  }
+
+  function reportToCsv(columns, rows){
+    const sep = ";";
+    const out = [];
+    out.push(columns.map(csvEscape).join(sep));
+    for (const r of rows){
+      const line = r.map(v => (typeof v === "number" ? toCsvNumber(v) : csvEscape(v))).join(sep);
+      out.push(line);
+    }
+    return out.join("\n") + "\n";
+  }
+
+  function reportToXlsHtml(title, columns, rows){
+    // Old-school HTML table served as .xls (works in Excel/LibreOffice)
+    const th = columns.map(c => `<th>${escapeHtml(c)}</th>`).join("");
+    const trs = rows.map(r => {
+      const tds = r.map(v => {
+        if (typeof v === "number") return `<td style="mso-number-format:'0.00'; text-align:right;">${escapeHtml(toCsvNumber(v).replace(",", "."))}</td>`;
+        return `<td>${escapeHtml(v==null?"":String(v))}</td>`;
+      }).join("");
+      return `<tr>${tds}</tr>`;
+    }).join("");
+    return `<!doctype html><html><head><meta charset="utf-8">
+      <title>${escapeHtml(title)}</title>
+      <style>
+        table{ border-collapse:collapse; }
+        th,td{ border:1px solid #ccc; padding:6px 8px; vertical-align:top; }
+        th{ background:#f7f7f7; font-weight:700; }
+      </style>
+      </head><body>
+      <table>
+        <thead><tr>${th}</tr></thead>
+        <tbody>${trs}</tbody>
+      </table>
+      </body></html>`;
+  }
+
+  function safeFilename(s){
+    return String(s||"rapport").replace(/[^a-z0-9\-_]+/gi,"_").replace(/_+/g,"_").replace(/^_+|_+$/g,"").slice(0,60) || "rapport";
+  }
+
+  function exportLastReport(kind){
+    if (!lastReportData || !Array.isArray(lastReportData.columns) || !Array.isArray(lastReportData.rows)){
+      return alert("Ingen rapport att exportera ännu. Generera en rapport först.");
+    }
+    const title = lastReportData.title || lastReportTitle || "Rapport";
+    const base = safeFilename(title);
+    if (kind === "csv"){
+      const csv = reportToCsv(lastReportData.columns, lastReportData.rows);
+      downloadText(base + ".csv", csv, "text/csv");
       return;
     }
-
-    list.forEach(v => {
-      const deb = v.lines.reduce((s,l)=> s + (l.amount>0?l.amount:0), 0);
-      const cre = v.lines.reduce((s,l)=> s + (l.amount<0?-l.amount:0), 0);
-      const div = document.createElement("div");
-      div.className = "item";
-      div.innerHTML = `
-        <div class="top">
-          <div>
-            <div class="title">${escapeHtml(v.series)}${escapeHtml(v.no)} · ${escapeHtml(v.date)} · ${escapeHtml(v.text || "(utan text)")}</div>
-            <div class="meta">${v.lines.length} rader · Debet ${fmtSEK(deb)} · Kredit ${fmtSEK(cre)} · Sign ${escapeHtml(v.sign||"-")}</div>
-          </div>
-          <div class="row">
-            <button class="btn secondary" data-act="edit" data-id="${v.id}">Redigera</button>
-            <button class="btn danger" data-act="del" data-id="${v.id}">Ta bort</button>
-          </div>
-        </div>
-        <div style="margin-top:8px; overflow:auto;">
-          <table>
-            <thead>
-              <tr>
-                <th style="width:110px;">Konto</th>
-                <th>Radtext</th>
-                <th class="right" style="width:140px;">Belopp (debet + / kredit −)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${v.lines.map(l => `
-                <tr>
-                  <td>${escapeHtml(l.account)}</td>
-                  <td>${escapeHtml(l.text || "")}</td>
-                  <td class="right">${fmtSEK(l.amount)}</td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        </div>
-      `;
-      div.addEventListener("click", (e)=>{
-        const btn = e.target.closest("button");
-        if (!btn) return;
-        const id = btn.dataset.id;
-        const act = btn.dataset.act;
-        if (act === "edit") loadVoucherToEditor(id);
-        if (act === "del") deleteVoucher(id);
-      });
-      voucherList.appendChild(div);
-    });
+    if (kind === "xls"){
+      const xls = reportToXlsHtml(title, lastReportData.columns, lastReportData.rows);
+      downloadText(base + ".xls", xls, "application/vnd.ms-excel");
+      return;
+    }
   }
 
-  // --- Accounts view ---
-  function renderAccounts(){
-    const q = (accountSearch.value || "").trim().toLowerCase();
-    const keys = Object.keys(state.accounts).sort((a,b)=>a.localeCompare(b,"sv"));
-
-    accountsTbody.innerHTML = "";
-    keys.forEach(no => {
-      const a = state.accounts[no];
-      const hay = `${no} ${a.name} ${a.type}`.toLowerCase();
-      if (q && !hay.includes(q)) return;
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${escapeHtml(no)}</td>
-        <td>${escapeHtml(a.name)}</td>
-        <td>${escapeHtml(typeLabel(a.type))}</td>
-        <td><button class="btn danger" data-del="${no}">✕</button></td>
-      `;
-      tr.querySelector("button").addEventListener("click", ()=>{
-        if (!confirm(`Ta bort konto ${no}? (verifikationer påverkas inte, men rapporter/export kan bli konstiga)`)) return;
-        delete state.accounts[no];
-        save();
-      });
-      accountsTbody.appendChild(tr);
-    });
+  function setRangeFullYear(){
+    const yearId = (rptYearSelect && rptYearSelect.value) ? rptYearSelect.value : state.activeYearId;
+    if (rptFrom) rptFrom.value = fiscalYearStart(yearId);
+    if (rptTo) rptTo.value = fiscalYearEnd(yearId);
   }
 
-  function typeLabel(t){
-    return ({asset:"Tillgång", liability:"EK/Skuld", income:"Intäkt", expense:"Kostnad", other:"Övrigt"})[t] || "Övrigt";
+  function setRangeThisMonth(){
+    const yearId = (rptYearSelect && rptYearSelect.value) ? rptYearSelect.value : state.activeYearId;
+    const today = todayISO();
+    const y = Number(today.slice(0,4));
+    const m = Number(today.slice(5,7));
+    const first = y + "-" + pad2(m) + "-01";
+    const { from, to } = clampRangeToFY(yearId, first, today);
+    if (rptFrom) rptFrom.value = from;
+    if (rptTo) rptTo.value = to;
   }
 
-  
-  // --- SRU (låst/valfritt) ---
-  function renderSru(){
-    const enabled = !!(state.features && state.features.sruEnabled);
-
-    if (sruLockedBox){
-      if (!enabled){
-        sruLockedBox.innerHTML = `
-          <div style="font-weight:900; margin-bottom:6px;">Låst: SRU-export</div>
-          <div class="muted small">
-            SRU är en <b>valfri</b> funktion. Aktivera den under <b>Inställningar → SRU / Deklaration</b>.
-            Därefter bygger vi mappning för blankett <b>NE</b> (konto/beräkningar → fält).
-          </div>
-        `;
-      } else {
-        sruLockedBox.innerHTML = `
-          <div style="font-weight:900; margin-bottom:6px;">SRU är aktiverat</div>
-          <div class="muted small">
-            Nästa steg: SRU-mappning för NE (fältlista + regler). Exportknappen är tillfälligt avstängd tills mappningen är klar.
-          </div>
-        `;
-      }
-    }
-    if (sruStatusText){
-      sruStatusText.textContent = enabled
-        ? "Aktiverat · NE-mappning: ej implementerad ännu"
-        : "Avstängt · visas i menyn men är låst";
-    }
-    if (btnSruExport) btnSruExport.disabled = true; // keep disabled for now
+  function setRangeThisQuarter(){
+    const yearId = (rptYearSelect && rptYearSelect.value) ? rptYearSelect.value : state.activeYearId;
+    const today = todayISO();
+    const y = Number(today.slice(0,4));
+    const m = Number(today.slice(5,7));
+    const q = Math.floor((m-1)/3) + 1;
+    const qm = (q-1)*3 + 1;
+    const first = y + "-" + pad2(qm) + "-01";
+    const { from, to } = clampRangeToFY(yearId, first, today);
+    if (rptFrom) rptFrom.value = from;
+    if (rptTo) rptTo.value = to;
   }
 
-
-  // --- Settings ---
-  function renderSettings(){
-    sCompany.value = state.company.name || "";
-    sOrgnr.value = state.company.orgnr || "";
-    sCurrency.value = state.company.currency || "SEK";
-    sSign.value = state.company.defaultSign || "";
-
-    if (sAddr) sAddr.value = state.company.addr || "";
-    if (sZip) sZip.value = state.company.zip || "";
-    if (sCity) sCity.value = state.company.city || "";
-    if (sCountry) sCountry.value = state.company.country || "";
-    if (sEmail) sEmail.value = state.company.email || "";
-    if (sPhone) sPhone.value = state.company.phone || "";
-    if (sWeb) sWeb.value = state.company.web || "";
-    if (sVat) sVat.value = state.company.vat || "";
-    if (sPayDays) sPayDays.value = String(state.company.payDays ?? 30);
-    if (sBg) sBg.value = state.company.bankgiro || "";
-    if (sPg) sPg.value = state.company.plusgiro || "";
-    if (sIban) sIban.value = state.company.iban || "";
-    if (sSwift) sSwift.value = state.company.swift || "";
-    if (sInvNote) sInvNote.value = state.company.invoiceNote || "";
-    if (sInvFooter) sInvFooter.value = state.company.invoiceFooter || "";
-    if (sSruEnabled) sSruEnabled.checked = !!(state.features && state.features.sruEnabled);
-    if (logoPreview){
-      const has = !!(state.company.logoDataUrl && String(state.company.logoDataUrl).startsWith("data:"));
-      logoPreview.innerHTML = has ? `<img alt="Logo" src="${state.company.logoDataUrl}" style="max-height:44px; max-width:220px; object-fit:contain; border:1px solid rgba(34,48,68,.8); border-radius:10px; padding:6px; background:rgba(11,18,32,.4);">` : `<span class="muted small">Ingen logotyp vald.</span>`;
-    }
-    const lp = document.getElementById("logoPreview");
-    if (lp){
-      if (state.company.logoDataUrl){
-        lp.innerHTML = `<img alt="logo" src="${state.company.logoDataUrl}" style="max-height:40px; max-width:180px; object-fit:contain; border:1px solid rgba(34,48,68,.8); border-radius:10px; padding:6px; background:rgba(11,18,32,.6);" />`;
-      } else {
-        lp.textContent = "Ingen logotyp vald.";
-      }
-    }
-
-    yearsTbody.innerHTML = "";
-    state.fiscalYears.forEach(y => {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td>${escapeHtml(y.id)}</td>
-        <td>${escapeHtml(y.start)}</td>
-        <td>${escapeHtml(y.end)}</td>
-        <td><button class="btn danger" data-y="${y.id}">✕</button></td>
-      `;
-      tr.querySelector("button").addEventListener("click", ()=>{
-        if (!confirm(`Ta bort räkenskapsår ${y.id}? (verifikationer i året raderas INTE automatiskt)`)) return;
-        state.fiscalYears = state.fiscalYears.filter(z => z.id !== y.id);
-        if (!state.fiscalYears.find(z => z.id === state.activeYearId)){
-          state.activeYearId = state.fiscalYears[0]?.id || "";
-        }
-        save();
-      });
-      yearsTbody.appendChild(tr);
-    });
-
+  function renderReports(){
+    // Fill year selector and set sensible defaults
     fillYearSelectors();
-  }
 
-  function fillYearSelectors(){
-    const ys = state.fiscalYears.slice().sort((a,b)=>a.id.localeCompare(b.id,"sv"));
-
-    const selects = [yearSelect, reportsYearSelect, trialYearSelect, sieYearSelect, carryFrom, carryTo, sruYearSelect];
-    selects.forEach(sel => {
-      const prev = sel.value;
-      sel.innerHTML = "";
-      ys.forEach(y => {
-        const opt = document.createElement("option");
-        opt.value = y.id;
-        opt.textContent = `${y.id} (${y.start} – ${y.end})`;
-        sel.appendChild(opt);
-      });
-      sel.value = ys.find(y=>y.id===prev)?.id || state.activeYearId || ys[0]?.id || "";
-    });
-
-    companyNameEl.textContent = state.company.name || "FU-Bookkeeping";
-
-    // Header dropdown (active fiscal year)
-    if (yearPillSelect){
-      const prev = yearPillSelect.value;
-      yearPillSelect.innerHTML = "";
-      ys.forEach(y => {
-        const opt = document.createElement("option");
-        opt.value = y.id;
-        opt.textContent = `Räkenskapsår: ${y.id} (${y.start} – ${y.end})`;
-        yearPillSelect.appendChild(opt);
-      });
-      yearPillSelect.value = ys.find(y=>y.id===state.activeYearId)?.id || ys.find(y=>y.id===prev)?.id || ys[0]?.id || "";
-    }
-  }
-
-  // --- Carry forward IB ---
-  function carryForwardIB(fromId, toId){
-    if (fromId === toId) return alert("Välj två olika år.");
-    const fromYear = getYear(fromId);
-    const toYear = getYear(toId);
-    if (!fromYear || !toYear) return;
-
-    const bal = accountBalances(fromId);
-
-    // Keep only balance sheet-ish: account class 1 & 2, plus user-typed asset/liability
-    const ibLines = Object.entries(bal)
-      .filter(([acc, amt]) => {
-        const t = state.accounts[acc]?.type || guessTypeFromAccountNo(acc);
-        if (t === "asset" || t === "liability") return Math.abs(amt) > 0.00001;
-        const first = String(acc)[0];
-        return (first === "1" || first === "2") && Math.abs(amt) > 0.00001;
-      })
-      .map(([acc, amt]) => ({ account: acc, text: "IB", amount: Math.round(amt*100)/100 }));
-
-    // Create a voucher on toYear start with these lines, plus a balancing line if needed
-    const sum = ibLines.reduce((s,l)=> s + l.amount, 0);
-    if (Math.abs(sum) > 0.00001){
-      // In theory assets+liab should balance already; if not, put difference on 2019 (or create it)
-      if (!state.accounts["2019"]) state.accounts["2019"] = { name: "Årets resultat", type: "liability" };
-      ibLines.push({ account: "2019", text: "IB justering", amount: -Math.round(sum*100)/100 });
-    }
-
-    const series = "IB";
-    const no = nextVerno(toId, series);
-    state.vouchers.push({
-      id: crypto.randomUUID(),
-      yearId: toId,
-      series,
-      no,
-      date: toYear.start,
-      text: "Ingående balans",
-      regDate: todayISO(),
-      sign: state.company.defaultSign || "",
-      lines: ibLines
-    });
-
-    save();
-    alert(`Skapade IB-verifikation i ${toId} (${toYear.start}).`);
-  }
-
-  // --- Export helpers (download) ---
-  function downloadText(filename, text, mime="text/plain"){
-    const blob = new Blob([text], {type: mime});
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    setTimeout(()=> URL.revokeObjectURL(a.href), 1500);
-  }
-
-  function escapeHtml(s){
-    return String(s ?? "").replace(/[&<>\"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
-  }
-
-
-
-  // --- ÅÄÖ/teckenkodning: försök rätta vanliga "mojibake" ---
-  function fixSwedishText(s){
-    if (s == null) return s;
-    let t = String(s);
-
-    // Vanliga fel när UTF-8 tolkas som ISO-8859-1/Windows-1252
-    const map = {
-      "Ã¥":"å","Ã¤":"ä","Ã¶":"ö","Ã…":"Å","Ã„":"Ä","Ã–":"Ö",
-      "â€“":"–","â€”":"—","â€":"”","â€œ":"“","â€˜":"‘","â€™":"’",
-      "Â ":" ",
-      "Â":""
-    };
-    for (const [bad, good] of Object.entries(map)){
-      if (t.includes(bad)) t = t.split(bad).join(good);
-    }
-    return t;
-  }
-
-  function fixSwedishDataInPlace(){
-    // Accounts
-    if (state.accounts){
-      for (const [acc, obj] of Object.entries(state.accounts)){
-        if (obj && typeof obj.name === "string") obj.name = fixSwedishText(obj.name);
-      }
-    }
-    // Customers
-    if (state.customers){
-      for (const [id, c] of Object.entries(state.customers)){
-        if (!c) continue;
-        if (typeof c.name === "string") c.name = fixSwedishText(c.name);
-        if (typeof c.addr === "string") c.addr = fixSwedishText(c.addr);
-        if (typeof c.email === "string") c.email = fixSwedishText(c.email);
-        if (typeof c.orgnr === "string") c.orgnr = fixSwedishText(c.orgnr);
-      }
-    }
-    // Vouchers texts
-    if (Array.isArray(state.vouchers)){
-      for (const v of state.vouchers){
-        if (!v) continue;
-        if (typeof v.text === "string") v.text = fixSwedishText(v.text);
-        if (typeof v.sign === "string") v.sign = fixSwedishText(v.sign);
-        if (Array.isArray(v.lines)){
-          for (const l of v.lines){
-            if (l && typeof l.text === "string") l.text = fixSwedishText(l.text);
-          }
-        }
-      }
-    }
-    // Invoices texts
-    if (Array.isArray(state.invoices)){
-      for (const inv of state.invoices){
-        if (!inv) continue;
-        if (typeof inv.ref === "string") inv.ref = fixSwedishText(inv.ref);
-        if (Array.isArray(inv.lines)){
-          for (const l of inv.lines){
-            if (l && typeof l.desc === "string") l.desc = fixSwedishText(l.desc);
-          }
-        }
-      }
-    }
-  }
-
-
-  // --- SIE4 Export (simplified but compliant-ish) ---
-  function sieQuote(s){
-    // SIE spec: use ASCII 34 quotes for fields with spaces; escape quotes with backslash
-    const t = String(s ?? "");
-    const esc = t.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-    return `"${esc}"`;
-  }
-
-  function toSieAmount(n){
-    // dot decimals, max 2, no plus sign
-    const v = Math.round((Number(n) || 0) * 100) / 100;
-    // Avoid trailing .00 if integer? Spec allows without decimals; we keep 2 decimals for stability.
-    return v.toFixed(2);
-  }
-
-  function exportSIE4(yearId){
-    const fy = getYear(yearId);
-    if (!fy) return alert("Okänt räkenskapsår.");
-
-    // balances for IB/UB
-    const bal = accountBalances(yearId);
-
-    const lines = [];
-    lines.push("#FLAGGA 0");
-    lines.push(`#PROGRAM ${sieQuote("FU-Bookkeeping (HTML)")} ${sieQuote("1.0")}`);
-    lines.push("#FORMAT PC8");
-    lines.push(`#GEN ${ymd(todayISO())} ${sieQuote(state.company.defaultSign || "")}`);
-    lines.push(`#FNAMN ${sieQuote(state.company.name || "")}`);
-    if (state.company.orgnr) lines.push(`#ORGNR ${sieQuote(state.company.orgnr)}`);
-    if (state.company.currency && state.company.currency !== "SEK") lines.push(`#VALUTA ${sieQuote(state.company.currency)}`);
-    lines.push("#KPTYP EUBAS97");
-    lines.push(`#SIETYP 4`);
-    lines.push(`#RAR 0 ${ymd(fy.start)} ${ymd(fy.end)}`);
-
-    // chart of accounts
-    Object.keys(state.accounts)
-      .sort((a,b)=>a.localeCompare(b,"sv"))
-      .forEach(acc => {
-        lines.push(`#KONTO ${acc} ${sieQuote(state.accounts[acc].name || "")}`);
-      });
-
-    // IB (only for balance sheet accounts)
-    Object.entries(bal)
-      .filter(([acc, amt]) => {
-        const t = state.accounts[acc]?.type || guessTypeFromAccountNo(acc);
-        if (t === "asset" || t === "liability") return true;
-        const first = String(acc)[0];
-        return first === "1" || first === "2";
-      })
-      .sort(([a],[b])=>a.localeCompare(b,"sv"))
-      .forEach(([acc, amt]) => {
-        // For simplicity we set #IB equal to current-year balance if you only book IB in year.
-        // If you have a full year of transactions, IB should ideally be start balances.
-        // Use the Carry-forward feature to create correct IB voucher.
-        lines.push(`#IB 0 ${acc} ${toSieAmount(amt)}`);
-      });
-
-    // verifications
-    const vs = yearVouchers(yearId)
-      .slice()
-      .sort((a,b)=> (a.series+a.no+a.date).localeCompare(b.series+b.no+b.date, "sv"));
-
-    vs.forEach(v => {
-      lines.push(`#VER ${sieQuote(v.series)} ${sieQuote(v.no)} ${ymd(v.date)} ${sieQuote(v.text || "")} ${ymd(v.regDate || v.date)} ${sieQuote(v.sign || "")}`);
-      lines.push("{");
-      v.lines.forEach(l => {
-        lines.push(` #TRANS ${l.account} { } ${toSieAmount(l.amount)} ${ymd(v.date)} ${sieQuote(l.text || v.text || "")}`);
-      });
-      lines.push("}");
-    });
-
-    // UB (closing) for balance sheet accounts, year 0 should always be present
-    Object.entries(bal)
-      .filter(([acc, amt]) => {
-        const t = state.accounts[acc]?.type || guessTypeFromAccountNo(acc);
-        if (t === "asset" || t === "liability") return true;
-        const first = String(acc)[0];
-        return first === "1" || first === "2";
-      })
-      .sort(([a],[b])=>a.localeCompare(b,"sv"))
-      .forEach(([acc, amt]) => {
-        lines.push(`#UB 0 ${acc} ${toSieAmount(amt)}`);
-      });
-
-    const content = lines.join("\n") + "\n";
-    downloadText(`SIE4_${yearId}.se`, content, "text/plain");
-  }
-
-  // --- SIE import (basic) ---
-  function isAllDigits(s){
-    for (let i=0;i<s.length;i++){
-      const c = s.charCodeAt(i);
-      if (c < 48 || c > 57) return false;
-    }
-    return s.length > 0;
-  }
-
-  function parseSieDate(s){
-    const t = String(s || "").trim();
-    if (t.length === 8 && isAllDigits(t)) return t.slice(0,4) + "-" + t.slice(4,6) + "-" + t.slice(6,8);
-    if (t.length === 10 && t[4] === "-" && t[7] === "-") return t;
-    return t;
-  }
-
-  function parseSieAmount(s){
-    const t = String(s || "").trim().replace(",", ".");
-    const v = Number(t);
-    return Number.isFinite(v) ? Math.round(v * 100) / 100 : 0;
-  }
-
-  function tokenizeSieLine(line){
-    const tokens = [];
-    const BS = String.fromCharCode(92); // backslash
-    let i = 0;
-    while (i < line.length){
-      while (i < line.length && line.charCodeAt(i) <= 32) i++;
-      if (i >= line.length) break;
-      if (line[i] === '"'){
-        i++;
-        let out = "";
-        while (i < line.length){
-          const ch = line[i];
-          if (ch === BS && i+1 < line.length){ out += line[i+1]; i += 2; continue; }
-          if (ch === '"'){ i++; break; }
-          out += ch;
-          i++;
-        }
-        tokens.push(out);
-      } else {
-        let j = i;
-        while (j < line.length && line.charCodeAt(j) > 32) j++;
-        tokens.push(line.slice(i, j));
-        i = j;
-      }
-    }
-    return tokens;
-  }
-
-  async function readFileAsText(file, encoding){
-    const buf = await file.arrayBuffer();
-    const raw = (encoding || "utf-8").toLowerCase();
-
-    // Some browsers differ in TextDecoder labels (especially for CP437/PC8).
-    const candidates = [];
-    if (raw === "ibm437" || raw === "cp437" || raw === "pc8"){
-      candidates.push("ibm437", "cp437", "ibm-437");
-    } else if (raw === "windows-1252" || raw === "cp1252"){
-      candidates.push("windows-1252", "cp1252");
-    } else {
-      candidates.push(raw);
-    }
-    // Always fall back to UTF-8 last
-    candidates.push("utf-8");
-
-    let lastErr = null;
-    for (const enc of candidates){
-      try {
-        return new TextDecoder(enc, { fatal:false }).decode(buf);
-      } catch (e){
-        lastErr = e;
-      }
-    }
-    // Very unlikely, but keep a safe fallback
-    if (lastErr) throw lastErr;
-    return new TextDecoder("utf-8", { fatal:false }).decode(buf);
-  }
-
-  function normalizeNewlines(text){
-    const CR = String.fromCharCode(13);
-    const LF = String.fromCharCode(10);
-    return String(text || "").split(CR + LF).join(LF).split(CR).join(LF);
-  }
-
-  function ensureYearExists(id){
-    if (!id) return;
-    if (!state.fiscalYears.find(y => y.id === id)){
-      state.fiscalYears.push({ id, start: id + "-01-01", end: id + "-12-31" });
-      state.fiscalYears.sort((a,b)=>a.id.localeCompare(b.id, "sv"));
-    }
-  }
-
-  function yearIdForDate(dateIso){
-    const d = dateIso;
-    for (const fy of state.fiscalYears){
-      if (fy.start <= d && d <= fy.end) return fy.id;
-    }
-    return d ? d.slice(0,4) : state.activeYearId;
-  }
-
-  function parseSIE(text){
-    const parsed = { company:{}, fiscalYears:[], accounts:{}, vouchers:[] };
-    const rarByNo = {}; // "0" -> {id,start,end}
-
-    let currentVoucher = null;
-    let currentYearIdHint = null;
-
-    const lines = normalizeNewlines(text).split(String.fromCharCode(10));
-
-    for (const raw of lines){
-      const line = String(raw || "").trim();
-      if (!line) continue;
-      if (line[0] === ";") continue;
-
-      if (line.startsWith("#FNAMN")){
-        const t = tokenizeSieLine(line);
-        if (t[1]) parsed.company.name = t[1];
-        continue;
-      }
-      if (line.startsWith("#ORGNR")){
-        const t = tokenizeSieLine(line);
-        if (t[1]) parsed.company.orgnr = t[1];
-        continue;
-      }
-      if (line.startsWith("#VALUTA")){
-        const t = tokenizeSieLine(line);
-        if (t[1]) parsed.company.currency = t[1];
-        continue;
-      }
-      if (line.startsWith("#KONTO")){
-        const t = tokenizeSieLine(line);
-        const acc = t[1];
-        const name = t.slice(2).join(" ").trim();
-        if (acc) parsed.accounts[acc] = { name: name || ("(konto " + acc + ")"), type: guessTypeFromAccountNo(acc) };
-        continue;
-      }
-      if (line.startsWith("#RAR")){
-        const t = tokenizeSieLine(line);
-        const rarNo = String(t[1] ?? "");
-        const start = parseSieDate(t[2]);
-        const end = parseSieDate(t[3]);
-        if (rarNo && start && end){
-          const id = start.slice(0,4);
-          rarByNo[rarNo] = { id, start, end };
-          if (!parsed.fiscalYears.find(y => y.id === id)) parsed.fiscalYears.push({ id, start, end });
-          if (rarNo === "0") currentYearIdHint = id;
-        }
-        continue;
-      }
-
-      if (line === "{") continue;
-
-      if (line === "}"){
-        if (currentVoucher){
-          // Validate balance before keeping
-          const sum = currentVoucher.lines.reduce((s,l)=> s + l.amount, 0);
-          if (Math.abs(sum) < 0.01) parsed.vouchers.push(currentVoucher);
-          currentVoucher = null;
-        }
-        continue;
-      }
-
-      if (line.startsWith("#VER")){
-        const t = tokenizeSieLine(line);
-        const series = String(t[1] ?? "A");
-        const no = String(t[2] ?? "");
-        const date = parseSieDate(t[3]);
-        const textV = String(t[4] ?? "");
-        const regDate = parseSieDate(t[5] ?? date);
-        const sign = String(t[6] ?? "");
-
-        const yearId = currentYearIdHint || (date ? date.slice(0,4) : "");
-        currentVoucher = {
-          id: crypto.randomUUID(),
-          yearId,
-          series,
-          no,
-          date,
-          text: textV,
-          regDate,
-          sign,
-          lines: []
-        };
-        continue;
-      }
-
-      if (line.startsWith("#TRANS") && currentVoucher){
-        const t = tokenizeSieLine(line);
-        const acc = t[1];
-        if (!acc) continue;
-
-        let idx = 2;
-        // Skip object list token(s) { ... }
-        if (t[idx] && (t[idx] === "{" || String(t[idx]).startsWith("{"))){
-          while (idx < t.length && !(t[idx] === "}" || String(t[idx]).endsWith("}"))) idx++;
-          idx++;
-        }
-        const amount = parseSieAmount(t[idx]); idx++;
-        // date exists in SIE, but we keep voucher date as primary
-        const _dt = parseSieDate(t[idx]); idx++;
-        const txt = t.slice(idx).join(" ");
-
-        currentVoucher.lines.push({
-          account: String(acc),
-          text: txt || currentVoucher.text || "",
-          amount: Math.round(amount * 100) / 100
-        });
-
-        if (!parsed.accounts[String(acc)]){
-          parsed.accounts[String(acc)] = { name: "(konto " + acc + ")", type: guessTypeFromAccountNo(acc) };
-        }
-        continue;
-      }
-    }
-
-    parsed.fiscalYears.sort((a,b)=>a.id.localeCompare(b.id, "sv"));
-
-    // Fallback: if file had no #RAR, derive years from vouchers
-    if (parsed.fiscalYears.length === 0 && parsed.vouchers.length){
-      const set = new Set();
-      for (const v of parsed.vouchers){
-        if (v.date && v.date.length >= 4) set.add(v.date.slice(0,4));
-      }
-      for (const id of set){
-        parsed.fiscalYears.push({ id, start: id + "-01-01", end: id + "-12-31" });
-      }
-      parsed.fiscalYears.sort((a,b)=>a.id.localeCompare(b.id, "sv"));
-    }
-
-    // If yearId on vouchers looks empty, set it based on date
-    for (const v of parsed.vouchers){
-      if (!v.yearId) v.yearId = v.date ? v.date.slice(0,4) : "";
-    }
-
-    return parsed;
-  }
-
-  function mergeParsedSIE(parsed, wipe){
-    const before = { years: state.fiscalYears.length, accounts: Object.keys(state.accounts).length, vouchers: state.vouchers.length };
-
-    if (wipe){
-      state = defaultData();
-      state.accounts = {};
-      state.vouchers = [];
-      state.fiscalYears = [];
-    }
-
-    // Company
-    if (parsed.company?.name && (!state.company.name || state.company.name === "FU-Bookkeeping")) state.company.name = parsed.company.name;
-    if (parsed.company?.orgnr && !state.company.orgnr) state.company.orgnr = parsed.company.orgnr;
-    if (parsed.company?.currency) state.company.currency = parsed.company.currency;
-
-    // Years
-    for (const y of (parsed.fiscalYears || [])){
-      if (!state.fiscalYears.find(z => z.id === y.id)) state.fiscalYears.push({ id:y.id, start:y.start, end:y.end });
-    }
-    state.fiscalYears.sort((a,b)=>a.id.localeCompare(b.id, "sv"));
-
-    // Accounts
-    for (const [acc, a] of Object.entries(parsed.accounts || {})){
-      if (!state.accounts[acc]) state.accounts[acc] = a;
-      else {
-        if (String(state.accounts[acc].name || "").startsWith("(konto") && a.name) state.accounts[acc].name = a.name;
-        if (!state.accounts[acc].type && a.type) state.accounts[acc].type = a.type;
-      }
-    }
-
-    // Vouchers (skip duplicates)
-    const existing = new Set(state.vouchers.map(v => String(v.yearId) + "|" + String(v.series) + "|" + String(v.no) + "|" + String(v.date)));
-    for (const v of (parsed.vouchers || [])){
-      const yearId = v.yearId || yearIdForDate(v.date);
-      v.yearId = yearId;
-      ensureYearExists(yearId);
-
-      const key = String(v.yearId) + "|" + String(v.series) + "|" + String(v.no) + "|" + String(v.date);
-      if (existing.has(key)) continue;
-      state.vouchers.push(v);
-      existing.add(key);
-    }
-
-    // Active year: latest
-    const latest = state.fiscalYears.slice().sort((a,b)=>a.id.localeCompare(b.id, "sv")).at(-1);
-    if (latest) state.activeYearId = latest.id;
-
-    // sort vouchers
-    state.vouchers.sort((a,b)=> (a.yearId+b.series+a.no+a.date).localeCompare(b.yearId+b.series+b.no+b.date, "sv"));
-
-    save();
-
-    const after = { years: state.fiscalYears.length, accounts: Object.keys(state.accounts).length, vouchers: state.vouchers.length };
-    return { before, after };
-  }
-
-  // --- CSV trial balance export ---
-  function exportTrialCsv(yearId){
-    const b = accountBalances(yearId);
-    const rows = Object.keys(state.accounts)
-      .sort((a,b)=>a.localeCompare(b,"sv"))
-      .map(acc => [acc, state.accounts[acc]?.name || "", (b[acc]||0).toFixed(2)])
-      .filter(r => Math.abs(Number(r[2])) > 0.00001);
-
-    const csv = ["Konto;Namn;Saldo"].concat(rows.map(r => r.map(x=>String(x).replaceAll(";", ",")).join(";"))).join("\n") + "\n";
-    downloadText(`saldolista_${yearId}.csv`, csv, "text/csv");
-  }
-
-  
-  // --- SRU (NE) ---
-  function ensureSruDefaults(){
-    if (!state.sru) state.sru = { enabled:false, periodSuffix:"P4", neMappings: [] };
-    if (typeof state.sru.enabled !== "boolean") state.sru.enabled = false;
-    if (!state.sru.periodSuffix) state.sru.periodSuffix = "P4";
-    if (!Array.isArray(state.sru.neMappings)) state.sru.neMappings = [];
-  }
-
-  function renderSRU(){
-    ensureSruDefaults();
-    // sync year select
-    fillYearSelectors();
-    const ys = state.fiscalYears.slice().sort((a,b)=>a.id.localeCompare(b.id,"sv"));
-
-    if (sruYearSelect){
-      const prev = sruYearSelect.value;
-      sruYearSelect.innerHTML = "";
+    if (rptYearSelect){
+      // Build options (reuse fiscal years)
+      const ys = state.fiscalYears.slice().sort((a,b)=>a.id.localeCompare(b.id,"sv"));
+      const prev = rptYearSelect.value;
+      rptYearSelect.innerHTML = "";
       ys.forEach(y=>{
         const opt = document.createElement("option");
         opt.value = y.id;
         opt.textContent = `${y.id} (${y.start} – ${y.end})`;
-        sruYearSelect.appendChild(opt);
+        rptYearSelect.appendChild(opt);
       });
-      sruYearSelect.value = ys.find(y=>y.id===prev)?.id || state.activeYearId || ys[0]?.id || "";
+      rptYearSelect.value = ys.find(y=>y.id===prev)?.id || state.activeYearId || ys[0]?.id || "";
     }
 
-    if (sruPeriodSuffix) sruPeriodSuffix.value = state.sru.periodSuffix || "P4";
-
-    const enabled = !!state.sru.enabled;
-    if (sruLockedBox) sruLockedBox.hidden = enabled;
-    if (sruUnlockedBox) sruUnlockedBox.hidden = !enabled;
-    if (sruLockBadge){
-      sruLockBadge.innerHTML = enabled ? "✅ <b>Aktiv</b> · beta" : "🔒 <b>Låst</b> · beta";
-    }
-
-    renderSruMapTable();
-  }
-
-  function normalizeFilterToken(tok){
-    return String(tok||"").trim();
-  }
-
-  function accountMatchesFilter(acc, filterStr){
-    const a = String(acc||"").trim();
-    if (!a) return false;
-    const parts = String(filterStr||"").split(",").map(normalizeFilterToken).filter(Boolean);
-    if (!parts.length) return false;
-
-    for (const p of parts){
-      // range 3000-3099
-      const mRange = p.match(/^(\d{1,4})\s*-\s*(\d{1,4})$/);
-      if (mRange){
-        const lo = mRange[1].padStart(4,"0");
-        const hi = mRange[2].padStart(4,"0");
-        if (a >= lo && a <= hi) return true;
-        continue;
-      }
-      // wildcard prefix 30*
-      if (p.endsWith("*")){
-        const pre = p.slice(0,-1);
-        if (a.startsWith(pre)) return true;
-        continue;
-      }
-      // exact
-      if (p === a) return true;
-    }
-    return false;
-  }
-
-  function sumForFilter(yearId, filterStr){
-    let sum = 0;
-    for (const v of yearVouchers(yearId)){
-      for (const l of (v.lines||[])){
-        if (accountMatchesFilter(l.account, filterStr)){
-          sum += Number(l.amount)||0;
-        }
-      }
-    }
-    return Math.round(sum*100)/100;
-  }
-
-  function renderSruMapTable(){
-    ensureSruDefaults();
-    if (!sruMapTbody) return;
-    sruMapTbody.innerHTML = "";
-
-    if (!state.sru.neMappings.length){
-      // seed with a few common placeholders (user edits field codes)
-      state.sru.neMappings = [
-        { id: crypto.randomUUID(), code:"", filter:"30*", invert:true, note:"Intäkter (konto 3xxx) – ange rätt fältkod" },
-        { id: crypto.randomUUID(), code:"", filter:"4*", invert:false, note:"Kostnader (konto 4xxx) – ange rätt fältkod" }
-      ];
-    }
-
-    state.sru.neMappings.forEach((m, idx)=>{
-      const tr = document.createElement("tr");
-
-      const tdCode = document.createElement("td");
-      const inpCode = document.createElement("input");
-      inpCode.value = m.code || "";
-      inpCode.placeholder = "t.ex. R1";
-      inpCode.addEventListener("input", ()=>{ m.code = inpCode.value.trim(); });
-      tdCode.appendChild(inpCode);
-
-      const tdFilter = document.createElement("td");
-      const inpFilter = document.createElement("input");
-      inpFilter.value = m.filter || "";
-      inpFilter.placeholder = "t.ex. 3000-3099, 3010";
-      inpFilter.addEventListener("input", ()=>{ m.filter = inpFilter.value; });
-      tdFilter.appendChild(inpFilter);
-
-      const tdSign = document.createElement("td");
-      const sel = document.createElement("select");
-      sel.innerHTML = `
-        <option value="normal">Normal</option>
-        <option value="invert">Invertera</option>
-      `;
-      sel.value = m.invert ? "invert" : "normal";
-      sel.addEventListener("change", ()=>{ m.invert = (sel.value === "invert"); });
-      tdSign.appendChild(sel);
-
-      const tdNote = document.createElement("td");
-      const inpNote = document.createElement("input");
-      inpNote.value = m.note || "";
-      inpNote.placeholder = "Valfritt";
-      inpNote.addEventListener("input", ()=>{ m.note = inpNote.value; });
-      tdNote.appendChild(inpNote);
-
-      const tdX = document.createElement("td");
-      const bx = document.createElement("button");
-      bx.className = "btn danger";
-      bx.textContent = "✕";
-      bx.title = "Ta bort rad";
-      bx.addEventListener("click", ()=>{
-        state.sru.neMappings.splice(idx,1);
-        save();
-        renderSRU();
-      });
-      tdX.appendChild(bx);
-
-      tr.appendChild(tdCode);
-      tr.appendChild(tdFilter);
-      tr.appendChild(tdSign);
-      tr.appendChild(tdNote);
-      tr.appendChild(tdX);
-      sruMapTbody.appendChild(tr);
-    });
-  }
-
-  function validateNeMapping(){
-    ensureSruDefaults();
-    const rows = state.sru.neMappings || [];
-    const okRows = rows.filter(r => (r.code||"").trim() && (r.filter||"").trim());
-    if (!okRows.length) return { ok:false, msg:"Lägg till minst en rad med fältkod + kontofilter." };
-    // check duplicates
-    const seen = new Set();
-    for (const r of okRows){
-      const c = (r.code||"").trim().toUpperCase();
-      if (seen.has(c)) return { ok:false, msg:`Fältkod ${c} finns flera gånger. Slå ihop eller ändra.` };
-      seen.add(c);
-    }
-    return { ok:true, rows: okRows.map(r=>({ ...r, code:(r.code||"").trim().toUpperCase() })) };
-  }
-
-  function exportSRUNE(){
-    ensureSruDefaults();
-    if (!state.sru.enabled) return alert("SRU är låst. Aktivera först.");
-    const yearId = (sruYearSelect && sruYearSelect.value) || state.activeYearId;
-    const periodSuffix = (sruPeriodSuffix?.value || state.sru.periodSuffix || "P4").trim() || "P4";
-    state.sru.periodSuffix = periodSuffix;
-
-    const v = validateNeMapping();
-    if (!v.ok) return alert(v.msg);
-
-    const orgnr = (state.company.orgnr || "").trim();
-    if (!orgnr) return alert("Fyll i Org.nr under Inställningar först (behövs i SRU).");
-
-    // Calculate field values
-    const fields = [];
-    for (const r of v.rows){
-      let val = sumForFilter(yearId, r.filter || "");
-      if (r.invert) val = -val;
-      val = Math.round(val*100)/100;
-      if (Math.abs(val) < 0.00001) continue;
-      fields.push({ code: r.code, value: val });
-    }
-    if (!fields.length) return alert("Alla fält blev 0. Kontrollera att du har verifikationer i året och att kontofiltren matchar.");
-
-    // SRU file content (simple, line-based)
-    const now = new Date();
-    const tsDate = `${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}`;
-    const tsTime = `${String(now.getHours()).padStart(2,"0")}${String(now.getMinutes()).padStart(2,"0")}${String(now.getSeconds()).padStart(2,"0")}`;
-    const ident = `${orgnr.replaceAll("-","")}${tsDate}${tsTime}`;
-
-    const blankettKod = `NE-${yearId}${periodSuffix}`;
-
-    // INFO.SRU (minimal but practical)
-    const info = [
-      "#DATABESKRIVNING_START",
-      "#PRODUKT SRU",
-      `#IDENTITET ${ident}`,
-      `#NAMN ${sieQuote(state.company.name || "")}`,
-      state.company.addr ? `#ADRESS ${sieQuote(state.company.addr)}` : "",
-      (state.company.zip || state.company.city) ? `#POST ${sieQuote((state.company.zip||"").trim())} ${sieQuote((state.company.city||"").trim())}` : "",
-      "#FILNAMN BLANKETTER.SRU",
-      "#DATABESKRIVNING_SLUT",
-      "#FIL_SLUT"
-    ].filter(Boolean).join("\n") + "\n";
-
-    // BLANKETTER.SRU
-    const bl = [];
-    bl.push(`#BLANKETT ${blankettKod}`);
-    bl.push(`#IDENTITET ${orgnr.replaceAll("-","")}`);
-    bl.push(`#NAMN ${sieQuote(state.company.name || "")}`);
-    fields.forEach(f=>{
-      // values as integer? SRU typically uses whole kronor; but some accept decimals. We round to whole kronor for safety.
-      const kronor = Math.round(f.value);
-      bl.push(`#UPPGIFT ${f.code} ${kronor}`);
-    });
-    bl.push("#BLANKETTSLUT");
-    bl.push("#FIL_SLUT");
-
-    const blanketter = bl.join("\n") + "\n";
-
-    downloadText("INFO.SRU", info, "text/plain");
-    downloadText("BLANKETTER.SRU", blanketter, "text/plain");
-    alert("SRU-export skapad (INFO.SRU + BLANKETTER.SRU). OBS: Detta är beta – verifiera mot Skatteverkets validering innan skarp inlämning.");
-  }
-
-
-  // --- Event wiring ---
-  document.getElementById("btnNewVoucher").addEventListener("click", newVoucher);
-  document.getElementById("btnAddLine").addEventListener("click", ()=>{ currentLines.push(makeLine()); renderLines(); updateBalanceBadge(); });
-  document.getElementById("btnClearVoucher").addEventListener("click", ()=>{ if (!confirm("Rensa verifikationen?")) return; newVoucher(); });
-  document.getElementById("btnSaveVoucher").addEventListener("click", saveVoucher);
-  document.getElementById("btnRefresh").addEventListener("click", renderAll);
-  yearSelect.addEventListener("change", ()=>{ state.activeYearId = yearSelect.value; save(); });
-  if (yearPillSelect) yearPillSelect.addEventListener("change", ()=>{ state.activeYearId = yearPillSelect.value; if (yearSelect) yearSelect.value = state.activeYearId; save(); });
-
-  document.getElementById("btnAddAccount").addEventListener("click", ()=>{
-    const no = String(aNo.value||"").trim();
-    const name = String(aName.value||"").trim();
-    const type = aType.value;
-    if (!/^\d{4}$/.test(no)) return alert("Kontonummer ska vara 4 siffror (t.ex. 1930).");
-    if (!name) return alert("Ange kontonamn.");
-    state.accounts[no] = { name, type };
-    aNo.value = ""; aName.value = "";
-    save();
-  });
-  accountSearch.addEventListener("input", renderAccounts);
-  // Customer/Supplier registry events
-  if (btnCustNew) btnCustNew.addEventListener("click", ()=>{ resetCustomerEditor(); renderCustomers(); });
-  if (btnCustSave) btnCustSave.addEventListener("click", saveCustomerFromRegistry);
-  if (btnCustRefresh) btnCustRefresh.addEventListener("click", renderCustomers);
-  if (custSearch) custSearch.addEventListener("input", renderCustomers);
-
-  if (btnSupNew) btnSupNew.addEventListener("click", ()=>{ resetSupplierEditor(); renderSuppliers(); });
-  if (btnSupSave) btnSupSave.addEventListener("click", saveSupplierFromRegistry);
-  if (btnSupRefresh) btnSupRefresh.addEventListener("click", renderSuppliers);
-  if (supSearch) supSearch.addEventListener("input", renderSuppliers);
-
-
-  document.getElementById("btnResetDemo").addEventListener("click", ()=>{
-    if (!confirm("Återställ kontoplanen till demo? (Detta skriver över dina konton.)")) return;
-    state.accounts = demoAccounts();
-    save();
-  });
-
-  const btnFixChars = document.getElementById("btnFixChars");
-  if (btnFixChars) btnFixChars.addEventListener("click", ()=>{
-    // OBS: Den här kan bara rätta "mojibake" (t.ex. Ã¥→å). Om du ser '�' är informationen redan förlorad.
-    const hasReplacement = JSON.stringify(state).includes("�");
-    if (hasReplacement){
-      alert("Jag ser tecken '�' i din data. Det betyder oftast att något har lästs/sparats med fel teckenkodning.\n\nKnappen 'Fixa ÅÄÖ' kan inte återskapa '�' till å/ä/ö (informationen är redan borta), men den kan rätta vanliga fel som Ã¥/Ã¤/Ã¶.\n\nTips: Om detta kom från en SIE-import – importera om filen och testa en annan teckenkodning (UTF-8 / Windows-1252 / IBM437).");
-    }
-    fixSwedishDataInPlace();
-    save();
-    renderAll();
-    alert("Klart! Om text fortfarande visar '�' behöver du importera om/återskapa källan med rätt teckenkodning.");
-  });
-
-  document.getElementById("btnExportJson").addEventListener("click", ()=>{
-    downloadText("backup.json", JSON.stringify(state, null, 2), "application/json");
-  });
-
-  document.getElementById("jsonImport").addEventListener("change", async (e)=>{
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const txt = await file.text();
-    try {
-      const d = JSON.parse(txt);
-      state = d;
-      save();
-      alert("Import klar.");
-    } catch {
-      alert("Kunde inte läsa JSON.");
-    }
-    e.target.value = "";
-  });
-
-  document.getElementById("btnWipe").addEventListener("click", ()=>{
-    if (!confirm("Rensa ALL data? Detta går inte att ångra.")) return;
-    localStorage.removeItem(STORAGE_KEY);
-    state = defaultData();
-    save();
-    newVoucher();
-  });
-
-  // File sync actions
-  if (btnConnectFile) btnConnectFile.addEventListener("click", fsConnectExisting);
-  if (btnCreateFile) btnCreateFile.addEventListener("click", fsCreateNew);
-
-  if (btnSaveToFile) btnSaveToFile.addEventListener("click", async ()=>{
-    try {
-      if (!fsHandle) return;
-      const ok = await fsEnsurePermission(true);
-      if (!ok) return alert("Behörighet nekad.");
-      await fsWriteState();
-    } catch (e){
-      fsLastError = e;
-      updateFsUI();
-      alert("Kunde inte spara till fil.");
-    }
-  });
-
-  if (btnLoadFromFile) btnLoadFromFile.addEventListener("click", async ()=>{
-    try {
-      if (!fsHandle) return;
-      if (!confirm("Läsa in data från filen och ersätta det som finns i appen nu?") ) return;
-      await fsLoadState();
-    } catch (e){
-      fsLastError = e;
-      updateFsUI();
-      alert("Kunde inte läsa in filen.");
-    }
-  });
-
-  if (btnDisconnectFile) btnDisconnectFile.addEventListener("click", async ()=>{
-    await fsDisconnect();
-  });
-
-  if (fsAutosave) fsAutosave.addEventListener("change", ()=>{
-    if (!state.features) state.features = { sruEnabled: false };
-    if (typeof state.features.sruEnabled !== "boolean") state.features.sruEnabled = false;
-    if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
-    state.fileSync.autosave = !!fsAutosave.checked;
-    save();
-  });
-
-  if (fsRequireFile) fsRequireFile.addEventListener("change", ()=>{
-    if (!state.features) state.features = { sruEnabled: false };
-    if (typeof state.features.sruEnabled !== "boolean") state.features.sruEnabled = false;
-    if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
-    state.fileSync.requireFile = !!fsRequireFile.checked;
-    save();
-    updateFsUI();
-  });
-
-  document.getElementById("btnExportSie4").addEventListener("click", ()=> exportSIE4(sieYearSelect.value));
-
-  if (btnImportSie){
-    btnImportSie.addEventListener("click", async ()=>{
-      const file = sieImportFile && sieImportFile.files ? sieImportFile.files[0] : null;
-      if (!file) return alert("Välj en SIE-fil först.");
-      const enc = sieImportEncoding ? sieImportEncoding.value : "utf-8";
-      const wipe = !!(sieImportWipe && sieImportWipe.checked);
-
-      try {
-        const txt = await readFileAsText(file, enc);
-        const parsed = parseSIE(txt);
-        const stats = mergeParsedSIE(parsed, wipe);
-        alert(`Import klar.
-År: ${stats.before.years} → ${stats.after.years}
-Konton: ${stats.before.accounts} → ${stats.after.accounts}
-Verifikationer: ${stats.before.vouchers} → ${stats.after.vouchers}`);
-      } catch (e){
-        console.error(e);
-        const msg = (e && (e.message || e.name)) ? (e.message || e.name) : String(e);
-        const head = (typeof txt === "string") ? txt.slice(0, 200).replace(/\s+/g," ").trim() : "";
-        alert("Kunde inte importera filen.\n\nFel: " + msg + "\n\nFörsta tecken i filen: " + head + "\n\nTips: prova annan teckenkodning (UTF-8 / Windows-1252 / IBM437) och öppna DevTools → Console för detaljer.");
-      }
-
-      if (sieImportFile) sieImportFile.value = "";
-    });
-  }
-  document.getElementById("btnExportTrialCsv").addEventListener("click", ()=> exportTrialCsv(trialYearSelect.value));
-
-  // SRU (NE)
-  if (btnEnableSRU) btnEnableSRU.addEventListener("click", ()=>{
-    ensureSruDefaults();
-    const msg = "Aktivera SRU (beta)?\n\nDetta är en tidig funktion. Du ansvarar för att mappning och filformat stämmer innan inlämning.";
-    if (!confirm(msg)) return;
-    state.sru.enabled = true;
-    save();
-    renderSRU();
-  });
-  if (btnSruAddMap) btnSruAddMap.addEventListener("click", ()=>{
-    ensureSruDefaults();
-    state.sru.neMappings.push({ id: crypto.randomUUID(), code:"", filter:"", invert:false, note:"" });
-    save();
-    renderSRU();
-  });
-  if (btnSruSaveMap) btnSruSaveMap.addEventListener("click", ()=>{
-    ensureSruDefaults();
-    state.sru.periodSuffix = (sruPeriodSuffix?.value || state.sru.periodSuffix || "P4").trim() || "P4";
-    save();
-    alert("NE-mappning sparad.");
-  });
-  if (btnExportSRUNE) btnExportSRUNE.addEventListener("click", exportSRUNE);
-
-
-  
-  function handleSaveSettings(){
-    // Företagsuppgifter
-    state.company.name = (sCompany?.value || "").trim() || "FU-Bookkeeping";
-    state.company.orgnr = (sOrgnr?.value || "").trim();
-    state.company.currency = (sCurrency?.value || "SEK");
-    state.company.defaultSign = (sSign?.value || "").trim();
-
-    // Fakturauppgifter (fälten finns i Settings-DOM)
-    state.company.addr = (sAddr?.value || "").trim();
-    state.company.zip = (sZip?.value || "").trim();
-    state.company.city = (sCity?.value || "").trim();
-    state.company.country = (sCountry?.value || "").trim();
-    state.company.email = (sEmail?.value || "").trim();
-    state.company.phone = (sPhone?.value || "").trim();
-    state.company.web = (sWeb?.value || "").trim();
-    state.company.vat = (sVat?.value || "").trim();
-
-    const payDays = Number(String(sPayDays?.value || "").trim());
-    state.company.payDays = Number.isFinite(payDays) ? payDays : (state.company.payDays ?? 30);
-
-    state.company.bankgiro = (sBg?.value || "").trim();
-    state.company.plusgiro = (sPg?.value || "").trim();
-    state.company.iban = (sIban?.value || "").trim();
-    state.company.swift = (sSwift?.value || "").trim();
-    state.company.invoiceNote = (sInvNote?.value || "").trim();
-    state.company.invoiceFooter = (sInvFooter?.value || "").trim();
-
-    // SRU toggle ligger i state.features
-    if (!state.features) state.features = { sruEnabled: false };
-    state.features.sruEnabled = !!(sSruEnabled && sSruEnabled.checked);
-
-    save();
-    renderSettings();
-    alert("Inställningar sparade.");
-  }
-
-  const _btnSaveSettings = document.getElementById("btnSaveSettings");
-  if (_btnSaveSettings) _btnSaveSettings.addEventListener("click", (e)=>{ e.preventDefault(); handleSaveSettings(); });
-
-  // capture fallback (if something stops propagation)
-  document.addEventListener("click", (e)=>{
-    const b = e.target && e.target.closest ? e.target.closest("#btnSaveSettings") : null;
-    if (!b) return;
-    e.preventDefault();
-    handleSaveSettings();
-  }, true);
-
-
-  // Logo upload (stored as data URL in localStorage)
-  if (sLogo){
-    sLogo.addEventListener("change", ()=>{
-      const f = sLogo.files && sLogo.files[0] ? sLogo.files[0] : null;
-      if (!f) return;
-      if (!String(f.type||"").startsWith("image/")) return alert("Välj en bildfil (PNG/JPG/SVG).");
-      const r = new FileReader();
-      r.onload = ()=>{
-        state.company.logoDataUrl = String(r.result || "");
-        save();
-        renderSettings();
-      };
-      r.onerror = ()=> alert("Kunde inte läsa bilden.");
-      r.readAsDataURL(f);
-      sLogo.value = "";
-    });
-  }
-  if (btnRemoveLogo){
-    btnRemoveLogo.addEventListener("click", ()=>{
-      if (!confirm("Ta bort logotypen?")) return;
-      state.company.logoDataUrl = "";
-      save();
-      renderSettings();
-    });
-  }
-
-  document.getElementById("btnAddYear").addEventListener("click", ()=>{
-    const s = fyStart.value; const e = fyEnd.value;
-    if (!s || !e) return alert("Ange start- och slutdatum.");
-    const id = String(s.slice(0,4));
-    if (state.fiscalYears.some(y=>y.id===id)) return alert("Året finns redan (id = första året i startdatum).");
-    state.fiscalYears.push({ id, start:s, end:e });
-    state.activeYearId = id;
-    save();
-  });
-
-  document.getElementById("btnCarry").addEventListener("click", ()=>{
-    if (!confirm("Skapa ingående balans i 'Till'-året baserat på saldon i 'Från'-året?")) return;
-    carryForwardIB(carryFrom.value, carryTo.value);
-  });
-
-  document.getElementById("btnFillExample").addEventListener("click", ()=>{
-    // Creates the four example vouchers A76-A79 on 2024-12-31
-    const yearId = yearSelect.value || state.activeYearId;
-    const y = getYear(yearId);
-    if (!y) return;
-    const date = `${yearId}-12-31`;
-
-    const examples = [
-      { no:"76", text:"Justering bank", lines:[ {acc:"1930", amt:+5676.65}, {acc:"2013", amt:-5676.65} ] },
-      { no:"77", text:"Justering skattekonto", lines:[ {acc:"1630", amt:+965.00}, {acc:"2013", amt:-965.00} ] },
-      { no:"78", text:"Justering lager", lines:[ {acc:"1460", amt:+29700.00}, {acc:"4960", amt:-29700.00} ] },
-      { no:"79", text:"Årets resultat", lines:[ {acc:"8999", amt:+2310.60}, {acc:"2019", amt:-2310.60} ] },
-    ];
-
-    // Ensure accounts exist
-    for (const ex of examples){
-      for (const l of ex.lines){
-        if (!state.accounts[l.acc]) state.accounts[l.acc] = { name: `(konto ${l.acc})`, type: guessTypeFromAccountNo(l.acc) };
+    // Default range: full FY
+    if (rptFrom && rptTo){
+      const yearId = (rptYearSelect && rptYearSelect.value) ? rptYearSelect.value : state.activeYearId;
+      if (!rptFrom.value || !rptTo.value){
+        rptFrom.value = fiscalYearStart(yearId);
+        rptTo.value = fiscalYearEnd(yearId);
       }
     }
 
-    // Insert
-    examples.forEach(ex => {
-      state.vouchers.push({
-        id: crypto.randomUUID(),
-        yearId,
-        series:"A",
-        no: ex.no,
-        date,
-        text: ex.text,
-        regDate: todayISO(),
-        sign: state.company.defaultSign || "",
-        lines: ex.lines.map(l => ({ account:l.acc, text:ex.text, amount:l.amt }))
-      });
-    });
+    // Keep print button in sync
+    if (btnRptPrint) btnRptPrint.disabled = !lastReportHtml;
+  }
 
-    save();
-    alert("La in A76–A79 som exempel (kontrollera beloppen innan du använder i skarp bokföring)." );
-  });
 
-  // Keep balance badge updated
-  [vDate, vSeries, vNo, vText, vSign].forEach(el => el.addEventListener("input", updateBalanceBadge));
+  function renderLedger(yearId){
+    if (!ledgerTbody || !ledgerAccount) return;
+    const acc = ledgerAccount.value;
+    if (!acc){ ledgerTbody.innerHTML = ""; return; }
 
-// --- Render all ---
-function renderAll(){
-  fillYearSelectors();
-
-  // invoices also need year selector options
-  if (invYearSelect){
-    const prev = invYearSelect.value;
-    invYearSelect.innerHTML = "";
-    state.fiscalYears
+    const vs = yearVouchers(yearId)
       .slice()
-      .sort((a,b)=>a.id.localeCompare(b.id,"sv"))
-      .forEach(y=>{
-        const opt = document.createElement("option");
-        opt.value = y.id;
-        opt.textContent = `${y.id} (${y.start} – ${y.end})`;
-        invYearSelect.appendChild(opt);
-      });
+      .sort((a,b)=> (a.date+a.series+a.no).localeCompare(b.date+b.series+b.no, "sv"));
 
-    invYearSelect.value =
-      state.fiscalYears.find(y=>y.id===prev)?.id || state.activeYearId;
+    const rows = [];
+    vs.forEach(v=>{
+      v.lines.forEach(l=>{
+        if (String(l.account) !== String(acc)) return;
+        rows.push({
+          date: v.date,
+          ver: (v.series||"") + (v.no||""),
+          text: l.text || v.text || "",
+          amt: Number(l.amount)||0
+        });
+      });
+    });
+
+    let run = 0;
+    ledgerTbody.innerHTML = "";
+    rows.forEach(r=>{
+      run = Math.round((run + r.amt)*100)/100;
+      const tr=document.createElement("tr");
+      tr.innerHTML = `
+        <td>${escapeHtml(r.date)}</td>
+        <td>${escapeHtml(r.ver)}</td>
+        <td>${escapeHtml(r.text)}</td>
+        <td class="right">${fmtSEK(r.amt)}</td>
+        <td class="right">${fmtSEK(run)}</td>
+      `;
+      ledgerTbody.appendChild(tr);
+    });
+
+    if (rows.length===0){
+      const tr=document.createElement("tr");
+      tr.innerHTML = `<td colspan="5" class="muted small">Inga transaktioner för valt konto i detta år.</td>`;
+      ledgerTbody.appendChild(tr);
+    }
   }
 
-  renderVoucherList();
-  renderLines();
-  updateBalanceBadge();
 
-  
-    const rep = document.getElementById("tab-reports");
-    const acc = document.getElementById("tab-accounts");
-    const inv = document.getElementById("tab-invoices");
+// --- Report generator wiring ---
+if (btnRptGenerate) btnRptGenerate.addEventListener("click", generateReport);
+if (btnRptPrint) btnRptPrint.addEventListener("click", printLastReport);
+if (btnRptCsv) btnRptCsv.addEventListener("click", ()=> exportLastReport("csv"));
+if (btnRptXls) btnRptXls.addEventListener("click", ()=> exportLastReport("xls"));
+if (btnRptFullYear) btnRptFullYear.addEventListener("click", () => { setRangeFullYear(); });
+if (btnRptThisMonth) btnRptThisMonth.addEventListener("click", () => { setRangeThisMonth(); });
+if (btnRptThisQuarter) btnRptThisQuarter.addEventListener("click", () => { setRangeThisQuarter(); });
 
-  const cus = document.getElementById("tab-customers");
-  const sup = document.getElementById("tab-suppliers");
-
-  if (rep && !rep.hidden) renderReports();
-  if (acc && !acc.hidden) renderAccounts();
-  if (inv && !inv.hidden) renderInvoices();
-  if (cus && !cus.hidden) renderCustomers();
-  if (sup && !sup.hidden) renderSuppliers();
-  const sru = document.getElementById("tab-sru");
-  if (sru && !sru.hidden) renderSru();
+if (rptYearSelect){
+  rptYearSelect.addEventListener("change", () => {
+    setRangeFullYear();
+    lastReportHtml = "";
+    lastReportTitle = "";
+    if (reportOutput) reportOutput.innerHTML = '<div class="muted small">Välj rapport + datumintervall och klicka <b>Generera</b>.</div>';
+    if (btnRptPrint) btnRptPrint.disabled = true;
+    if (btnRptCsv) btnRptCsv.disabled = true;
+    if (btnRptXls) btnRptXls.disabled = true;
+  });
 }
+
 
 // --- Init ---
 fillYearSelectors();
