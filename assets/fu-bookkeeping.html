@@ -1,33 +1,22 @@
 <!doctype html>
+<!--
+  FU-BOOKKEEPING (Mini-bokföring / BAS) – offline i webbläsaren
+
+  Copyright (c) 2026 Innovatio Brutalis
+  All rights reserved.
+
+  License: Proprietary.
+  Permission is NOT granted to use, copy, modify, merge, publish, distribute,
+  sublicense, and/or sell copies of this software or its associated files,
+  except with explicit prior written permission from the copyright holder.
+-->
 <html lang="sv">
 <head>
-  <!-- Proprietary software. All rights reserved. -->
-  <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-LGJK9XKDZB');
-    // Optional: count popup opens explicitly (page_view also fires).
-    gtag('event', 'fu_bookkeeping_open', { page_path: window.location.pathname + window.location.search });
-  </script>
-
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="copyright" content="Innovatio Brutalis">
-  <meta name="license" content="All rights reserved">
-
-  <!-- Open Graph (for LinkedIn etc.) -->
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="FU-Bookkeeping">
-  <meta property="og:locale" content="sv_SE">
-  <meta property="og:title" content="FU-Bookkeeping">
-  <meta property="og:description" content="Bokföring utan abonnemang, utan moln, utan krångel — kör direkt i webbläsaren med lokal lagring.">
-  <meta property="og:image" content="https://www.innovatio-brutalis.se/assets/faktura.jpg">
-
-  <title>FU-Bookkeeping</title>
+  <title>Mini-bokföring (BAS) – offline i webbläsaren</title>
   <style>
+    html{ font-size: clamp(14px, 1.05vw, 16px); }
     :root{ --bg:#0b0f14; --card:#111826; --muted:#94a3b8; --text:#e5e7eb; --line:#223044; --ok:#22c55e; --bad:#ef4444; --accent:#60a5fa; }
     *{ box-sizing:border-box; }
     body{ margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:linear-gradient(180deg,#0b0f14,#070a0f); color:var(--text); }
@@ -49,13 +38,13 @@
     /* Extra safety: ensure nothing overlays the nav row */
     header nav *{ pointer-events:auto !important; }
 
-    .wrap{ max-width:1100px; margin:0 auto; padding:16px; }
+    .wrap{ max-width:1400px; margin:0 auto; padding:clamp(10px, 1.2vw, 16px); }
 
     /* Layout with vertical navigation */
-    .layout{ display:grid; grid-template-columns: 220px 1fr; gap:12px; align-items:start; }
-    .sidebar{ display:grid; gap:8px; padding:12px; border:1px solid var(--line); border-radius:16px; background:rgba(17,24,38,.55); box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+    .layout{ display:grid; grid-template-columns: 200px 1fr; gap:12px; align-items:start;  min-width:0; }
+    .sidebar{ display:grid; gap:8px; padding:12px; border:1px solid var(--line); border-radius:16px; background:rgba(17,24,38,.90); box-shadow: 0 10px 30px rgba(0,0,0,.18); }
     .sidebar .tab{ width:100%; text-align:left; }
-    .content{ min-width:0; }
+    .content{ min-width:0; overflow:hidden; }
 
     @media (max-width: 900px){
       .layout{ grid-template-columns: 1fr; }
@@ -65,14 +54,34 @@
     .row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
     h1{ margin:0; font-size:18px; font-weight:700; }
     .pill{ font-size:12px; color:var(--muted); border:1px solid var(--line); padding:6px 10px; border-radius:999px; }
+    /* Header year dropdown should look like a pill */
+    select.pill{
+      appearance:none;
+      -webkit-appearance:none;
+      -moz-appearance:none;
+      background:rgba(11,15,20,.0);
+      color:var(--muted);
+      cursor:pointer;
+      padding-right:28px;
+      background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+      background-position: calc(100% - 14px) 55%, calc(100% - 9px) 55%;
+      background-size:5px 5px, 5px 5px;
+      background-repeat:no-repeat;
+    }
+    select.pill:focus{
+      outline:none;
+      border-color:rgba(96,165,250,.7);
+      box-shadow:0 0 0 3px rgba(96,165,250,.12);
+    }
+
     nav{ display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
     button, input, select, textarea{ font:inherit; }
     .tab{ background:transparent; color:var(--muted); border:1px solid var(--line); padding:8px 12px; border-radius:10px; cursor:pointer; }
     .tab.active{ color:var(--text); border-color:rgba(96,165,250,.7); box-shadow:0 0 0 3px rgba(96,165,250,.12); }
     main .wrap{ padding-top:18px; }
-    .grid{ display:grid; grid-template-columns: 1fr; gap:12px; }
-    @media (min-width: 980px){ .grid.two{ grid-template-columns: 1fr 1fr; } }
-    .card{ background:rgba(17,24,38,.75); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .grid{ display:grid; grid-template-columns: 1fr; gap:12px; min-width:0; }
+    @media (min-width: 980px){ .grid.two{ grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); } }
+    .card{ isolation:isolate; overflow:hidden; background:rgba(17,24,38,.94); border:1px solid var(--line); border-radius:16px; padding:14px; box-shadow: 0 10px 30px rgba(0,0,0,.25);  min-width:0; overflow:hidden; }
     .card h2{ margin:0 0 10px 0; font-size:14px; color:var(--muted); font-weight:700; letter-spacing:.02em; }
     .muted{ color:var(--muted); }
     .btn{ background:rgba(96,165,250,.15); border:1px solid rgba(96,165,250,.4); color:var(--text); padding:8px 12px; border-radius:12px; cursor:pointer; }
@@ -92,8 +101,8 @@
     .status{ font-size:12px; padding:6px 10px; border-radius:999px; border:1px solid var(--line); }
     .status.ok{ color:var(--ok); border-color:rgba(34,197,94,.35); background:rgba(34,197,94,.08); }
     .status.bad{ color:var(--bad); border-color:rgba(239,68,68,.35); background:rgba(239,68,68,.08); }
-    .list{ display:grid; gap:10px; }
-    .item{ padding:10px; border:1px solid var(--line); border-radius:14px; background:rgba(11,18,32,.6); }
+    .list{ display:grid; gap:12px; }
+    .item{ position:relative; overflow:hidden; padding:10px; border:1px solid var(--line); border-radius:14px; background:rgba(11,18,32,.92); }
     .item .top{ display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
     .item .title{ font-weight:700; }
     .item .meta{ font-size:12px; color:var(--muted); }
@@ -105,14 +114,10 @@
 <header>
   <div class="wrap">
     <div class="row">
-      <h1 id="companyName">FU-Bookkeeping</h1>
-      <span class="pill" id="yearPill">Räkenskapsår: –</span>
+      <h1 id="companyName">Mini-bokföring</h1>
+      <select class="pill" id="yearPillSelect" aria-label="Aktivt räkenskapsår"></select>
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill">Lagring: localStorage (offline)</span>
-      <a class="pill" href="/coding/" aria-label="Tillbaka till Innovatio Brutalis">Tillbaka till sidan</a>
-    </div>
-    <div class="muted small" style="margin-top:10px;">
-      © <span id="copyrightYear"></span> Innovatio Brutalis — FU-Bookkeeping. All rights reserved.
     </div>
   </div>
 </header>
@@ -123,7 +128,9 @@
       <aside class="sidebar" aria-label="Navigation">
         <button type="button" class="tab active" data-tab="vouchers">Verifikationer</button>
         <button type="button" class="tab" data-tab="accounts">Kontoplan</button>
-        <button type="button" class="tab" data-tab="invoices">Fakturor</button>
+                <button type="button" class="tab" data-tab="customers">Kunder</button>
+        <button type="button" class="tab" data-tab="suppliers">Leverantörer</button>
+<button type="button" class="tab" data-tab="invoices">Fakturor</button>
 <button type="button" class="tab" data-tab="export">Import/Export</button>
         <button type="button" class="tab" data-tab="settings">Inställningar</button>
       </aside>
@@ -165,7 +172,7 @@
               </div>
             </div>
 
-            <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.55);">
+            <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
               <div class="row" style="justify-content:space-between; margin-bottom:8px;">
                 <div class="muted small">Rader</div>
                 <div class="row">
@@ -253,6 +260,7 @@
             <div class="row">
               <input id="accountSearch" placeholder="Sök (konto eller namn)" />
               <button class="btn danger" id="btnResetDemo">Återställ demo-kontoplan</button>
+              <button class="btn secondary" id="btnFixChars" title="Försöker rätta vanliga teckenkodningsfel (Ã¥→å osv).">Fixa ÅÄÖ</button>
             </div>
           </div>
           <div style="overflow:auto;">
@@ -321,7 +329,111 @@
       </div>
     </section>
 
-        <!-- FAKTUROR -->
+    <!-- KUNDER -->
+    <section id="tab-customers" hidden>
+      <div class="grid two">
+        <div class="card">
+          <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+            <h2>Kundregister</h2>
+            <div class="row">
+              <button class="btn secondary" id="btnCustNew">Ny</button>
+              <button class="btn" id="btnCustSave">Spara</button>
+            </div>
+          </div>
+
+          <div class="grid" style="gap:10px;">
+            <input type="hidden" id="custEditId" />
+            <div class="field">
+              <label>Namn</label>
+              <input id="custRegName" placeholder="t.ex. Mariano Vozzi" />
+            </div>
+            <div class="field">
+              <label>Adress</label>
+              <input id="custRegAddr" placeholder="Gata, postnr, ort" />
+            </div>
+            <div class="row" style="gap:10px;">
+              <div class="field" style="flex:1; min-width:220px;">
+                <label>E-post (valfritt)</label>
+                <input id="custRegEmail" placeholder="kund@exempel.se" />
+              </div>
+              <div class="field" style="min-width:180px;">
+                <label>Org.nr (valfritt)</label>
+                <input id="custRegOrgnr" placeholder="559999-9999" />
+              </div>
+            </div>
+            <div class="muted small">Tips: kunder används i Fakturor-fliken och sparas i din datafil/backup.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+            <h2>Kunder</h2>
+            <div class="row">
+              <input id="custSearch" placeholder="Sök kund…" />
+              <button class="btn secondary" id="btnCustRefresh">Uppdatera</button>
+            </div>
+          </div>
+          <div id="customersList" class="list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LEVERANTÖRER -->
+    <section id="tab-suppliers" hidden>
+      <div class="grid two">
+        <div class="card">
+          <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+            <h2>Leverantörsregister</h2>
+            <div class="row">
+              <button class="btn secondary" id="btnSupNew">Ny</button>
+              <button class="btn" id="btnSupSave">Spara</button>
+            </div>
+          </div>
+
+          <div class="grid" style="gap:10px;">
+            <input type="hidden" id="supEditId" />
+            <div class="field">
+              <label>Namn</label>
+              <input id="supRegName" placeholder="t.ex. Webhallen AB" />
+            </div>
+            <div class="field">
+              <label>Adress</label>
+              <input id="supRegAddr" placeholder="Gata, postnr, ort" />
+            </div>
+            <div class="row" style="gap:10px;">
+              <div class="field" style="flex:1; min-width:220px;">
+                <label>E-post (valfritt)</label>
+                <input id="supRegEmail" placeholder="leverantor@exempel.se" />
+              </div>
+              <div class="field" style="min-width:180px;">
+                <label>Org.nr (valfritt)</label>
+                <input id="supRegOrgnr" placeholder="559999-9999" />
+              </div>
+            </div>
+            <div class="row" style="gap:10px;">
+              <div class="field" style="flex:1; min-width:220px;">
+                <label>Bankgiro/Plusgiro (valfritt)</label>
+                <input id="supRegPayout" placeholder="BG/PG" />
+              </div>
+            </div>
+            <div class="muted small">Leverantörer är förberett för kommande inköp/leverantörsfakturor.</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="row" style="justify-content:space-between; margin-bottom:10px;">
+            <h2>Leverantörer</h2>
+            <div class="row">
+              <input id="supSearch" placeholder="Sök leverantör…" />
+              <button class="btn secondary" id="btnSupRefresh">Uppdatera</button>
+            </div>
+          </div>
+          <div id="suppliersList" class="list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAKTUROR -->
     <section id="tab-invoices" hidden>
       <div class="grid two">
         <div class="card">
@@ -353,7 +465,7 @@
               </div>
             </div>
 
-            <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.55);">
+            <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
               <div class="row" style="justify-content:space-between; margin-bottom:8px;">
                 <div class="muted small">Kund</div>
                 <button class="btn secondary" id="btnInvPickCustomer">Välj/Lägg till</button>
@@ -361,7 +473,7 @@
               <div id="invCustomerBox" class="muted small">Ingen kund vald.</div>
             </div>
 
-            <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.55);">
+            <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
               <div class="row" style="justify-content:space-between; margin-bottom:8px;">
                 <div class="muted small">Rader</div>
                 <div class="row">
@@ -390,7 +502,7 @@
               </div>
             </div>
 
-            <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.55);">
+            <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
               <div class="row" style="justify-content:space-between;">
                 <div>
                   <div class="muted small">Totalt inkl. moms</div>
@@ -518,7 +630,7 @@
             </select>
             <label class="btn secondary" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
               Välj SIE-fil
-              <input id="sieImportFile" type="file" accept=".se,.sie,.txt,text/plain" hidden />
+              <input id="sieImportFile" type="file" hidden />
             </label>
             <button class="btn" id="btnImportSie">Importera</button>
             <label class="muted small" style="display:flex; align-items:center; gap:8px;">
@@ -562,6 +674,95 @@
                 <input id="sSign" placeholder="t.ex. MA" />
               </div>
             </div>
+            <div style="height:1px; background:rgba(34,48,68,.8); margin:12px 0;"></div>
+            <h2>Fakturauppgifter</h2>
+            <div class="grid" style="gap:10px;">
+              <div class="row" style="gap:10px;">
+                <div class="field" style="flex:1; min-width:260px;">
+                  <label>Adress</label>
+                  <input id="sAddr" placeholder="Gata, nr" />
+                </div>
+                <div class="field" style="min-width:140px;">
+                  <label>Postnr</label>
+                  <input id="sZip" placeholder="123 45" />
+                </div>
+                <div class="field" style="flex:1; min-width:200px;">
+                  <label>Ort</label>
+                  <input id="sCity" placeholder="Stockholm" />
+                </div>
+                <div class="field" style="min-width:180px;">
+                  <label>Land (valfritt)</label>
+                  <input id="sCountry" placeholder="Sverige" />
+                </div>
+              </div>
+
+              <div class="row" style="gap:10px;">
+                <div class="field" style="min-width:220px; flex:1;">
+                  <label>E-post</label>
+                  <input id="sEmail" placeholder="faktura@dittbolag.se" />
+                </div>
+                <div class="field" style="min-width:200px;">
+                  <label>Telefon</label>
+                  <input id="sPhone" placeholder="+46 ..." />
+                </div>
+                <div class="field" style="min-width:220px;">
+                  <label>Webb (valfritt)</label>
+                  <input id="sWeb" placeholder="https://..." />
+                </div>
+              </div>
+
+              <div class="row" style="gap:10px;">
+                <div class="field" style="min-width:220px;">
+                  <label>Momsreg.nr / VAT (valfritt)</label>
+                  <input id="sVat" placeholder="SE559999999901" />
+                </div>
+                <div class="field" style="min-width:160px;">
+                  <label>Betalvillkor (dagar)</label>
+                  <input id="sPayDays" inputmode="numeric" placeholder="30" />
+                </div>
+              </div>
+
+              <div class="row" style="gap:10px; flex-wrap:wrap;">
+                <div class="field" style="min-width:220px;">
+                  <label>Bankgiro (valfritt)</label>
+                  <input id="sBg" placeholder="123-4567" />
+                </div>
+                <div class="field" style="min-width:220px;">
+                  <label>Plusgiro (valfritt)</label>
+                  <input id="sPg" placeholder="123456-7" />
+                </div>
+                <div class="field" style="min-width:260px; flex:1;">
+                  <label>IBAN (valfritt)</label>
+                  <input id="sIban" placeholder="SE..." />
+                </div>
+                <div class="field" style="min-width:180px;">
+                  <label>SWIFT/BIC (valfritt)</label>
+                  <input id="sSwift" placeholder="XXXXSESS" />
+                </div>
+              </div>
+
+              <div class="row" style="gap:10px;">
+                <div class="field" style="flex:1; min-width:260px;">
+                  <label>Notis på faktura (valfritt)</label>
+                  <input id="sInvNote" placeholder="t.ex. Tack för din beställning!" />
+                </div>
+              </div>
+
+              <div class="field">
+                <label>Fakturafot / extra info (valfritt)</label>
+                <textarea id="sInvFooter" placeholder="t.ex. Förseningsränta 8% + referens..."></textarea>
+              </div>
+
+              <div class="row" style="gap:10px; align-items:center; flex-wrap:wrap;">
+                <div class="field" style="min-width:260px;">
+                  <label>Logotyp (valfritt)</label>
+                  <input id="sLogo" type="file" accept="image/*" />
+                </div>
+                <button class="btn secondary" type="button" id="btnRemoveLogo">Ta bort logotyp</button>
+                <div id="logoPreview" class="muted small"></div>
+              </div>
+            </div>
+
             <div class="row" style="justify-content:flex-end;">
               <button class="btn" id="btnSaveSettings">Spara</button>
             </div>
@@ -581,9 +782,15 @@
             </div>
             <button class="btn" id="btnAddYear">Lägg till år</button>
           </div>
-          <div class="row" style="gap:10px; margin-bottom:10px;">
-            <select id="carryFrom"></select>
-            <select id="carryTo"></select>
+          <div class="row" style="gap:10px; margin-bottom:10px; align-items:end;">
+            <div class="field" style="min-width:240px;">
+              <label>IB från (år)</label>
+              <select id="carryFrom"></select>
+            </div>
+            <div class="field" style="min-width:240px;">
+              <label>IB till (år)</label>
+              <select id="carryTo"></select>
+            </div>
             <button class="btn secondary" id="btnCarry">För över IB (balanskonto)</button>
           </div>
           <div class="muted small">För över IB skapar en verifikation på första dagen i ”Till”-året med text “Ingående balans”.</div>
@@ -608,6 +815,15 @@
   </div>
 </main>
 
+<footer style="border-top:1px solid var(--line); background:rgba(11,15,20,.98);">
+  <div class="wrap" style="padding-top:12px; padding-bottom:12px;">
+    <div class="muted small">
+      © 2026 Innovatio Brutalis. All rights reserved. Licens: Proprietär – ingen användning, kopiering,
+      modifiering eller distribution är tillåten utan skriftligt tillstånd.
+    </div>
+  </div>
+</footer>
+
 <script>
 (function(){
  
@@ -618,10 +834,6 @@
   const bootPill = document.getElementById("bootPill");
   const setBoot = (text) => { if (bootPill) bootPill.textContent = text; };
   setBoot("JS: OK");
-
-  const cy = document.getElementById("copyrightYear");
-  if (cy) cy.textContent = String(new Date().getFullYear());
-
   window.addEventListener("error", () => setBoot("JS: fel (konsol)"));
   window.addEventListener("unhandledrejection", () => setBoot("JS: fel (konsol)"));
 
@@ -695,7 +907,7 @@
     const now = new Date();
     const y = now.getFullYear();
     return {
-      company: { name: "Mini-bokföring", orgnr: "", currency: "SEK", defaultSign: "" },
+      company: { name: "Mini-bokföring", orgnr: "", currency: "SEK", defaultSign: "", addr:"", zip:"", city:"", country:"", email:"", phone:"", web:"", vat:"", payDays:30, bankgiro:"", plusgiro:"", iban:"", swift:"", invoiceNote:"", invoiceFooter:"", logoDataUrl:"" },
       fileSync: { autosave: true, requireFile: false },
       fiscalYears: [
         { id: String(y-1), start: `${y-1}-01-01`, end: `${y-1}-12-31` },
@@ -705,6 +917,7 @@
       accounts: demoAccounts(),
       vouchers: [],
       customers: {},
+      suppliers: {},
       invoices: []
     };
   }
@@ -732,12 +945,17 @@
       const d = JSON.parse(raw);
       // very light migration defaults
       if (!d.company) d.company = defaultData().company;
-      if (!d.fileSync) d.fileSync = { autosave: true, requireFile: true };
-      if (typeof d.fileSync.requireFile !== "boolean") d.fileSync.requireFile = true;
+            // company invoice defaults
+      const cdef = defaultData().company;
+      d.company = d.company || {};
+      for (const k of Object.keys(cdef)) if (d.company[k] == null) d.company[k] = cdef[k];
+if (!d.fileSync) d.fileSync = { autosave: true, requireFile: false };
+      if (typeof d.fileSync.requireFile !== "boolean") d.fileSync.requireFile = false;
       if (!d.fiscalYears) d.fiscalYears = defaultData().fiscalYears;
       if (!d.accounts) d.accounts = demoAccounts();
       if (!d.vouchers) d.vouchers = [];
       if (!d.customers) d.customers = {};
+      if (!d.suppliers) d.suppliers = {};
       if (!d.invoices) d.invoices = [];
       if (!d.activeYearId) d.activeYearId = d.fiscalYears[0]?.id ?? String(new Date().getFullYear());
       return d;
@@ -769,7 +987,7 @@
     // Lock core editing actions if user requires a file but none is connected.
     const ids = [
       "btnNewVoucher","btnAddLine","btnClearVoucher","btnSaveVoucher",
-      "btnAddAccount","btnResetDemo",
+      "btnAddAccount",
       "btnAddYear","btnCarry",
       "btnWipe"
     ];
@@ -879,7 +1097,8 @@
     state = d;
     // migration defaults
     if (!state.company) state.company = defaultData().company;
-    if (!state.fileSync) state.fileSync = { autosave: true, requireFile: true };
+        { const cdef = defaultData().company; state.company = state.company || {}; for (const k of Object.keys(cdef)) if (state.company[k] == null) state.company[k] = cdef[k]; }
+if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
     if (typeof state.fileSync.requireFile !== "boolean") state.fileSync.requireFile = true;
 
     save();
@@ -989,14 +1208,16 @@
   const sections = {
     vouchers: document.getElementById("tab-vouchers"),
     accounts: document.getElementById("tab-accounts"),
-    reports: document.getElementById("tab-reports"),
+        customers: document.getElementById("tab-customers"),
+    suppliers: document.getElementById("tab-suppliers"),
+reports: document.getElementById("tab-reports"),
     invoices: document.getElementById("tab-invoices"),
     export: document.getElementById("tab-export"),
     settings: document.getElementById("tab-settings"),
   };
 
   const companyNameEl = document.getElementById("companyName");
-  const yearPillEl = document.getElementById("yearPill");
+  const yearPillSelect = document.getElementById("yearPillSelect");
 
   const yearSelect = document.getElementById("yearSelect");
   const voucherList = document.getElementById("voucherList");
@@ -1045,6 +1266,24 @@
   const sOrgnr = document.getElementById("sOrgnr");
   const sCurrency = document.getElementById("sCurrency");
   const sSign = document.getElementById("sSign");
+  const sAddr = document.getElementById("sAddr");
+  const sZip = document.getElementById("sZip");
+  const sCity = document.getElementById("sCity");
+  const sCountry = document.getElementById("sCountry");
+  const sEmail = document.getElementById("sEmail");
+  const sPhone = document.getElementById("sPhone");
+  const sWeb = document.getElementById("sWeb");
+  const sVat = document.getElementById("sVat");
+  const sPayDays = document.getElementById("sPayDays");
+  const sBg = document.getElementById("sBg");
+  const sPg = document.getElementById("sPg");
+  const sIban = document.getElementById("sIban");
+  const sSwift = document.getElementById("sSwift");
+  const sInvNote = document.getElementById("sInvNote");
+  const sInvFooter = document.getElementById("sInvFooter");
+  const sLogo = document.getElementById("sLogo");
+  const btnRemoveLogo = document.getElementById("btnRemoveLogo");
+  const logoPreview = document.getElementById("logoPreview");
 
   const fyStart = document.getElementById("fyStart");
   const fyEnd = document.getElementById("fyEnd");
@@ -1067,6 +1306,8 @@
 
     if (t === "reports") renderReports();
     if (t === "invoices") renderInvoices();
+    if (t === "customers") renderCustomers();
+    if (t === "suppliers") renderSuppliers();
     if (t === "settings") renderSettings();
     if (t === "accounts") renderAccounts();
   }
@@ -1157,6 +1398,31 @@
   const custAddr = document.getElementById("custAddr");
   const custEmail = document.getElementById("custEmail");
   const custOrgnr = document.getElementById("custOrgnr");
+  // Customer registry (tab)
+  const custEditId = document.getElementById("custEditId");
+  const custRegName = document.getElementById("custRegName");
+  const custRegAddr = document.getElementById("custRegAddr");
+  const custRegEmail = document.getElementById("custRegEmail");
+  const custRegOrgnr = document.getElementById("custRegOrgnr");
+  const custSearch = document.getElementById("custSearch");
+  const customersList = document.getElementById("customersList");
+  const btnCustNew = document.getElementById("btnCustNew");
+  const btnCustSave = document.getElementById("btnCustSave");
+  const btnCustRefresh = document.getElementById("btnCustRefresh");
+
+  // Supplier registry (tab)
+  const supEditId = document.getElementById("supEditId");
+  const supRegName = document.getElementById("supRegName");
+  const supRegAddr = document.getElementById("supRegAddr");
+  const supRegEmail = document.getElementById("supRegEmail");
+  const supRegOrgnr = document.getElementById("supRegOrgnr");
+  const supRegPayout = document.getElementById("supRegPayout");
+  const supSearch = document.getElementById("supSearch");
+  const suppliersList = document.getElementById("suppliersList");
+  const btnSupNew = document.getElementById("btnSupNew");
+  const btnSupSave = document.getElementById("btnSupSave");
+  const btnSupRefresh = document.getElementById("btnSupRefresh");
+
 
   let editingInvoiceId = null;
   let invCustomerId = null;
@@ -1182,7 +1448,7 @@
     editingInvoiceId = null;
     invCustomerId = null;
     invDate.value = todayISO();
-    invDue.value = addDays(invDate.value, 30);
+    invDue.value = addDays(invDate.value, (state.company.payDays||30));
     invNo.value = "";
     invRef.value = "";
     invLines = [ { kind:"item", desc:"", qty:"1", price:"", vat:"25" } ];
@@ -1314,7 +1580,7 @@
   function saveInvoice(){
     const yearId = invoiceYearId();
     const date = invDate.value || todayISO();
-    const due = invDue.value || addDays(date, 30);
+    const due = invDue.value || addDays(date, (state.company.payDays||30));
     const no = (invNo.value || "").trim() || nextInvoiceNo(yearId);
     const ref = clampText(invRef.value || "");
 
@@ -1463,25 +1729,39 @@
     const html = `<!doctype html><html><head><meta charset="utf-8" />
       <title>Faktura ${escapeHtml(inv.no)}</title>
       <style>
-        body{ font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; padding:24px; }
+        body{ font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; padding:24px; color:#111; }
         h1{ margin:0 0 8px 0; }
         .muted{ color:#555; }
-        .top{ display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; }
+        .top{ display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+        .seller{ text-align:right; min-width:260px; }
+        .logo{ max-height:72px; max-width:260px; object-fit:contain; }
+        .box{ border:1px solid #ddd; border-radius:12px; padding:12px; background:#fafafa; }
         table{ width:100%; border-collapse:collapse; margin-top:16px; }
         th,td{ border-bottom:1px solid #ddd; padding:8px 6px; }
         th{ text-align:left; }
         .sum{ margin-top:12px; display:flex; justify-content:flex-end; }
-        .sum div{ min-width:260px; }
+        .sum div{ min-width:300px; }
+        .paygrid{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:14px; }
+        @media (max-width: 700px){ .paygrid{ grid-template-columns: 1fr; } .seller{ text-align:left; } }
+        .kv{ display:flex; justify-content:space-between; gap:12px; }
+        .footer{ margin-top:18px; font-size:12px; color:#555; white-space:pre-wrap; }
       </style></head><body>
       <div class="top">
         <div>
+          ${state.company.logoDataUrl?`<img class="logo" alt="Logotyp" src="${state.company.logoDataUrl}">`:""}
           <h1>Faktura #${escapeHtml(inv.no)}</h1>
           <div class="muted">Fakturadatum: ${escapeHtml(inv.date)} · Förfallodatum: ${escapeHtml(inv.due)}</div>
           ${inv.ref?`<div class="muted">Referens: ${escapeHtml(inv.ref)}</div>`:""}
+          ${state.company.invoiceNote?`<div class="muted" style="margin-top:6px;">${escapeHtml(state.company.invoiceNote)}</div>`:""}
         </div>
-        <div>
+        <div class="seller">
           <div style="font-weight:800;">${escapeHtml(state.company.name||"")}</div>
           ${state.company.orgnr?`<div class="muted">Org.nr: ${escapeHtml(state.company.orgnr)}</div>`:""}
+          ${state.company.vat?`<div class="muted">Momsreg.nr: ${escapeHtml(state.company.vat)}</div>`:""}
+          ${[state.company.addr, [state.company.zip, state.company.city].filter(Boolean).join(" "), state.company.country].filter(x=>x&&String(x).trim()).map(x=>`<div class="muted">${escapeHtml(x)}</div>`).join("")}
+          ${state.company.email?`<div class="muted">${escapeHtml(state.company.email)}</div>`:""}
+          ${state.company.phone?`<div class="muted">${escapeHtml(state.company.phone)}</div>`:""}
+          ${state.company.web?`<div class="muted">${escapeHtml(state.company.web)}</div>`:""}
         </div>
       </div>
 
@@ -1489,6 +1769,8 @@
         <div class="muted">Kund</div>
         <div style="font-weight:800;">${escapeHtml(c.name||"")}</div>
         <div class="muted">${escapeHtml(c.addr||"")}</div>
+        ${c.orgnr?`<div class="muted">Org.nr: ${escapeHtml(c.orgnr)}</div>`:""}
+        ${c.email?`<div class="muted">${escapeHtml(c.email)}</div>`:""}
       </div>
 
       <table>
@@ -1497,10 +1779,29 @@
       </table>
 
       <div class="sum"><div>
-        <div style="display:flex; justify-content:space-between;"><span>Summa exkl. moms</span><span>${fmtSEK(tot.net)} ${escapeHtml(state.company.currency||"SEK")}</span></div>
-        <div style="display:flex; justify-content:space-between;"><span>Moms</span><span>${fmtSEK(tot.vat)} ${escapeHtml(state.company.currency||"SEK")}</span></div>
-        <div style="display:flex; justify-content:space-between; font-weight:900; font-size:18px;"><span>Att betala</span><span>${fmtSEK(tot.gross)} ${escapeHtml(state.company.currency||"SEK")}</span></div>
+        <div class="kv"><span>Summa exkl. moms</span><span>${fmtSEK(tot.net)} ${escapeHtml(state.company.currency||"SEK")}</span></div>
+        <div class="kv"><span>Moms</span><span>${fmtSEK(tot.vat)} ${escapeHtml(state.company.currency||"SEK")}</span></div>
+        <div class="kv" style="font-weight:900; font-size:18px;"><span>Att betala</span><span>${fmtSEK(tot.gross)} ${escapeHtml(state.company.currency||"SEK")}</span></div>
       </div></div>
+
+      <div class="paygrid">
+        <div class="box">
+          <div style="font-weight:800; margin-bottom:6px;">Betalningsuppgifter</div>
+          ${state.company.bankgiro?`<div class="kv"><span>Bankgiro</span><span>${escapeHtml(state.company.bankgiro)}</span></div>`:""}
+          ${state.company.plusgiro?`<div class="kv"><span>Plusgiro</span><span>${escapeHtml(state.company.plusgiro)}</span></div>`:""}
+          ${state.company.iban?`<div class="kv"><span>IBAN</span><span>${escapeHtml(state.company.iban)}</span></div>`:""}
+          ${state.company.swift?`<div class="kv"><span>SWIFT/BIC</span><span>${escapeHtml(state.company.swift)}</span></div>`:""}
+          <div class="kv"><span>Referens/OCR</span><span>${escapeHtml(inv.no)}</span></div>
+        </div>
+        <div class="box">
+          <div style="font-weight:800; margin-bottom:6px;">Villkor</div>
+          <div class="kv"><span>Förfallodatum</span><span>${escapeHtml(inv.due)}</span></div>
+          <div class="kv"><span>Belopp</span><span>${fmtSEK(tot.gross)} ${escapeHtml(state.company.currency||"SEK")}</span></div>
+          ${state.company.payDays?`<div class="muted" style="margin-top:6px;">Betalvillkor: ${escapeHtml(String(state.company.payDays))} dagar</div>`:""}
+        </div>
+      </div>
+
+      ${state.company.invoiceFooter?`<div class="footer">${escapeHtml(state.company.invoiceFooter)}</div>`:""}
 
       <script>window.onload=()=>window.print();<\/script>
 
@@ -1637,6 +1938,196 @@
     updateInvoiceTotals();
     closeCustomerDialog();
   }
+  // --- Customer registry (tab) ---
+  function resetCustomerEditor(){
+    if (custEditId) custEditId.value = "";
+    if (custRegName) custRegName.value = "";
+    if (custRegAddr) custRegAddr.value = "";
+    if (custRegEmail) custRegEmail.value = "";
+    if (custRegOrgnr) custRegOrgnr.value = "";
+  }
+
+  function loadCustomerToEditor(id){
+    const c = state.customers?.[id];
+    if (!c) return;
+    if (custEditId) custEditId.value = id;
+    if (custRegName) custRegName.value = c.name || "";
+    if (custRegAddr) custRegAddr.value = c.addr || "";
+    if (custRegEmail) custRegEmail.value = c.email || "";
+    if (custRegOrgnr) custRegOrgnr.value = c.orgnr || "";
+  }
+
+  function saveCustomerFromRegistry(){
+    const name = (custRegName?.value || "").trim();
+    if (!name) return alert("Ange kundnamn.");
+    const c = {
+      name,
+      addr: (custRegAddr?.value || "").trim(),
+      email: (custRegEmail?.value || "").trim(),
+      orgnr: (custRegOrgnr?.value || "").trim()
+    };
+    const id = (custEditId?.value || "").trim() || crypto.randomUUID();
+    state.customers = state.customers || {};
+    state.customers[id] = c;
+    save();
+    // keep invoice editor in sync if it was the same customer
+    if (invCustomerId === id) renderInvoiceCustomer();
+    updateInvoiceTotals();
+    renderCustomers();
+    loadCustomerToEditor(id);
+  }
+
+  function deleteCustomer(id){
+    const used = (state.invoices||[]).some(inv => inv.customerId === id);
+    const msg = used
+      ? "Kunden används i minst en faktura. Ta bort ändå? (Fakturor kommer visa '(kund)')"
+      : "Ta bort kunden?";
+    if (!confirm(msg)) return;
+
+    delete state.customers[id];
+    if (invCustomerId === id) invCustomerId = null;
+    save();
+    renderCustomers();
+    renderInvoiceCustomer();
+    updateInvoiceTotals();
+    resetCustomerEditor();
+  }
+
+  function renderCustomers(){
+    if (!customersList) return;
+    const q = (custSearch?.value || "").trim().toLowerCase();
+    const keys = Object.keys(state.customers||{})
+      .sort((a,b)=> (state.customers[a]?.name||"").localeCompare(state.customers[b]?.name||"", "sv"));
+
+    customersList.innerHTML = "";
+    if (!keys.length){
+      customersList.innerHTML = `<div class="muted small">Inga kunder sparade än.</div>`;
+      return;
+    }
+
+    keys.forEach(id=>{
+      const c = state.customers[id];
+      const hay = `${c.name||""} ${c.addr||""} ${c.email||""} ${c.orgnr||""}`.toLowerCase();
+      if (q && !hay.includes(q)) return;
+
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div class="top">
+          <div>
+            <div class="title">${escapeHtml(c.name||"(namn)")}</div>
+            <div class="meta">${escapeHtml(c.addr||"")}</div>
+            <div class="meta">${escapeHtml(c.email||"")}${c.orgnr?(" · "+escapeHtml(c.orgnr)):""}</div>
+          </div>
+          <div class="row">
+            <button class="btn secondary" data-act="edit" data-id="${id}">Redigera</button>
+            <button class="btn danger" data-act="del" data-id="${id}">Ta bort</button>
+          </div>
+        </div>
+      `;
+      div.addEventListener("click", (e)=>{
+        const b = e.target.closest("button");
+        if (!b) return;
+        const act = b.dataset.act;
+        const cid = b.dataset.id;
+        if (act==="edit"){ loadCustomerToEditor(cid); }
+        if (act==="del"){ deleteCustomer(cid); }
+      });
+      customersList.appendChild(div);
+    });
+  }
+
+  // --- Supplier registry (tab) ---
+  function resetSupplierEditor(){
+    if (supEditId) supEditId.value = "";
+    if (supRegName) supRegName.value = "";
+    if (supRegAddr) supRegAddr.value = "";
+    if (supRegEmail) supRegEmail.value = "";
+    if (supRegOrgnr) supRegOrgnr.value = "";
+    if (supRegPayout) supRegPayout.value = "";
+  }
+
+  function loadSupplierToEditor(id){
+    const s = state.suppliers?.[id];
+    if (!s) return;
+    if (supEditId) supEditId.value = id;
+    if (supRegName) supRegName.value = s.name || "";
+    if (supRegAddr) supRegAddr.value = s.addr || "";
+    if (supRegEmail) supRegEmail.value = s.email || "";
+    if (supRegOrgnr) supRegOrgnr.value = s.orgnr || "";
+    if (supRegPayout) supRegPayout.value = s.payout || "";
+  }
+
+  function saveSupplierFromRegistry(){
+    const name = (supRegName?.value || "").trim();
+    if (!name) return alert("Ange leverantörsnamn.");
+    const s = {
+      name,
+      addr: (supRegAddr?.value || "").trim(),
+      email: (supRegEmail?.value || "").trim(),
+      orgnr: (supRegOrgnr?.value || "").trim(),
+      payout: (supRegPayout?.value || "").trim()
+    };
+    const id = (supEditId?.value || "").trim() || crypto.randomUUID();
+    state.suppliers = state.suppliers || {};
+    state.suppliers[id] = s;
+    save();
+    renderSuppliers();
+    loadSupplierToEditor(id);
+  }
+
+  function deleteSupplier(id){
+    if (!confirm("Ta bort leverantören?")) return;
+    delete state.suppliers[id];
+    save();
+    renderSuppliers();
+    resetSupplierEditor();
+  }
+
+  function renderSuppliers(){
+    if (!suppliersList) return;
+    const q = (supSearch?.value || "").trim().toLowerCase();
+    const keys = Object.keys(state.suppliers||{})
+      .sort((a,b)=> (state.suppliers[a]?.name||"").localeCompare(state.suppliers[b]?.name||"", "sv"));
+
+    suppliersList.innerHTML = "";
+    if (!keys.length){
+      suppliersList.innerHTML = `<div class="muted small">Inga leverantörer sparade än.</div>`;
+      return;
+    }
+
+    keys.forEach(id=>{
+      const s = state.suppliers[id];
+      const hay = `${s.name||""} ${s.addr||""} ${s.email||""} ${s.orgnr||""} ${s.payout||""}`.toLowerCase();
+      if (q && !hay.includes(q)) return;
+
+      const div = document.createElement("div");
+      div.className = "item";
+      div.innerHTML = `
+        <div class="top">
+          <div>
+            <div class="title">${escapeHtml(s.name||"(namn)")}</div>
+            <div class="meta">${escapeHtml(s.addr||"")}</div>
+            <div class="meta">${escapeHtml(s.email||"")}${s.orgnr?(" · "+escapeHtml(s.orgnr)):""}${s.payout?(" · "+escapeHtml(s.payout)):""}</div>
+          </div>
+          <div class="row">
+            <button class="btn secondary" data-act="edit" data-id="${id}">Redigera</button>
+            <button class="btn danger" data-act="del" data-id="${id}">Ta bort</button>
+          </div>
+        </div>
+      `;
+      div.addEventListener("click", (e)=>{
+        const b = e.target.closest("button");
+        if (!b) return;
+        const act = b.dataset.act;
+        const sid = b.dataset.id;
+        if (act==="edit"){ loadSupplierToEditor(sid); }
+        if (act==="del"){ deleteSupplier(sid); }
+      });
+      suppliersList.appendChild(div);
+    });
+  }
+
 
   function wireInvoiceEvents(){
     if (btnInvNew) btnInvNew.addEventListener("click", newInvoice);
@@ -1649,7 +2140,7 @@
     if (btnInvPrint) btnInvPrint.addEventListener("click", ()=>{
       // print current editor as a "draft" by saving temporarily in memory
       const tmpId = editingInvoiceId || "__draft__";
-      const tmp = { id: tmpId, yearId: invoiceYearId(), no: (invNo.value||"").trim()||"Utkast", date: invDate.value||todayISO(), due: invDue.value||addDays(invDate.value||todayISO(),30), customerId: invCustomerId, ref: invRef.value||"", lines: invLines.map(l=>({kind:l.kind, desc:l.desc||"", qty:parseMoney(l.qty), price:parseMoney(l.price), vat:parseMoney(l.vat)})) };
+      const tmp = { id: tmpId, yearId: invoiceYearId(), no: (invNo.value||"").trim()||"Utkast", date: invDate.value||todayISO(), due: invDue.value||addDays(invDate.value||todayISO(), (state.company.payDays||30)), customerId: invCustomerId, ref: invRef.value||"", lines: invLines.map(l=>({kind:l.kind, desc:l.desc||"", qty:parseMoney(l.qty), price:parseMoney(l.price), vat:parseMoney(l.vat)})) };
       // temporarily render without storing
       const c = state.customers?.[tmp.customerId];
       if (!c) return alert("Välj kund först.");
@@ -2066,6 +2557,34 @@
     sCurrency.value = state.company.currency || "SEK";
     sSign.value = state.company.defaultSign || "";
 
+    if (sAddr) sAddr.value = state.company.addr || "";
+    if (sZip) sZip.value = state.company.zip || "";
+    if (sCity) sCity.value = state.company.city || "";
+    if (sCountry) sCountry.value = state.company.country || "";
+    if (sEmail) sEmail.value = state.company.email || "";
+    if (sPhone) sPhone.value = state.company.phone || "";
+    if (sWeb) sWeb.value = state.company.web || "";
+    if (sVat) sVat.value = state.company.vat || "";
+    if (sPayDays) sPayDays.value = String(state.company.payDays ?? 30);
+    if (sBg) sBg.value = state.company.bankgiro || "";
+    if (sPg) sPg.value = state.company.plusgiro || "";
+    if (sIban) sIban.value = state.company.iban || "";
+    if (sSwift) sSwift.value = state.company.swift || "";
+    if (sInvNote) sInvNote.value = state.company.invoiceNote || "";
+    if (sInvFooter) sInvFooter.value = state.company.invoiceFooter || "";
+    if (logoPreview){
+      const has = !!(state.company.logoDataUrl && String(state.company.logoDataUrl).startsWith("data:"));
+      logoPreview.innerHTML = has ? `<img alt="Logo" src="${state.company.logoDataUrl}" style="max-height:44px; max-width:220px; object-fit:contain; border:1px solid rgba(34,48,68,.8); border-radius:10px; padding:6px; background:rgba(11,18,32,.4);">` : `<span class="muted small">Ingen logotyp vald.</span>`;
+    }
+    const lp = document.getElementById("logoPreview");
+    if (lp){
+      if (state.company.logoDataUrl){
+        lp.innerHTML = `<img alt="logo" src="${state.company.logoDataUrl}" style="max-height:40px; max-width:180px; object-fit:contain; border:1px solid rgba(34,48,68,.8); border-radius:10px; padding:6px; background:rgba(11,18,32,.6);" />`;
+      } else {
+        lp.textContent = "Ingen logotyp vald.";
+      }
+    }
+
     yearsTbody.innerHTML = "";
     state.fiscalYears.forEach(y => {
       const tr = document.createElement("tr");
@@ -2106,8 +2625,19 @@
     });
 
     companyNameEl.textContent = state.company.name || "Mini-bokföring";
-    const y = getYear(state.activeYearId);
-    yearPillEl.textContent = y ? `Räkenskapsår: ${y.id} (${y.start} – ${y.end})` : `Räkenskapsår: ${state.activeYearId}`;
+
+    // Header dropdown (active fiscal year)
+    if (yearPillSelect){
+      const prev = yearPillSelect.value;
+      yearPillSelect.innerHTML = "";
+      ys.forEach(y => {
+        const opt = document.createElement("option");
+        opt.value = y.id;
+        opt.textContent = `Räkenskapsår: ${y.id} (${y.start} – ${y.end})`;
+        yearPillSelect.appendChild(opt);
+      });
+      yearPillSelect.value = ys.find(y=>y.id===state.activeYearId)?.id || ys.find(y=>y.id===prev)?.id || ys[0]?.id || "";
+    }
   }
 
   // --- Carry forward IB ---
@@ -2170,6 +2700,71 @@
   function escapeHtml(s){
     return String(s ?? "").replace(/[&<>\"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
   }
+
+
+
+  // --- ÅÄÖ/teckenkodning: försök rätta vanliga "mojibake" ---
+  function fixSwedishText(s){
+    if (s == null) return s;
+    let t = String(s);
+
+    // Vanliga fel när UTF-8 tolkas som ISO-8859-1/Windows-1252
+    const map = {
+      "Ã¥":"å","Ã¤":"ä","Ã¶":"ö","Ã…":"Å","Ã„":"Ä","Ã–":"Ö",
+      "â€“":"–","â€”":"—","â€":"”","â€œ":"“","â€˜":"‘","â€™":"’",
+      "Â ":" ",
+      "Â":""
+    };
+    for (const [bad, good] of Object.entries(map)){
+      if (t.includes(bad)) t = t.split(bad).join(good);
+    }
+    return t;
+  }
+
+  function fixSwedishDataInPlace(){
+    // Accounts
+    if (state.accounts){
+      for (const [acc, obj] of Object.entries(state.accounts)){
+        if (obj && typeof obj.name === "string") obj.name = fixSwedishText(obj.name);
+      }
+    }
+    // Customers
+    if (state.customers){
+      for (const [id, c] of Object.entries(state.customers)){
+        if (!c) continue;
+        if (typeof c.name === "string") c.name = fixSwedishText(c.name);
+        if (typeof c.addr === "string") c.addr = fixSwedishText(c.addr);
+        if (typeof c.email === "string") c.email = fixSwedishText(c.email);
+        if (typeof c.orgnr === "string") c.orgnr = fixSwedishText(c.orgnr);
+      }
+    }
+    // Vouchers texts
+    if (Array.isArray(state.vouchers)){
+      for (const v of state.vouchers){
+        if (!v) continue;
+        if (typeof v.text === "string") v.text = fixSwedishText(v.text);
+        if (typeof v.sign === "string") v.sign = fixSwedishText(v.sign);
+        if (Array.isArray(v.lines)){
+          for (const l of v.lines){
+            if (l && typeof l.text === "string") l.text = fixSwedishText(l.text);
+          }
+        }
+      }
+    }
+    // Invoices texts
+    if (Array.isArray(state.invoices)){
+      for (const inv of state.invoices){
+        if (!inv) continue;
+        if (typeof inv.ref === "string") inv.ref = fixSwedishText(inv.ref);
+        if (Array.isArray(inv.lines)){
+          for (const l of inv.lines){
+            if (l && typeof l.desc === "string") l.desc = fixSwedishText(l.desc);
+          }
+        }
+      }
+    }
+  }
+
 
   // --- SIE4 Export (simplified but compliant-ish) ---
   function sieQuote(s){
@@ -2311,9 +2906,31 @@
 
   async function readFileAsText(file, encoding){
     const buf = await file.arrayBuffer();
-    const enc = (encoding || "utf-8").toLowerCase();
-    try { return new TextDecoder(enc, {fatal:false}).decode(buf); }
-    catch { return new TextDecoder("utf-8", {fatal:false}).decode(buf); }
+    const raw = (encoding || "utf-8").toLowerCase();
+
+    // Some browsers differ in TextDecoder labels (especially for CP437/PC8).
+    const candidates = [];
+    if (raw === "ibm437" || raw === "cp437" || raw === "pc8"){
+      candidates.push("ibm437", "cp437", "ibm-437");
+    } else if (raw === "windows-1252" || raw === "cp1252"){
+      candidates.push("windows-1252", "cp1252");
+    } else {
+      candidates.push(raw);
+    }
+    // Always fall back to UTF-8 last
+    candidates.push("utf-8");
+
+    let lastErr = null;
+    for (const enc of candidates){
+      try {
+        return new TextDecoder(enc, { fatal:false }).decode(buf);
+      } catch (e){
+        lastErr = e;
+      }
+    }
+    // Very unlikely, but keep a safe fallback
+    if (lastErr) throw lastErr;
+    return new TextDecoder("utf-8", { fatal:false }).decode(buf);
   }
 
   function normalizeNewlines(text){
@@ -2550,6 +3167,7 @@
   document.getElementById("btnSaveVoucher").addEventListener("click", saveVoucher);
   document.getElementById("btnRefresh").addEventListener("click", renderAll);
   yearSelect.addEventListener("change", ()=>{ state.activeYearId = yearSelect.value; save(); });
+  if (yearPillSelect) yearPillSelect.addEventListener("change", ()=>{ state.activeYearId = yearPillSelect.value; if (yearSelect) yearSelect.value = state.activeYearId; save(); });
 
   document.getElementById("btnAddAccount").addEventListener("click", ()=>{
     const no = String(aNo.value||"").trim();
@@ -2562,11 +3180,35 @@
     save();
   });
   accountSearch.addEventListener("input", renderAccounts);
+  // Customer/Supplier registry events
+  if (btnCustNew) btnCustNew.addEventListener("click", ()=>{ resetCustomerEditor(); renderCustomers(); });
+  if (btnCustSave) btnCustSave.addEventListener("click", saveCustomerFromRegistry);
+  if (btnCustRefresh) btnCustRefresh.addEventListener("click", renderCustomers);
+  if (custSearch) custSearch.addEventListener("input", renderCustomers);
+
+  if (btnSupNew) btnSupNew.addEventListener("click", ()=>{ resetSupplierEditor(); renderSuppliers(); });
+  if (btnSupSave) btnSupSave.addEventListener("click", saveSupplierFromRegistry);
+  if (btnSupRefresh) btnSupRefresh.addEventListener("click", renderSuppliers);
+  if (supSearch) supSearch.addEventListener("input", renderSuppliers);
+
 
   document.getElementById("btnResetDemo").addEventListener("click", ()=>{
     if (!confirm("Återställ kontoplanen till demo? (Detta skriver över dina konton.)")) return;
     state.accounts = demoAccounts();
     save();
+  });
+
+  const btnFixChars = document.getElementById("btnFixChars");
+  if (btnFixChars) btnFixChars.addEventListener("click", ()=>{
+    // OBS: Den här kan bara rätta "mojibake" (t.ex. Ã¥→å). Om du ser '�' är informationen redan förlorad.
+    const hasReplacement = JSON.stringify(state).includes("�");
+    if (hasReplacement){
+      alert("Jag ser tecken '�' i din data. Det betyder oftast att något har lästs/sparats med fel teckenkodning.\n\nKnappen 'Fixa ÅÄÖ' kan inte återskapa '�' till å/ä/ö (informationen är redan borta), men den kan rätta vanliga fel som Ã¥/Ã¤/Ã¶.\n\nTips: Om detta kom från en SIE-import – importera om filen och testa en annan teckenkodning (UTF-8 / Windows-1252 / IBM437).");
+    }
+    fixSwedishDataInPlace();
+    save();
+    renderAll();
+    alert("Klart! Om text fortfarande visar '�' behöver du importera om/återskapa källan med rätt teckenkodning.");
   });
 
   document.getElementById("btnExportJson").addEventListener("click", ()=>{
@@ -2630,13 +3272,13 @@
   });
 
   if (fsAutosave) fsAutosave.addEventListener("change", ()=>{
-    if (!state.fileSync) state.fileSync = { autosave: true, requireFile: true };
+    if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
     state.fileSync.autosave = !!fsAutosave.checked;
     save();
   });
 
   if (fsRequireFile) fsRequireFile.addEventListener("change", ()=>{
-    if (!state.fileSync) state.fileSync = { autosave: true, requireFile: true };
+    if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
     state.fileSync.requireFile = !!fsRequireFile.checked;
     save();
     updateFsUI();
@@ -2661,7 +3303,9 @@ Konton: ${stats.before.accounts} → ${stats.after.accounts}
 Verifikationer: ${stats.before.vouchers} → ${stats.after.vouchers}`);
       } catch (e){
         console.error(e);
-        alert("Kunde inte importera filen. Testa en annan teckenkodning (UTF-8 / Windows-1252 / IBM437)." );
+        const msg = (e && (e.message || e.name)) ? (e.message || e.name) : String(e);
+        const head = (typeof txt === "string") ? txt.slice(0, 200).replace(/\s+/g," ").trim() : "";
+        alert("Kunde inte importera filen.\n\nFel: " + msg + "\n\nFörsta tecken i filen: " + head + "\n\nTips: prova annan teckenkodning (UTF-8 / Windows-1252 / IBM437) och öppna DevTools → Console för detaljer.");
       }
 
       if (sieImportFile) sieImportFile.value = "";
@@ -2669,13 +3313,69 @@ Verifikationer: ${stats.before.vouchers} → ${stats.after.vouchers}`);
   }
   document.getElementById("btnExportTrialCsv").addEventListener("click", ()=> exportTrialCsv(trialYearSelect.value));
 
-  document.getElementById("btnSaveSettings").addEventListener("click", ()=>{
-    state.company.name = sCompany.value.trim() || "Mini-bokföring";
-    state.company.orgnr = sOrgnr.value.trim();
-    state.company.currency = sCurrency.value;
-    state.company.defaultSign = sSign.value.trim();
+  
+  function handleSaveSettings(){
+    // Företagsuppgifter
+    state.company.name = (sCompany?.value || "").trim() || "Mini-bokföring";
+    state.company.orgnr = (sOrgnr?.value || "").trim();
+    state.company.currency = (sCurrency?.value || "SEK");
+    state.company.defaultSign = (sSign?.value || "").trim();
+
+    // Fakturauppgifter (om fälten finns i DOM)
+    state.company.address = (sAddress?.value || "").trim();
+    state.company.contactEmail = (sEmail?.value || "").trim();
+    state.company.contactPhone = (sPhone?.value || "").trim();
+
+    state.company.paymentMethod = (sPayMethod?.value || "").trim(); // t.ex. Bankgiro/Plusgiro/IBAN
+    state.company.paymentAccount = (sPayAccount?.value || "").trim(); // nummer
+    state.company.paymentReferencePrefix = (sPayRefPrefix?.value || "").trim(); // t.ex. OCR-prefix
+    state.company.paymentTermsDays = Number.isFinite(Number(sPayTerms?.value)) ? Number(sPayTerms.value) : (state.company.paymentTermsDays || 30);
+
+    // Logo-data sparas redan när man väljer fil, men behåll om den finns
+    if (typeof state.company.logoData !== "string") state.company.logoData = state.company.logoData || "";
+
     save();
-  });
+    renderSettings();
+    alert("Inställningar sparade.");
+  }
+
+  const _btnSaveSettings = document.getElementById("btnSaveSettings");
+  if (_btnSaveSettings) _btnSaveSettings.addEventListener("click", (e)=>{ e.preventDefault(); handleSaveSettings(); });
+
+  // capture fallback (if something stops propagation)
+  document.addEventListener("click", (e)=>{
+    const b = e.target && e.target.closest ? e.target.closest("#btnSaveSettings") : null;
+    if (!b) return;
+    e.preventDefault();
+    handleSaveSettings();
+  }, true);
+
+
+  // Logo upload (stored as data URL in localStorage)
+  if (sLogo){
+    sLogo.addEventListener("change", ()=>{
+      const f = sLogo.files && sLogo.files[0] ? sLogo.files[0] : null;
+      if (!f) return;
+      if (!String(f.type||"").startsWith("image/")) return alert("Välj en bildfil (PNG/JPG/SVG).");
+      const r = new FileReader();
+      r.onload = ()=>{
+        state.company.logoDataUrl = String(r.result || "");
+        save();
+        renderSettings();
+      };
+      r.onerror = ()=> alert("Kunde inte läsa bilden.");
+      r.readAsDataURL(f);
+      sLogo.value = "";
+    });
+  }
+  if (btnRemoveLogo){
+    btnRemoveLogo.addEventListener("click", ()=>{
+      if (!confirm("Ta bort logotypen?")) return;
+      state.company.logoDataUrl = "";
+      save();
+      renderSettings();
+    });
+  }
 
   document.getElementById("btnAddYear").addEventListener("click", ()=>{
     const s = fyStart.value; const e = fyEnd.value;
@@ -2761,13 +3461,19 @@ function renderAll(){
   renderLines();
   updateBalanceBadge();
 
-  const rep = document.getElementById("tab-reports");
-  const acc = document.getElementById("tab-accounts");
-  const inv = document.getElementById("tab-invoices");
+  
+    const rep = document.getElementById("tab-reports");
+    const acc = document.getElementById("tab-accounts");
+    const inv = document.getElementById("tab-invoices");
+
+  const cus = document.getElementById("tab-customers");
+  const sup = document.getElementById("tab-suppliers");
 
   if (rep && !rep.hidden) renderReports();
   if (acc && !acc.hidden) renderAccounts();
   if (inv && !inv.hidden) renderInvoices();
+  if (cus && !cus.hidden) renderCustomers();
+  if (sup && !sup.hidden) renderSuppliers();
 }
 
 // --- Init ---
@@ -2780,11 +3486,12 @@ newVoucher();
 
 // Invoices init
 state.customers = state.customers || {};
+state.suppliers = state.suppliers || {};
 state.invoices = state.invoices || [];
 
 if (invYearSelect) invYearSelect.value = state.activeYearId;
 if (invDate) invDate.value = todayISO();
-if (invDue) invDue.value = addDays(todayISO(), 30);
+if (invDue) invDue.value = addDays(todayISO(), (state.company.payDays||30));
 
 wireInvoiceEvents();
 newInvoice();
