@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="sv">
 <head>
+  <!-- Proprietary software. All rights reserved. -->
   <!-- Google tag (gtag.js) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
   <script>
@@ -14,6 +15,8 @@
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="copyright" content="Innovatio Brutalis">
+  <meta name="license" content="All rights reserved">
 
   <!-- Open Graph (for LinkedIn etc.) -->
   <meta property="og:type" content="website">
@@ -107,6 +110,9 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill">Lagring: localStorage (offline)</span>
       <a class="pill" href="/coding/" aria-label="Tillbaka till Innovatio Brutalis">Tillbaka till sidan</a>
+    </div>
+    <div class="muted small" style="margin-top:10px;">
+      © <span id="copyrightYear"></span> Innovatio Brutalis — FU-Bookkeeping. All rights reserved.
     </div>
   </div>
 </header>
@@ -612,6 +618,10 @@
   const bootPill = document.getElementById("bootPill");
   const setBoot = (text) => { if (bootPill) bootPill.textContent = text; };
   setBoot("JS: OK");
+
+  const cy = document.getElementById("copyrightYear");
+  if (cy) cy.textContent = String(new Date().getFullYear());
+
   window.addEventListener("error", () => setBoot("JS: fel (konsol)"));
   window.addEventListener("unhandledrejection", () => setBoot("JS: fel (konsol)"));
 
