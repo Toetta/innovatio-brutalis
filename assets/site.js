@@ -118,9 +118,10 @@
     try {
       if (typeof window.gtag === "function") {
         const url = new URL(href, window.location.origin);
-        const popupName = url.pathname.includes("gearbox_visualiser.html")
+        const pathLower = (url.pathname || "").toLowerCase();
+        const popupName = pathLower.includes("gearbox_visualiser.html")
           ? "gearbox_visualiser"
-          : (url.pathname.includes("fu-bookkeeping.html") ? "fu_bookkeeping" : (url.pathname.split("/").filter(Boolean).slice(-1)[0] || "popup"));
+          : (pathLower.includes("fu-bookkeeping.html") ? "fu_bookkeeping" : (url.pathname.split("/").filter(Boolean).slice(-1)[0] || "popup"));
 
         const eventName = (popupName === "gearbox_visualiser")
           ? "gearbox_visualiser_click"
