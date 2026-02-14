@@ -1,6 +1,17 @@
 <!doctype html>
 <html lang="sv">
 <head>
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-LGJK9XKDZB');
+    // Optional: count popup opens explicitly (page_view also fires).
+    gtag('event', 'fu_bookkeeping_open', { page_path: window.location.pathname + window.location.search });
+  </script>
+
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Mini-bokföring (BAS) – offline i webbläsaren</title>
@@ -86,6 +97,7 @@
       <span class="pill" id="yearPill">Räkenskapsår: –</span>
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill">Lagring: localStorage (offline)</span>
+      <a class="pill" href="/coding/" aria-label="Tillbaka till Innovatio Brutalis">Tillbaka till sidan</a>
     </div>
   </div>
 </header>

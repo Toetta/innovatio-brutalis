@@ -1,23 +1,48 @@
 (() => {
   // --- Helpers ---
-  const norm = (p) => (p.endsWith("/") ? p : p + "/");
-  const path = norm(window.location.pathname);
+  const pathname = window.location.pathname;
+  const params = new URLSearchParams(window.location.search);
+  const langOverride = (params.get("lang") || "").toLowerCase();
+
+  // Normalize only directory-like paths (avoid corrupting file paths like /assets/foo.html)
+  const norm = (p) => {
+    if (p.endsWith("/")) return p;
+    const last = p.split("/").filter(Boolean).slice(-1)[0] || "";
+    return last.includes(".") ? p : (p + "/");
+  };
+
+  const path = norm(pathname);
 
   // Detect language: /en/ prefix => EN, otherwise SV
-  const isEN = path.startsWith("/en/");
+  let isEN = path.startsWith("/en/");
+  if (langOverride === "en") isEN = true;
+  if (langOverride === "sv") isEN = false;
   const root = isEN ? "/en/" : "/";
 
   // Map "current section" based on pathname
   // Examples: /cnc/, /en/engineering/, etc.
-  const section = (() => {
+  let section = (() => {
     const p = path.replace(/^\/en\//, "/");
     const parts = p.split("/").filter(Boolean);
     return parts[0] || ""; // "" means home
   })();
 
+  // Allow pages to override which nav item should be marked active.
+  // Example: <meta name="ib-nav-section" content="coding" />
+  try {
+    const override = document.querySelector('meta[name="ib-nav-section"]')?.getAttribute("content")?.trim();
+    if (override) section = override;
+  } catch (_) {}
+
   // Where to switch language (paired pages)
-  const svUrl = path.replace(/^\/en\//, "/");
-  const enUrl = path.startsWith("/en/") ? path : "/en" + path;
+  // Special-case /assets/ popups: use ?lang=sv/en because /en/assets/... doesn't exist.
+  const svUrl = pathname.startsWith("/assets/")
+    ? `${pathname}?lang=sv`
+    : path.replace(/^\/en\//, "/");
+
+  const enUrl = pathname.startsWith("/assets/")
+    ? `${pathname}?lang=en`
+    : (path.startsWith("/en/") ? path : "/en" + path);
 
   // Nav items (edit THIS list only, future-proof)
   const navItems = [
@@ -95,11 +120,11 @@
         const url = new URL(href, window.location.origin);
         const popupName = url.pathname.includes("gearbox_visualiser.html")
           ? "gearbox_visualiser"
-          : (url.pathname.split("/").filter(Boolean).slice(-1)[0] || "popup");
+          : (url.pathname.includes("fu-bookkeeping.html") ? "fu_bookkeeping" : (url.pathname.split("/").filter(Boolean).slice(-1)[0] || "popup"));
 
         const eventName = (popupName === "gearbox_visualiser")
           ? "gearbox_visualiser_click"
-          : "popup_click";
+          : (popupName === "fu_bookkeeping" ? "fu_bookkeeping_click" : "popup_click");
 
         window.gtag("event", eventName, {
           transport_type: "beacon",
