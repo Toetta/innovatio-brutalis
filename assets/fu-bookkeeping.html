@@ -3707,18 +3707,29 @@ Verifikationer: ${stats.before.vouchers} → ${stats.after.vouchers}`);
     state.company.currency = (sCurrency?.value || "SEK");
     state.company.defaultSign = (sSign?.value || "").trim();
 
-    // Fakturauppgifter (om fälten finns i DOM)
-    state.company.address = (sAddress?.value || "").trim();
-    state.company.contactEmail = (sEmail?.value || "").trim();
-    state.company.contactPhone = (sPhone?.value || "").trim();
+    // Fakturauppgifter (fälten finns i Settings-DOM)
+    state.company.addr = (sAddr?.value || "").trim();
+    state.company.zip = (sZip?.value || "").trim();
+    state.company.city = (sCity?.value || "").trim();
+    state.company.country = (sCountry?.value || "").trim();
+    state.company.email = (sEmail?.value || "").trim();
+    state.company.phone = (sPhone?.value || "").trim();
+    state.company.web = (sWeb?.value || "").trim();
+    state.company.vat = (sVat?.value || "").trim();
 
-    state.company.paymentMethod = (sPayMethod?.value || "").trim(); // t.ex. Bankgiro/Plusgiro/IBAN
-    state.company.paymentAccount = (sPayAccount?.value || "").trim(); // nummer
-    state.company.paymentReferencePrefix = (sPayRefPrefix?.value || "").trim(); // t.ex. OCR-prefix
-    state.company.paymentTermsDays = Number.isFinite(Number(sPayTerms?.value)) ? Number(sPayTerms.value) : (state.company.paymentTermsDays || 30);
+    const payDays = Number(String(sPayDays?.value || "").trim());
+    state.company.payDays = Number.isFinite(payDays) ? payDays : (state.company.payDays ?? 30);
 
-    // Logo-data sparas redan när man väljer fil, men behåll om den finns
-    if (typeof state.company.logoData !== "string") state.company.logoData = state.company.logoData || "";
+    state.company.bankgiro = (sBg?.value || "").trim();
+    state.company.plusgiro = (sPg?.value || "").trim();
+    state.company.iban = (sIban?.value || "").trim();
+    state.company.swift = (sSwift?.value || "").trim();
+    state.company.invoiceNote = (sInvNote?.value || "").trim();
+    state.company.invoiceFooter = (sInvFooter?.value || "").trim();
+
+    // SRU toggle ligger i state.features
+    if (!state.features) state.features = { sruEnabled: false };
+    state.features.sruEnabled = !!(sSruEnabled && sSruEnabled.checked);
 
     save();
     renderSettings();
