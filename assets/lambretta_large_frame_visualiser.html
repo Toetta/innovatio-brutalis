@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Lambretta Large Frame Gearbox Visualiser</title>
+  <style>
+    :root {
+      --bg: #0b0f14;
+      --panel: rgba(255,255,255,0.06);
+      --panel2: rgba(255,255,255,0.09);
+      --line: rgba(255,255,255,0.10);
+      --text: rgba(255,255,255,0.92);
+      --muted: rgba(255,255,255,0.65);
+      --accent: #4bb3ff;
+      --rowH: 34px;
+      --radius: 16px;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(1200px 600px at 30% -10%, rgba(75,179,255,0.18), transparent 55%),
+                  radial-gradient(900px 500px at 90% 10%, rgba(255,90,90,0.12), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+      font: 14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    header {
+      max-width: 1250px;
+      margin: 28px auto 10px;
+      padding: 0 16px;
+    }
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0.2px;
+    }
+    .sub {
+      margin: 6px 0 0;
+      color: var(--muted);
+    }
+
+    .wrap {
+      max-width: 1250px;
+      margin: 0 auto 40px;
+      padding: 0 16px;
+    }
+
+    .panel {
+      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .controls {
+      padding: 14px 14px 10px;
+      border-bottom: 1px solid var(--line);
+      display: grid;
+      gap: 12px;
+      grid-template-columns: 1.1fr 1fr 1fr;
+      align-items: start;
+    }
+    @media (max-width: 980px) {
+      .controls { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: .2px;
+      text-transform: uppercase;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 8px 0 6px;
+    }
+
+    input[type="number"], select {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.35);
+      color: var(--text);
+      outline: none;
+    }
+    input[type="number"]:focus, select:focus {
+      border-color: rgba(75,179,255,0.6);
+      box-shadow: 0 0 0 3px rgba(75,179,255,0.15);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .inline {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.35);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .btn:hover { border-color: rgba(255,255,255,0.18); }
+    .btn:active { transform: translateY(1px); }
+
+    .pillbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px 14px 14px;
+      border-bottom: 1px solid var(--line);
+    }
+    .pill {
+      border: 1px solid var(--line);
+      background: rgba(0,0,0,0.35);
+      border-radius: 999px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 75vh;
+      background: rgba(0,0,0,0.12);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 980px;
+    }
+    thead th {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      background: rgba(12,16,22,0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+      font-size: 12px;
+      color: rgba(255,255,255,0.75);
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      padding: 10px 8px;
+      white-space: nowrap;
+    }
+    thead tr:first-child th {
+      border-bottom: 1px solid rgba(255,255,255,0.12);
+      color: rgba(255,255,255,0.80);
+      letter-spacing: .16em;
+    }
+
+    tbody td {
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      border-right: 1px solid rgba(255,255,255,0.06);
+      padding: 0 8px;
+      height: var(--rowH);
+      text-align: center;
+      white-space: nowrap;
+      background: rgba(0,0,0,0.18);
+      font-variant-numeric: tabular-nums;
+    }
+    tbody tr td:first-child { border-left: 1px solid rgba(255,255,255,0.06); }
+
+    td.speed {
+      background: rgba(0,0,0,0.32);
+      color: rgba(255,255,255,0.9);
+      font-weight: 650;
+      border-right: 1px solid rgba(255,255,255,0.12);
+      border-left: 1px solid rgba(255,255,255,0.12);
+    }
+
+    td.rpm {
+      font-weight: 700;
+    }
+
+    .zoomRow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    input[type="range"] {
+      width: 220px;
+    }
+    .smallNote {
+      font-size: 12px;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Lambretta Large Frame Gearbox Visualiser</h1>
+  </header>
+
+  <div class="wrap">
+    <div class="panel">
+      <div class="controls">
+        <div class="card">
+          <h3>Display</h3>
+          <div class="row">
+            <div>
+              <label for="unit">Units</label>
+              <select id="unit">
+                <option value="mph">mph</option>
+                <option value="kmh">km/h</option>
+              </select>
+            </div>
+            <div>
+              <label for="step">Speed step</label>
+              <input id="step" type="number" min="0.5" step="0.5"/>
+            </div>
+          </div>
+
+          <label>Row height</label>
+          <div class="zoomRow">
+            <button class="btn" id="rhMinus" title="Smaller">−</button>
+            <input id="rowHeight" type="range" min="40" max="140" value="100"/>
+            <button class="btn" id="rhPlus" title="Larger">+</button>
+            <button class="btn" id="fit" title="Fit table to screen">Fit</button>
+            <span class="smallNote" id="rowHeightLabel">100%</span>
+          </div>
+
+          <div class="inline" style="margin-top:10px;">
+            <button class="btn" id="save">Save</button>
+            <button class="btn" id="load">Load</button>
+            <button class="btn" id="reset">Reset</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Engine RPM bands</h3>
+          <div class="row">
+            <div>
+              <label for="rpmIn">Power comes in (rpm)</label>
+              <input id="rpmIn" type="number" step="50"/>
+            </div>
+            <div>
+              <label for="rpmPeak">Peak power (rpm)</label>
+              <input id="rpmPeak" type="number" step="50"/>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="rpmShift">Change up / tail off (rpm)</label>
+              <input id="rpmShift" type="number" step="50"/>
+            </div>
+            <div>
+              <label for="rpmMax">Max rpm</label>
+              <input id="rpmMax" type="number" step="50"/>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="rpmIdle">Idle rpm (hide below)</label>
+              <input id="rpmIdle" type="number" step="50"/>
+            </div>
+            <div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Setup A vs B</h3>
+          <div class="row">
+            <div>
+              <label for="gbA">Gearbox (A)</label>
+              <select id="gbA"></select>
+
+              <label for="tyreA">Tyre (A)</label>
+              <select id="tyreA"></select>
+
+              <div class="row">
+                <div>
+                  <label for="sprA">Engine sprocket (teeth)</label>
+                  <input id="sprA" type="number" min="1" step="1" list="sprList"/>
+                </div>
+                <div>
+                  <label for="cwA">Crown wheel (teeth)</label>
+                  <input id="cwA" type="number" min="1" step="1" list="cwList"/>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label for="gbB">Gearbox (B)</label>
+              <select id="gbB"></select>
+
+              <label for="tyreB">Tyre (B)</label>
+              <select id="tyreB"></select>
+
+              <div class="row">
+                <div>
+                  <label for="sprB">Engine sprocket (teeth)</label>
+                  <input id="sprB" type="number" min="1" step="1" list="sprList"/>
+                </div>
+                <div>
+                  <label for="cwB">Crown wheel (teeth)</label>
+                  <input id="cwB" type="number" min="1" step="1" list="cwList"/>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <datalist id="sprList"></datalist>
+          <datalist id="cwList"></datalist>
+        </div>
+      </div>
+
+      <div class="pillbar" id="pills">
+        <span class="pill" id="maxA">A max @ max rpm: —</span>
+        <span class="pill" id="maxB">B max @ max rpm: —</span>
+        <span class="pill" id="maxAuto">Auto max speed: —</span>
+      </div>
+
+      <div class="table-wrap" id="tableWrap">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th colspan="6">Setup A RPM</th>
+              <th colspan="1">Speed</th>
+              <th colspan="6">Setup B RPM</th>
+            </tr>
+            <tr>
+              <th>1st RPM</th><th>2nd RPM</th><th>3rd RPM</th><th>4th RPM</th><th>5th RPM</th><th>6th RPM</th>
+              <th id="speedHead">mph</th>
+              <th>1st RPM</th><th>2nd RPM</th><th>3rd RPM</th><th>4th RPM</th><th>5th RPM</th><th>6th RPM</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+<script>
+const DATA = {"gearboxes": [{"label": "Lambretta OEM", "items": [{"id": 2, "name": "Factory LI125 S1 (Italian & Spanish)", "gears": [[51, 9], [42, 12], [39, 16], [35, 19], [null, null], [null, null]]}, {"id": 3, "name": "Factory Li125 S2 (Italian & Spanish)", "gears": [[51, 9], [42, 12], [39, 16], [35, 19], [null, null], [null, null]]}, {"id": 4, "name": "Factory Li125 Early S3 (Italian & Spanish)", "gears": [[51, 9], [42, 12], [39, 16], [35, 19], [null, null], [null, null]]}, {"id": 5, "name": "Factory LI 150 Rallymaster Special", "gears": [[51, 9], [42, 12], [37, 17], [34, 20], [null, null], [null, null]]}, {"id": 6, "name": "Factory LI125 Special", "gears": [[50, 10], [42, 12], [39, 15], [36, 18], [null, null], [null, null]]}, {"id": 7, "name": "Factory GP125", "gears": [[50, 10], [42, 12], [39, 15], [36, 18], [null, null], [null, null]]}, {"id": 8, "name": "Factory GP200 (Italian)", "gears": [[50, 10], [42, 12], [39, 15], [36, 18], [null, null], [null, null]]}, {"id": 9, "name": "Factory Li150 Special (Late)", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [null, null], [null, null]]}, {"id": 10, "name": "Factory SX150", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [null, null], [null, null]]}, {"id": 11, "name": "Factory GP150", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [null, null], [null, null]]}, {"id": 12, "name": "Factory GP200 (Late Indian)", "gears": [[50, 10], [42, 12], [38, 16], [36, 18], [null, null], [null, null]]}, {"id": 13, "name": "Factory Vijay Mk.1", "gears": [[50, 10], [42, 12], [38, 16], [35, 19], [null, null], [null, null]]}, {"id": 14, "name": "Factory LI150 Special/Pacemaker", "gears": [[50, 11], [41, 13], [39, 17], [35, 19], [null, null], [null, null]]}, {"id": 15, "name": "Factory Li125 (Late Italian)", "gears": [[50, 11], [41, 13], [39, 17], [35, 19], [null, null], [null, null]]}, {"id": 16, "name": "Factory Li150 S3 (Spanish)", "gears": [[50, 11], [41, 13], [39, 17], [34, 20], [null, null], [null, null]]}, {"id": 17, "name": "Factory LI150 (Italian)", "gears": [[50, 11], [41, 14], [37, 17], [34, 20], [null, null], [null, null]]}, {"id": 18, "name": "Factory Vijay Mk.2", "gears": [[50, 10], [41, 13], [37, 17], [33, 21], [null, null], [null, null]]}, {"id": 19, "name": "Factory TV175 S2", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]]}, {"id": 20, "name": "Factory TV175 S3", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]]}, {"id": 21, "name": "Factory SX200", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]]}, {"id": 22, "name": "Factory Jet 200", "gears": [[49, 12], [40, 14], [37, 18], [33, 21], [null, null], [null, null]]}, {"id": 23, "name": "Factory TV200/GT200", "gears": [[47, 13], [39, 15], [36, 19], [32, 22], [null, null], [null, null]]}]}, {"label": "Rimini Lambretta Centre", "items": [{"id": 26, "name": "5-Speed RLC Cyclone 5 Pro V2", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 27, "name": "5-Speed RLC Cyclone 5 Pro V1", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 28, "name": "5-Speed RLC Cyclone V2 Standard", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 29, "name": "5-Speed RLC Cyclone V2 low 1st", "gears": [[46, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 30, "name": "5-Speed RLC Cyclone V2 Tall 1st & Close 5th", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 31, "name": "5-Speed RLC Cyclone V2 Tall 5th", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]]}, {"id": 32, "name": "5-Speed RLC Cyclone V2 Close 5th", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [36, 18], [null, null]]}, {"id": 33, "name": "5-Speed RLC Cyclone V2 low 1st & tall 5th", "gears": [[46, 9], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]]}, {"id": 34, "name": "5-Speed 5-Speed RLC Cyclone V2 low 1st & Close 5th", "gears": [[46, 9], [41, 12], [38, 14], [36, 16], [36, 18], [null, null]]}, {"id": 35, "name": "5-Speed RLC Cyclone V2 Tall 1st & 5th", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]]}, {"id": 36, "name": "5-Speed RLC Cyclone V2 Tall 1st & Close 5th", "gears": [[44, 9], [41, 12], [38, 14], [36, 16], [36, 18], [null, null]]}, {"id": 37, "name": "5-Speed RLC Cyclone V1 Standard", "gears": [[50, 10], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 38, "name": "5-Speed RLC Cyclone V1 Tall 1st", "gears": [[49, 10], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 39, "name": "5-Speed RLC Cyclone V1 Tall 5th", "gears": [[50, 10], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]]}, {"id": 40, "name": "5-Speed RLC Cyclone V1 Tall 1st & 5th", "gears": [[49, 10], [41, 12], [38, 14], [36, 16], [34, 18], [null, null]]}]}, {"label": "MB Scooters", "items": [{"id": 43, "name": "5-Speed MB Scooters Ltd MB-5 (Late)", "gears": [[50, 10], [41, 12], [38, 15], [37, 18], [36, 20], [null, null]]}, {"id": 44, "name": "5-Speed MB Scooters Ltd MB-5 (Early)", "gears": [[50, 10], [41, 12], [38, 15], [37, 18], [34, 19], [null, null]]}, {"id": 45, "name": "MB Scooters Ltd Li150 CR", "gears": [[50, 11], [41, 14], [37, 16], [34, 18], [null, null], [null, null]]}, {"id": 46, "name": "MB Scooters Ltd Li150/SX200 CR MkI", "gears": [[49, 12], [40, 14], [37, 16], [34, 18], [null, null], [null, null]]}, {"id": 47, "name": "MB Scooters Ltd Li150/SX200 CR MkII", "gears": [[49, 12], [40, 14], [37, 17], [34, 20], [null, null], [null, null]]}]}, {"label": "AF Rayspeed", "items": [{"id": 50, "name": "5-Speed AF Clo5e Ratio (35 Tooth 5th)", "gears": [[45, 10], [41, 13], [38, 16], [36, 18], [35, 19], [null, null]]}, {"id": 51, "name": "5-Speed AF Clo5e Ratio (34 Tooth 5th)", "gears": [[45, 10], [41, 13], [38, 16], [36, 18], [34, 19], [null, null]]}, {"id": 52, "name": "AF 4-Speed Close Ratio", "gears": [[50, 11], [41, 13], [38, 16], [36, 18], [null, null], [null, null]]}]}, {"label": "Charlie Edmonds/Performance Tuning", "items": [{"id": 55, "name": "PT 6-Speed (Ultra Close Top Gear)", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [34, 20], [33, 20]]}, {"id": 56, "name": "PT 6-Speed (Very Close Top Gear)", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [34, 20], [32, 20]]}, {"id": 57, "name": "PT 5-Speed High Torque/Low RPM \"A\"", "gears": [[46, 13], [38, 15], [34, 18], [33, 20], [33, 22], [null, null]]}, {"id": 58, "name": "PT 5-Speed Low Torque/High RPM \"B\"", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [34, 20], [null, null]]}, {"id": 59, "name": "PT 4-Speed 50/50 (Li150 based)", "gears": [[50, 11], [41, 14], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 60, "name": "PT 4-Speed 50/50 (SX200 based)", "gears": [[49, 12], [40, 14], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 61, "name": "PT 4-Speed High Torque (Standard)", "gears": [[46, 13], [38, 15], [34, 18], [33, 22], [null, null], [null, null]]}, {"id": 62, "name": "PT 4-Speed High Torque (Opt. 47t 1st)", "gears": [[47, 13], [38, 15], [34, 18], [33, 22], [null, null], [null, null]]}, {"id": 63, "name": "PT 4-Speed High Torque (Opt. 39t 2nd)", "gears": [[46, 13], [39, 15], [34, 18], [33, 22], [null, null], [null, null]]}, {"id": 64, "name": "PT 4-Speed High Torque (Opt. 47t 1st & 39t 2nd)", "gears": [[47, 13], [39, 15], [34, 18], [33, 22], [null, null], [null, null]]}, {"id": 65, "name": "PT 4-Speed Low Torque (Race) (Standard)", "gears": [[46, 12], [39, 15], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 66, "name": "PT 4-Speed Low Torque (Race) (Opt. 1st)", "gears": [[47, 12], [39, 15], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 67, "name": "PT 4-Speed Low Torque (Race) (Opt. 2nd)", "gears": [[46, 12], [38, 15], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 68, "name": "PT 4-Speed Low Torque (Race) (Opt. 3rd)", "gears": [[46, 12], [39, 15], [36, 16], [33, 18], [null, null], [null, null]]}, {"id": 69, "name": "PT 4-Speed Low Torque (Race) (Opt. 4th)", "gears": [[46, 12], [39, 15], [35, 16], [34, 18], [null, null], [null, null]]}, {"id": 70, "name": "PT 4-Speed Low Torque (Race) (Opt. 1,2)", "gears": [[47, 12], [38, 15], [35, 16], [33, 18], [null, null], [null, null]]}, {"id": 71, "name": "PT 4-Speed Low Torque (Race) (Opt. 1,2,3)", "gears": [[47, 12], [38, 15], [36, 16], [33, 18], [null, null], [null, null]]}, {"id": 72, "name": "PT 4-Speed Low Torque (Race) (Opt. 1,2,3,4)", "gears": [[47, 12], [38, 15], [36, 16], [34, 18], [null, null], [null, null]]}]}, {"label": "Other Dealer 5-Speed Specials", "items": [{"id": 76, "name": "5- Speed Crimaz CML5", "gears": [[45, 9], [41, 12], [38, 14], [36, 16], [35, 18], [null, null]]}, {"id": 77, "name": "5-Speed Omega", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [33, 21], [null, null]]}, {"id": 78, "name": "5-Speed Tino Sacchi", "gears": [[50, 10], [42, 12], [39, 15], [35, 19], [33, 21], [null, null]]}]}, {"label": "Other Dealer 4-Specials", "items": [{"id": 80, "name": "4-Speed Casa Performance Close Ratio", "gears": [[50, 11], [41, 14], [39, 16], [36, 18], [null, null], [null, null]]}, {"id": 81, "name": "4-Speed Ricambio Rapido", "gears": [[49, 12], [40, 14], [37, 17], [34, 20], [null, null], [null, null]]}, {"id": 82, "name": "4-Speed BGM Pro", "gears": [[51, 11], [43, 14], [41, 17], [36, 18], [null, null], [null, null]]}, {"id": 83, "name": "4-Speed DGB Pacemaker", "gears": [[50, 11], [41, 13], [37, 17], [35, 19], [null, null], [null, null]]}, {"id": 84, "name": "4-Speed DRT \"Monza Super Speed\"", "gears": [[50, 10], [42, 12], [37, 14], [35, 17], [null, null], [null, null]]}, {"id": 85, "name": "4-Speed DRT \"Gran Tour\"", "gears": [[50, 10], [42, 12], [38, 15], [36, 18], [null, null], [null, null]]}, {"id": 86, "name": "4-Speed DRT", "gears": [[50, 10], [42, 12], [37, 14], [36, 17], [null, null], [null, null]]}, {"id": 87, "name": "4-Speed DRT Li150/SX200 CR", "gears": [[49, 12], [40, 14], [37, 17], [34, 20], [null, null], [null, null]]}, {"id": 88, "name": "4-Speed Cortina Close Ratio", "gears": [[50, 10], [41, 12], [38, 15], [36, 17], [null, null], [null, null]]}, {"id": 89, "name": "4-Speed Pro Porting SX150/GP200 CR", "gears": [[50, 11], [41, 13], [39, 16], [36, 18], [null, null], [null, null]]}, {"id": 90, "name": "4-Speed Gori RV4S Close Ratio", "gears": [[47, 14], [40, 15], [37, 17], [35, 19], [null, null], [null, null]]}, {"id": 91, "name": "4-Speed MSC/Dave Webster Close Ratio", "gears": [[50, 11], [41, 13], [39, 16], [36, 18], [null, null], [null, null]]}, {"id": 92, "name": "4-Speed Pinasco Close Ratio", "gears": [[50, 10], [42, 12], [38, 15], [36, 17], [null, null], [null, null]]}]}, {"label": "Lambretta 3-Wheeler", "items": [{"id": 95, "name": "4-Speed FLi175", "gears": [[51, 10], [42, 14], [39, 19], [36, 24], [null, null], [null, null]]}, {"id": 96, "name": "4-Speed Lambro 200", "gears": [[51, 9], [41, 14], [35, 19], [30, 24], [null, null], [null, null]]}, {"id": 97, "name": "4-Speed Lambro 550", "gears": [[51, 9], [41, 14], [35, 19], [29, 26], [null, null], [null, null]]}]}, {"label": "Custom Gearboxes", "items": [{"id": 100, "name": "Custom 1", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 101, "name": "Custom 2", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 102, "name": "Custom 3", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 103, "name": "Custom 4", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 104, "name": "Custom 5", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 105, "name": "Custom 6", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 106, "name": "Custom 7", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 107, "name": "Custom 8", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 108, "name": "Custom 9", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 109, "name": "Custom 10", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 110, "name": "Custom 11", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 111, "name": "Custom 12", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 112, "name": "Custom 13", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 113, "name": "Custom 14", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 114, "name": "Custom 15", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 115, "name": "Custom 16", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 116, "name": "Custom 17", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 117, "name": "Custom 18", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 118, "name": "Custom 19", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}, {"id": 119, "name": "Custom 20", "gears": [[0, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]]}]}], "tyres": [{"label": "Default", "items": [{"id": 1, "name": "Default 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 2, "name": "Default 3.00-10 (126.9 cm)", "circ_cm": 126.9, "circ_m": 1.2690000000000001}]}, {"label": "Popular tyres", "items": [{"id": 4, "name": "Dunlop TT92GP 3.50-10 (137.3)", "circ_cm": 137.3, "circ_m": 1.3730000000000002}, {"id": 5, "name": "SAVA MC20 3.50-10 (135.0)", "circ_cm": 135.0, "circ_m": 1.35}, {"id": 6, "name": "Michelin S1 3.50-10 (136.2)", "circ_cm": 136.2, "circ_m": 1.3619999999999999}]}, {"label": "Custom tyres", "items": [{"id": 8, "name": "Custom 1 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 9, "name": "Custom 2 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 10, "name": "Custom 3 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 11, "name": "Custom 4 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 12, "name": "Custom 5 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 13, "name": "Custom 6 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 14, "name": "Custom 7 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 15, "name": "Custom 8 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 16, "name": "Custom 9 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 17, "name": "Custom 10 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 18, "name": "Custom 11 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 19, "name": "Custom 12 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 20, "name": "Custom 13 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 21, "name": "Custom 14 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 22, "name": "Custom 15 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 23, "name": "Custom 16 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 24, "name": "Custom 17 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 25, "name": "Custom 18 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 26, "name": "Custom 19 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}, {"id": 27, "name": "Custom 20 ( cm)", "circ_cm": 0.0, "circ_m": 0.0}]}, {"label": "More tyres", "items": [{"id": 29, "name": "Schwalbe Classic 3.00-10 (127.7 cm)", "circ_cm": 127.7, "circ_m": 1.2770000000000001}, {"id": 30, "name": "Schwalbe Classic 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 31, "name": "Schwalbe Paceman 3.00-10 (127.7 cm)", "circ_cm": 127.7, "circ_m": 1.2770000000000001}, {"id": 32, "name": "Schwalbe Paceman 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 33, "name": "Schwalbe Powertrack 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 34, "name": "Schwalbe Powertrack 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 35, "name": "Schwalbe Powertrack 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 36, "name": "Schwalbe Powertrack 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 37, "name": "Schwalbe Powertrack 130/70-10 (137.0 cm)", "circ_cm": 137.0, "circ_m": 1.37}, {"id": 38, "name": "Schwalbe Powertrack 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 39, "name": "Schwalbe Powertrack 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}, {"id": 40, "name": "Schwalbe Raceman 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 41, "name": "Schwalbe Raceman 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 42, "name": "Schwalbe Raceman 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 43, "name": "Schwalbe Raceman 120/70-10 (132.6 cm)", "circ_cm": 132.6, "circ_m": 1.3259999999999998}, {"id": 44, "name": "Schwalbe Raceman 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 45, "name": "Schwalbe Raceman 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 46, "name": "Schwalbe Raceman 3.50-10 (135.7 cm)", "circ_cm": 135.7, "circ_m": 1.357}, {"id": 47, "name": "Schwalbe Raceman 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}, {"id": 48, "name": "Schwalbe Weatherman 100/80-10 (130.1 cm)", "circ_cm": 130.1, "circ_m": 1.301}, {"id": 49, "name": "Schwalbe Weatherman 100/90-10 (136.4 cm)", "circ_cm": 136.4, "circ_m": 1.364}, {"id": 50, "name": "Schwalbe Weatherman 110/80-10 (135.1 cm)", "circ_cm": 135.1, "circ_m": 1.351}, {"id": 51, "name": "Schwalbe Weatherman 120/70-10 (132.6 cm)", "circ_cm": 132.6, "circ_m": 1.3259999999999998}, {"id": 52, "name": "Schwalbe Weatherman 120/90-10 (147.7 cm)", "circ_cm": 147.7, "circ_m": 1.4769999999999999}, {"id": 53, "name": "Schwalbe Weatherman 130/70-10 (137.0 cm)", "circ_cm": 137.0, "circ_m": 1.37}, {"id": 54, "name": "Schwalbe Weatherman 130/90-10 (153.3 cm)", "circ_cm": 153.3, "circ_m": 1.5330000000000001}, {"id": 55, "name": "Schwalbe Weatherman 90/90-10 (130.7 cm)", "circ_cm": 130.7, "circ_m": 1.307}]}], "sprockets": [14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25], "crowns": [46, 47, 48, 49]};
+const DEFAULTS = {"gearboxA": 11, "gearboxB": 11, "tyreA": 1, "tyreB": 1, "sprocketA": 16, "crownA": 46, "sprocketB": 16, "crownB": 47, "rpmIn": 3800, "rpmPeak": 6000, "rpmShift": 6800, "rpmMax": 7500, "unit": "mph", "speedStep": 2, "rpmIdle": 1000};
+const STORAGE_KEY = "lambretta_large_frame_visualiser_v1";
+
+// -------- utils
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const roundTo = (v, step) => Math.round(v/step)*step;
+const ceilTo = (v, step) => Math.ceil(v/step)*step;
+
+function ordinal(n){
+  const mod100 = n % 100;
+  const mod10 = n % 10;
+  if (mod100 >= 10 && mod100 <= 20) return n + "th";
+  return n + ({1:"st",2:"nd",3:"rd"}[mod10] || "th");
+}
+
+function hex(r,g,b){
+  const to = (x)=>x.toString(16).padStart(2,"0");
+  return "#" + to(r) + to(g) + to(b);
+}
+
+function luminance(r,g,b){
+  // relative luminance approx
+  return (0.2126*r + 0.7152*g + 0.0722*b)/255;
+}
+
+function colorForRPM(rpm, rpmIn, rpmPeak, rpmShift, rpmMax){
+  if (!isFinite(rpm) || rpm<=0) return {bg:"#00000000", fg:"rgba(255,255,255,0.85)"};
+  if (rpm <= rpmIn) return {bg: hex(217,217,217), fg:"#000"};
+
+  // Green -> Yellow
+  if (rpm <= rpmPeak){
+    const t = (rpmPeak===rpmIn) ? 1 : (rpm - rpmIn)/(rpmPeak - rpmIn);
+    const r = Math.round(0 + t*(255-0));
+    const g = Math.round(176 + t*(255-176));
+    const b = Math.round(80 + t*(0-80));
+    const bg = hex(r,g,b);
+    const fg = luminance(r,g,b) > 0.6 ? "#000" : "#fff";
+    return {bg, fg};
+  }
+
+  // Yellow -> Orange
+  if (rpm <= rpmShift){
+    const t = (rpmShift===rpmPeak) ? 1 : (rpm - rpmPeak)/(rpmShift - rpmPeak);
+    const r = 255;
+    const g = Math.round(255 + t*(165-255));
+    const b = 0;
+    const bg = hex(r,g,b);
+    const fg = luminance(r,g,b) > 0.6 ? "#000" : "#fff";
+    return {bg, fg};
+  }
+
+  // Orange -> Red
+  if (rpm <= rpmMax){
+    const t = (rpmMax===rpmShift) ? 1 : (rpm - rpmShift)/(rpmMax - rpmShift);
+    const r = 255;
+    const g = Math.round(165 + t*(0-165));
+    const b = 0;
+    const bg = hex(r,g,b);
+    const fg = luminance(r,g,b) > 0.6 ? "#000" : "#fff";
+    return {bg, fg};
+  }
+
+  return {bg: hex(255,0,0), fg:"#fff"};
+}
+
+function unitLabel(unit){
+  return unit === "kmh" ? "km/h" : "mph";
+}
+
+function toKmh(speed, unit){
+  return unit==="kmh" ? speed : speed*1.609344;
+}
+
+function fromKmh(kmh, unit){
+  return unit==="kmh" ? kmh : kmh/1.609344;
+}
+
+// -------- state
+let state = null;
+
+// -------- data helpers
+function allGearboxesFlat(){
+  const out = [];
+  for (const g of DATA.gearboxes) {
+    for (const it of g.items) out.push(it);
+  }
+  return out;
+}
+
+function findGearbox(id){
+  for (const g of DATA.gearboxes) {
+    for (const it of g.items) if (it.id === id) return it;
+  }
+  return null;
+}
+
+function allTyresFlat(){
+  const out = [];
+  for (const g of DATA.tyres) {
+    for (const it of g.items) out.push(it);
+  }
+  return out;
+}
+
+function findTyre(id){
+  for (const g of DATA.tyres) {
+    for (const it of g.items) if (it.id === id) return it;
+  }
+  return null;
+}
+
+function validGearPairs(gearbox){
+  const pairs = gearbox?.gears || [];
+  return pairs.filter(p => p && p[0] && p[1] && p[0]>0 && p[1]>0);
+}
+
+function overallRatio(pair, sprocket, crown){
+  const [driven, drive] = pair;
+  if (!driven || !drive || !sprocket || !crown) return NaN;
+  return (driven/drive) * (crown/sprocket);
+}
+
+function speedKmhAtRPM(rpm, pair, tyreCircM, sprocket, crown){
+  const ratio = overallRatio(pair, sprocket, crown);
+  if (!isFinite(ratio) || ratio<=0) return NaN;
+  if (!isFinite(tyreCircM) || tyreCircM<=0) return NaN;
+  const wheelRpm = rpm/ratio;
+  const mPerMin = wheelRpm * tyreCircM;
+  return mPerMin * 60 / 1000;
+}
+
+function rpmAtSpeedKmh(kmh, pair, tyreCircM, sprocket, crown){
+  const ratio = overallRatio(pair, sprocket, crown);
+  if (!isFinite(ratio) || ratio<=0) return NaN;
+  if (!isFinite(tyreCircM) || tyreCircM<=0) return NaN;
+  const mPerMin = kmh * 1000 / 60;
+  const wheelRpm = mPerMin / tyreCircM;
+  return wheelRpm * ratio;
+}
+
+function maxSpeedForSetup(setup){
+  const gb = findGearbox(setup.gearboxId);
+  const tyre = findTyre(setup.tyreId);
+  if (!gb || !tyre) return NaN;
+  const pairs = gb.gears || [];
+  let best = NaN;
+  for (let i = pairs.length-1; i>=0; i--) {
+    const p = pairs[i];
+    if (!p || !p[0] || !p[1]) continue;
+    const kmh = speedKmhAtRPM(state.rpmMax, p, tyre.circ_m, setup.sprocket, setup.crown);
+    if (isFinite(kmh)) {
+      best = kmh;
+      break;
+    }
+  }
+  return best;
+}
+
+// -------- UI
+const els = {
+  unit: document.getElementById("unit"),
+  step: document.getElementById("step"),
+  rowHeight: document.getElementById("rowHeight"),
+  rowHeightLabel: document.getElementById("rowHeightLabel"),
+  rhMinus: document.getElementById("rhMinus"),
+  rhPlus: document.getElementById("rhPlus"),
+  fit: document.getElementById("fit"),
+  save: document.getElementById("save"),
+  load: document.getElementById("load"),
+  reset: document.getElementById("reset"),
+
+  rpmIn: document.getElementById("rpmIn"),
+  rpmPeak: document.getElementById("rpmPeak"),
+  rpmShift: document.getElementById("rpmShift"),
+  rpmMax: document.getElementById("rpmMax"),
+  rpmIdle: document.getElementById("rpmIdle"),
+
+  gbA: document.getElementById("gbA"),
+  gbB: document.getElementById("gbB"),
+  tyreA: document.getElementById("tyreA"),
+  tyreB: document.getElementById("tyreB"),
+  sprA: document.getElementById("sprA"),
+  cwA: document.getElementById("cwA"),
+  sprB: document.getElementById("sprB"),
+  cwB: document.getElementById("cwB"),
+
+  sprList: document.getElementById("sprList"),
+  cwList: document.getElementById("cwList"),
+
+  tbody: document.getElementById("tbody"),
+  speedHead: document.getElementById("speedHead"),
+  tableWrap: document.getElementById("tableWrap"),
+
+  maxA: document.getElementById("maxA"),
+  maxB: document.getElementById("maxB"),
+  maxAuto: document.getElementById("maxAuto"),
+};
+
+function populateSelect(selectEl, groups, selectedId){
+  selectEl.innerHTML = "";
+  for (const g of groups) {
+    const og = document.createElement("optgroup");
+    og.label = g.label;
+    for (const it of g.items) {
+      const opt = document.createElement("option");
+      opt.value = it.id;
+      opt.textContent = it.name;
+      if (it.id === selectedId) opt.selected = true;
+      og.appendChild(opt);
+    }
+    selectEl.appendChild(og);
+  }
+}
+
+function populateTyres(selectEl, tyreGroups, selectedId){
+  selectEl.innerHTML="";
+  for (const g of tyreGroups) {
+    const og=document.createElement("optgroup");
+    og.label=g.label;
+    for (const it of g.items) {
+      const opt=document.createElement("option");
+      opt.value=it.id;
+      const cm = (it.circ_cm!=null) ? it.circ_cm.toFixed(1) : "—";
+      opt.textContent = `${it.name} (${cm} cm)`;
+      if (it.id===selectedId) opt.selected=true;
+      og.appendChild(opt);
+    }
+    selectEl.appendChild(og);
+  }
+}
+
+function populateDatalists(){
+  // sprockets/crowns from sheet-derived tables
+  const sprVals = (DATA.sprockets || []).filter(x=>x>=10);
+  const cwVals = (DATA.crowns || []);
+  els.sprList.innerHTML = sprVals.map(v=>`<option value="${v}"></option>`).join("");
+  els.cwList.innerHTML = cwVals.map(v=>`<option value="${v}"></option>`).join("");
+}
+
+function setRowHeightPercent(p){
+  const pct = clamp(Math.round(p), 40, 140);
+  els.rowHeight.value = String(pct);
+  els.rowHeightLabel.textContent = pct + "%";
+  const base = 34; // px
+  const px = Math.round(base * (pct/100));
+  document.documentElement.style.setProperty("--rowH", px + "px");
+  state.rowHeightPct = pct;
+}
+
+function fitTableToScreen(){
+  // Try to fit all rows (plus header) within viewport height by adjusting row height.
+  const wrap = els.tableWrap;
+  const tbl = document.getElementById("tbl");
+  const headerH = tbl.tHead ? tbl.tHead.getBoundingClientRect().height : 70;
+  const avail = Math.max(220, window.innerHeight - wrap.getBoundingClientRect().top - 30);
+  const rows = els.tbody.children.length || 1;
+  const rowH = Math.floor((avail - headerH) / rows);
+  const base = 34;
+  const pct = clamp((rowH / base) * 100, 40, 140);
+  setRowHeightPercent(pct);
+}
+
+function readStateFromUI(){
+  state.unit = els.unit.value;
+  state.speedStep = parseFloat(els.step.value) || 2;
+
+  state.rpmIn = parseInt(els.rpmIn.value || "0", 10);
+  state.rpmPeak = parseInt(els.rpmPeak.value || "0", 10);
+  state.rpmShift = parseInt(els.rpmShift.value || "0", 10);
+  state.rpmMax = parseInt(els.rpmMax.value || "0", 10);
+  state.rpmIdle = parseInt(els.rpmIdle.value || "0", 10);
+
+  state.A.gearboxId = parseInt(els.gbA.value, 10);
+  state.B.gearboxId = parseInt(els.gbB.value, 10);
+  state.A.tyreId = parseInt(els.tyreA.value, 10);
+  state.B.tyreId = parseInt(els.tyreB.value, 10);
+
+  state.A.sprocket = parseInt(els.sprA.value || "0", 10);
+  state.A.crown = parseInt(els.cwA.value || "0", 10);
+  state.B.sprocket = parseInt(els.sprB.value || "0", 10);
+  state.B.crown = parseInt(els.cwB.value || "0", 10);
+}
+
+function writeStateToUI(){
+  els.unit.value = state.unit;
+  els.step.value = state.speedStep;
+
+  els.rpmIn.value = state.rpmIn;
+  els.rpmPeak.value = state.rpmPeak;
+  els.rpmShift.value = state.rpmShift;
+  els.rpmMax.value = state.rpmMax;
+  els.rpmIdle.value = state.rpmIdle;
+
+  populateSelect(els.gbA, DATA.gearboxes, state.A.gearboxId);
+  populateSelect(els.gbB, DATA.gearboxes, state.B.gearboxId);
+  populateTyres(els.tyreA, DATA.tyres, state.A.tyreId);
+  populateTyres(els.tyreB, DATA.tyres, state.B.tyreId);
+
+  els.sprA.value = state.A.sprocket;
+  els.cwA.value = state.A.crown;
+  els.sprB.value = state.B.sprocket;
+  els.cwB.value = state.B.crown;
+
+  setRowHeightPercent(state.rowHeightPct ?? 100);
+  els.speedHead.textContent = unitLabel(state.unit);
+}
+
+function buildRows(){
+  // determine max speed based on max rpm and top gear in each setup
+  const maxAKmh = maxSpeedForSetup(state.A);
+  const maxBKmh = maxSpeedForSetup(state.B);
+  const maxA = fromKmh(maxAKmh, state.unit);
+  const maxB = fromKmh(maxBKmh, state.unit);
+  const maxAuto = Math.max(isFinite(maxA)?maxA:0, isFinite(maxB)?maxB:0);
+
+  els.maxA.textContent = `A max @ max rpm: ${isFinite(maxA) ? maxA.toFixed(1) : "—"} ${unitLabel(state.unit)}`;
+  els.maxB.textContent = `B max @ max rpm: ${isFinite(maxB) ? maxB.toFixed(1) : "—"} ${unitLabel(state.unit)}`;
+  els.maxAuto.textContent = `Auto max speed: ${isFinite(maxAuto) ? ceilTo(maxAuto, state.speedStep).toFixed(1) : "—"} ${unitLabel(state.unit)}`;
+
+  const top = isFinite(maxAuto) && maxAuto>0 ? ceilTo(maxAuto, state.speedStep) : 80;
+  const speeds = [];
+  for (let s = top; s >= 0; s = Math.max(0, +(s - state.speedStep).toFixed(6))) {
+    speeds.push(s);
+    if (s===0) break;
+  }
+  return speeds;
+}
+
+function renderTable(){
+  readStateFromUI();
+  els.speedHead.textContent = unitLabel(state.unit);
+
+  const speeds = buildRows();
+  const gbA = findGearbox(state.A.gearboxId);
+  const gbB = findGearbox(state.B.gearboxId);
+  const tyreA = findTyre(state.A.tyreId);
+  const tyreB = findTyre(state.B.tyreId);
+
+  const pairsA = gbA?.gears || [];
+  const pairsB = gbB?.gears || [];
+
+  els.tbody.innerHTML = "";
+  for (const s of speeds) {
+    const tr = document.createElement("tr");
+
+    const kmh = toKmh(s, state.unit);
+
+    // setup A cells
+    for (let gi=0; gi<6; gi++) {
+      const td = document.createElement("td");
+      td.className = "rpm";
+      const p = pairsA[gi];
+      const rpm = (p && p[0] && p[1] && tyreA) ? rpmAtSpeedKmh(kmh, p, tyreA.circ_m, state.A.sprocket, state.A.crown) : NaN;
+      if (isFinite(rpm) && rpm >= state.rpmIdle && rpm <= state.rpmMax) {
+        const r = (rpm >= 200) ? (Math.round(rpm/10)*10) : Math.round(rpm);
+        td.textContent = String(r);
+        const c = colorForRPM(rpm, state.rpmIn, state.rpmPeak, state.rpmShift, state.rpmMax);
+        td.style.background = c.bg;
+        td.style.color = c.fg;
+      } else {
+        td.textContent = "";
+        td.style.background = "rgba(0,0,0,0.18)";
+        td.style.color = "rgba(255,255,255,0.85)";
+      }
+      tr.appendChild(td);
+    }
+
+    // speed cell
+    const tdS = document.createElement("td");
+    tdS.className = "speed";
+    tdS.textContent = s % 1 === 0 ? String(s.toFixed(0)) : String(s.toFixed(1));
+    tr.appendChild(tdS);
+
+    // setup B cells
+    for (let gi=0; gi<6; gi++) {
+      const td = document.createElement("td");
+      td.className = "rpm";
+      const p = pairsB[gi];
+      const rpm = (p && p[0] && p[1] && tyreB) ? rpmAtSpeedKmh(kmh, p, tyreB.circ_m, state.B.sprocket, state.B.crown) : NaN;
+      if (isFinite(rpm) && rpm >= state.rpmIdle && rpm <= state.rpmMax) {
+        const r = (rpm >= 200) ? (Math.round(rpm/10)*10) : Math.round(rpm);
+        td.textContent = String(r);
+        const c = colorForRPM(rpm, state.rpmIn, state.rpmPeak, state.rpmShift, state.rpmMax);
+        td.style.background = c.bg;
+        td.style.color = c.fg;
+      } else {
+        td.textContent = "";
+        td.style.background = "rgba(0,0,0,0.18)";
+        td.style.color = "rgba(255,255,255,0.85)";
+      }
+      tr.appendChild(td);
+    }
+
+    els.tbody.appendChild(tr);
+  }
+}
+
+function saveState(){
+  readStateFromUI();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function loadState(){
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return false;
+  try {
+    const obj = JSON.parse(raw);
+    if (!obj) return false;
+    state = obj;
+    // ensure required keys exist
+    state.A = state.A || {};
+    state.B = state.B || {};
+    state.rowHeightPct = state.rowHeightPct ?? 100;
+    writeStateToUI();
+    renderTable();
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+function resetState(){
+  state = {
+    unit: DEFAULTS.unit || "mph",
+    speedStep: DEFAULTS.speedStep || 2,
+    rpmIn: DEFAULTS.rpmIn,
+    rpmPeak: DEFAULTS.rpmPeak,
+    rpmShift: DEFAULTS.rpmShift,
+    rpmMax: DEFAULTS.rpmMax,
+    rpmIdle: (DEFAULTS.rpmIdle || 1000),
+    rowHeightPct: 100,
+    A: {
+      gearboxId: DEFAULTS.gearboxA,
+      tyreId: DEFAULTS.tyreA,
+      sprocket: DEFAULTS.sprocketA,
+      crown: DEFAULTS.crownA
+    },
+    B: {
+      gearboxId: DEFAULTS.gearboxB,
+      tyreId: DEFAULTS.tyreB,
+      sprocket: DEFAULTS.sprocketB,
+      crown: DEFAULTS.crownB
+    }
+  };
+  writeStateToUI();
+  renderTable();
+}
+
+function init(){
+  populateDatalists();
+  resetState();
+  loadState(); // if exists, it will override
+
+  // listeners
+  const rerender = ()=>{ renderTable(); };
+  ["change","input"].forEach(evt=>{
+    els.unit.addEventListener(evt, ()=>{
+      // convert step to match new unit, keep roughly same increment in km/h
+      const prev = state.unit;
+      readStateFromUI();
+      const stepVal = state.speedStep;
+      // when user toggles units, convert current step numeric to new unit
+      // If prev differs, convert
+      if (prev !== els.unit.value) {
+        const stepKmh = prev==="kmh" ? stepVal : stepVal*1.609344;
+        const newStep = els.unit.value==="kmh" ? stepKmh : stepKmh/1.609344;
+        els.step.value = (Math.round(newStep*2)/2).toString(); // nearest 0.5
+      }
+      renderTable();
+    });
+    els.step.addEventListener(evt, rerender);
+    els.rpmIn.addEventListener(evt, rerender);
+    els.rpmPeak.addEventListener(evt, rerender);
+    els.rpmShift.addEventListener(evt, rerender);
+    els.rpmMax.addEventListener(evt, rerender);
+    els.rpmIdle.addEventListener(evt, rerender);
+
+    els.gbA.addEventListener(evt, rerender);
+    els.gbB.addEventListener(evt, rerender);
+    els.tyreA.addEventListener(evt, rerender);
+    els.tyreB.addEventListener(evt, rerender);
+    els.sprA.addEventListener(evt, rerender);
+    els.cwA.addEventListener(evt, rerender);
+    els.sprB.addEventListener(evt, rerender);
+    els.cwB.addEventListener(evt, rerender);
+  });
+
+  els.rowHeight.addEventListener("input", ()=> setRowHeightPercent(parseInt(els.rowHeight.value,10)));
+  els.rhMinus.addEventListener("click", ()=> setRowHeightPercent((state.rowHeightPct||100) - 5));
+  els.rhPlus.addEventListener("click", ()=> setRowHeightPercent((state.rowHeightPct||100) + 5));
+  els.fit.addEventListener("click", ()=>{ fitTableToScreen(); });
+  window.addEventListener("resize", ()=>{ /* keep current */ });
+
+  els.save.addEventListener("click", saveState);
+  els.load.addEventListener("click", ()=>{ loadState(); });
+  els.reset.addEventListener("click", ()=>{ localStorage.removeItem(STORAGE_KEY); resetState(); });
+}
+
+init();
+</script>
+</body>
+</html>
