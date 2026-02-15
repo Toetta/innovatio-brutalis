@@ -129,7 +129,10 @@
   <div class="wrap">
     <div class="row">
       <h1 id="companyName">FU-BOOKKEEPING</h1>
-      <select class="pill" id="yearPillSelect" aria-label="Aktivt räkenskapsår"></select>
+      <div class="field" style="gap:4px; min-width: 180px;">
+        <label for="yearPillSelect">Räkenskapsår</label>
+        <select class="pill" id="yearPillSelect" aria-label="Räkenskapsår"></select>
+      </div>
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill">Lagring: localStorage (offline)</span>
     </div>
@@ -1606,7 +1609,63 @@ if (!state.features) state.features = { sruEnabled: false };
   }
 
   // --- Year selectors ---
+  function fiscalYearLabelFromPeriod(startIso, endIso){
+    if (!isoIsValid(startIso) && !isoIsValid(endIso)) return "";
+    const sy = isoIsValid(startIso) ? String(startIso).slice(0,4) : "";
+    const ey = isoIsValid(endIso) ? String(endIso).slice(0,4) : "";
+    if (sy && !/^\d{4}$/.test(sy)) return "";
+    if (ey && !/^\d{4}$/.test(ey)) return "";
+    if (sy && ey && sy !== ey) return `${sy}/${ey}`;
+    return sy || ey || "";
+  }
+
+  function voucherYearIds(){
+    const s = new Set();
+    (state.vouchers || []).forEach(v => {
+      if (v && v.yearId != null) s.add(String(v.yearId));
+    });
+    return s;
+  }
+
+  function normalizeFiscalYears(){
+    state.fiscalYears = Array.isArray(state.fiscalYears) ? state.fiscalYears : [];
+
+    // Convert SIE #RAR ids like "0"/"-1" into readable IDs derived from the period.
+    const out = [];
+    const used = new Set();
+
+    for (const y of state.fiscalYears){
+      if (!y || typeof y !== "object") continue;
+      const start = String(y.start || "");
+      const end = String(y.end || "");
+      let id = String(y.id || "").trim();
+
+      const inferred = fiscalYearLabelFromPeriod(start, end);
+      const isSmallNumericId = /^-?\d+$/.test(id) && Math.abs(Number(id)) < 100;
+      if ((id === "" || isSmallNumericId) && inferred) id = inferred;
+
+      // Guard against empty/invalid ids
+      if (!id) continue;
+
+      // De-duplicate exact same year entries
+      const exactKey = `${id}|${start}|${end}`;
+      if (used.has(exactKey)) continue;
+
+      // If id collides with a different period, disambiguate
+      if (out.some(z => z.id === id && (z.start !== start || z.end !== end))){
+        const suffix = isoIsValid(start) ? start.replaceAll("-", "") : "";
+        id = suffix ? `${id}_${suffix}` : `${id}_2`;
+      }
+
+      used.add(`${id}|${start}|${end}`);
+      out.push({ id, start, end });
+    }
+
+    state.fiscalYears = out;
+  }
+
   function normalizeActiveYear(){
+    normalizeFiscalYears();
     state.fiscalYears = Array.isArray(state.fiscalYears) ? state.fiscalYears : [];
     if (!state.fiscalYears.length){
       state.fiscalYears = defaultData().fiscalYears.slice();
@@ -1622,7 +1681,18 @@ if (!state.features) state.features = { sruEnabled: false };
   function fillSelectWithYears(selectEl, opts){
     if (!selectEl) return;
     const prev = selectEl.value;
-    const ys = state.fiscalYears.slice().sort((a,b)=>a.id.localeCompare(b.id,"sv"));
+    let ys = state.fiscalYears.slice().sort((a,b)=>a.id.localeCompare(b.id,"sv"));
+    if (opts && opts.onlyActiveYear){
+      const active = String(state.activeYearId || "");
+      const only = ys.filter(y => String(y.id) === active);
+      if (only.length) ys = only;
+    }
+    if (opts && opts.onlyWithVouchers){
+      const vset = voucherYearIds();
+      const filtered = ys.filter(y => vset.has(String(y.id)));
+      // If there are no vouchers yet, keep full list to avoid empty selectors.
+      if (filtered.length) ys = filtered;
+    }
     selectEl.innerHTML = "";
     ys.forEach(y=>{
       const opt = document.createElement("option");
@@ -1634,15 +1704,22 @@ if (!state.features) state.features = { sruEnabled: false };
     });
     const wanted = ys.find(y=>y.id===prev)?.id || state.activeYearId || ys[0]?.id || "";
     selectEl.value = wanted;
+
+    if (opts && Object.prototype.hasOwnProperty.call(opts, "setDisabled")){
+      selectEl.disabled = !!opts.setDisabled;
+    }
   }
 
   function fillYearSelectors(){
     normalizeActiveYear();
-    fillSelectWithYears(yearSelect);
-    fillSelectWithYears(yearPillSelect);
-    fillSelectWithYears(invYearSelect);
-    fillSelectWithYears(sieYearSelect);
-    fillSelectWithYears(document.getElementById("sruYearSelect"));
+    // Only the header dropdown is used to change year.
+    // All other year selectors follow the active year and are locked.
+    fillSelectWithYears(yearPillSelect, { onlyWithVouchers: true, setDisabled: false });
+    fillSelectWithYears(yearSelect, { onlyActiveYear: true, setDisabled: true });
+    fillSelectWithYears(invYearSelect, { onlyActiveYear: true, setDisabled: true });
+    fillSelectWithYears(rptYearSelect, { onlyActiveYear: true, setDisabled: true });
+    fillSelectWithYears(sieYearSelect, { onlyActiveYear: true, setDisabled: true });
+    fillSelectWithYears(document.getElementById("sruYearSelect"), { onlyActiveYear: true, setDisabled: true });
     fillSelectWithYears(carryFrom);
     fillSelectWithYears(carryTo);
   }
@@ -2250,13 +2327,28 @@ if (!state.features) state.features = { sruEnabled: false };
       const tag = toks[0];
 
       if (tag === "#RAR"){
-        const id = toks[1];
+        const sieId = toks[1];
         const start = isoFromYmd(toks[2]);
         const end = isoFromYmd(toks[3]);
-        if (id && start && end){
-          if (!state.fiscalYears.some(y=>y.id===id)) state.fiscalYears.push({ id, start, end });
-          currentYearId = id;
-          state.activeYearId = id;
+        if (sieId && start && end){
+          const inferred = fiscalYearLabelFromPeriod(start, end);
+          let id = String(sieId);
+          const isSmallNumericId = /^-?\d+$/.test(id) && Math.abs(Number(id)) < 100;
+          if ((id === "" || isSmallNumericId) && inferred) id = inferred;
+          if (!id && inferred) id = inferred;
+          if (!id) continue;
+
+          // If the same id exists with same period, keep it. If it exists with different period, disambiguate.
+          const existing = (state.fiscalYears||[]).find(y=>y.id===id);
+          let finalId = id;
+          if (existing && (existing.start !== start || existing.end !== end)){
+            finalId = `${id}_${start.replaceAll("-", "")}`;
+          }
+
+          state.fiscalYears = state.fiscalYears || [];
+          if (!state.fiscalYears.some(y=>y.id===finalId)) state.fiscalYears.push({ id: finalId, start, end });
+          currentYearId = finalId;
+          state.activeYearId = finalId;
         }
       }
       if (tag === "#KONTO"){
@@ -2299,8 +2391,8 @@ if (!state.features) state.features = { sruEnabled: false };
     if (companyNameEl) companyNameEl.textContent = state.company?.name || "FU-BOOKKEEPING";
     fillYearSelectors();
     // keep selectors in sync
-    if (yearSelect) yearSelect.value = yearSelect.value || state.activeYearId;
-    if (yearPillSelect) yearPillSelect.value = yearPillSelect.value || state.activeYearId;
+    if (yearSelect) yearSelect.value = state.activeYearId;
+    if (yearPillSelect) yearPillSelect.value = state.activeYearId;
     renderVoucherList();
     renderAccounts();
     updateFsUI();
@@ -2313,8 +2405,8 @@ if (!state.features) state.features = { sruEnabled: false };
     if (btnClearVoucher) btnClearVoucher.addEventListener("click", ()=>{ if (!confirm("Rensa verifikationen?")) return; newVoucher(); });
     if (btnSaveVoucher) btnSaveVoucher.addEventListener("click", saveVoucher);
     if (btnRefresh) btnRefresh.addEventListener("click", renderVoucherList);
-    if (yearSelect) yearSelect.addEventListener("change", ()=>{ setActiveYear(yearSelect.value); renderVoucherList(); });
-    if (yearPillSelect) yearPillSelect.addEventListener("change", ()=>{ setActiveYear(yearPillSelect.value); if (yearSelect) yearSelect.value = yearPillSelect.value; renderVoucherList(); });
+    // Year is changed only via the header dropdown.
+    if (yearPillSelect) yearPillSelect.addEventListener("change", ()=>{ setActiveYear(yearPillSelect.value); });
 
     if (btnAddAccount) btnAddAccount.addEventListener("click", ()=>{
       const no = (aNo?.value || "").trim();
@@ -3993,20 +4085,6 @@ if (!state.features) state.features = { sruEnabled: false };
   function renderReports(){
     // Fill year selector and set sensible defaults
     fillYearSelectors();
-
-    if (rptYearSelect){
-      // Build options (reuse fiscal years)
-      const ys = state.fiscalYears.slice().sort((a,b)=>a.id.localeCompare(b.id,"sv"));
-      const prev = rptYearSelect.value;
-      rptYearSelect.innerHTML = "";
-      ys.forEach(y=>{
-        const opt = document.createElement("option");
-        opt.value = y.id;
-        opt.textContent = `${y.id} (${y.start} – ${y.end})`;
-        rptYearSelect.appendChild(opt);
-      });
-      rptYearSelect.value = ys.find(y=>y.id===prev)?.id || state.activeYearId || ys[0]?.id || "";
-    }
 
     // Default range: full FY
     if (rptFrom && rptTo){
