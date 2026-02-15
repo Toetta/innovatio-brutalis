@@ -134,7 +134,7 @@
         <select class="pill" id="yearPillSelect" aria-label="Räkenskapsår"></select>
       </div>
       <span class="pill" id="bootPill">JS: laddar…</span>
-      <span class="pill">Lagring: localStorage (offline)</span>
+      <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
     </div>
   </div>
 </header>
@@ -1179,6 +1179,16 @@ if (!d.features) d.features = { sruEnabled: false };
   function updateFsUI(){
     if (!fsStatus) return;
 
+    // Header storage indicator (reacts to file connection)
+    if (storagePill){
+      if (fsApiSupported() && fsHandle){
+        const name = fsHandle && fsHandle.name ? fsHandle.name : "datafil";
+        storagePill.textContent = `Lagring: datafil (${name})`;
+      } else {
+        storagePill.textContent = "Lagring: localStorage (offline)";
+      }
+    }
+
     // checkboxes
     if (fsAutosave){
       fsAutosave.checked = !!(state.fileSync && state.fileSync.autosave);
@@ -1402,6 +1412,7 @@ if (!state.features) state.features = { sruEnabled: false };
 
   const companyNameEl = document.getElementById("companyName");
   const yearPillSelect = document.getElementById("yearPillSelect");
+  const storagePill = document.getElementById("storagePill");
 
   const yearSelect = document.getElementById("yearSelect");
   const voucherYearPill = document.getElementById("voucherYearPill");
