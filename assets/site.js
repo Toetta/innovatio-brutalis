@@ -1,4 +1,13 @@
 (() => {
+  // Enforce canonical host (keeps URLs consistent with <link rel="canonical">)
+  try {
+    if (window.location.hostname === "innovatio-brutalis.se") {
+      const target = "https://www.innovatio-brutalis.se" + window.location.pathname + window.location.search + window.location.hash;
+      window.location.replace(target);
+      return;
+    }
+  } catch (_) {}
+
   // --- Helpers ---
   const pathname = window.location.pathname;
   const params = new URLSearchParams(window.location.search);

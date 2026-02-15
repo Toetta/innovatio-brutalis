@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>404 — Not found</title>
+  <meta name="robots" content="noindex">
+  <script>
+    (function () {
+      try {
+        var host = window.location.hostname || "";
+        var targetHost = "www.innovatio-brutalis.se";
+
+        // If someone visits the apex domain, prefer the canonical www host.
+        if (host === "innovatio-brutalis.se") {
+          var target = "https://" + targetHost + window.location.pathname + window.location.search + window.location.hash;
+          window.location.replace(target);
+          return;
+        }
+
+        // GitHub Pages is case-sensitive: redirect legacy FU-Bookkeeping link casing.
+        var p = window.location.pathname || "";
+        if (p.toLowerCase() === "/assets/fu-bookkeeping.html" && p !== "/assets/fu-bookkeeping.html") {
+          var target2 = "/assets/fu-bookkeeping.html" + window.location.search + window.location.hash;
+          window.location.replace(target2);
+          return;
+        }
+      } catch (_) {}
+    })();
+  </script>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;margin:0;padding:48px;color:#111;background:#fff}
+    h1{margin:0 0 12px;font-size:28px}
+    p{margin:0 0 16px;color:#444;max-width:70ch;line-height:1.4}
+    a{color:#0b5fff}
+  </style>
+</head>
+<body>
+  <h1>404</h1>
+  <p>The requested page could not be found.</p>
+  <p><a href="/">Go to homepage</a></p>
+</body>
+</html>
