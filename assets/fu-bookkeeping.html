@@ -235,7 +235,6 @@
             <h2>Verifikationer i året</h2>
             <div class="row">
               <span class="pill" id="voucherYearPill" aria-label="Visat räkenskapsår"></span>
-              <button class="btn secondary" id="btnRefresh">Uppdatera</button>
             </div>
           </div>
 
@@ -2405,7 +2404,6 @@ if (!state.features) state.features = { sruEnabled: false };
     if (btnAddLine) btnAddLine.addEventListener("click", ()=>{ currentLines.push(makeLine()); renderLines(); updateBalanceBadge(); });
     if (btnClearVoucher) btnClearVoucher.addEventListener("click", ()=>{ if (!confirm("Rensa verifikationen?")) return; newVoucher(); });
     if (btnSaveVoucher) btnSaveVoucher.addEventListener("click", saveVoucher);
-    if (btnRefresh) btnRefresh.addEventListener("click", renderVoucherList);
     // Year is changed only via the header dropdown.
     if (yearPillSelect) yearPillSelect.addEventListener("change", ()=>{ setActiveYear(yearPillSelect.value); });
 
@@ -2494,6 +2492,32 @@ if (!state.features) state.features = { sruEnabled: false };
     if (sru.btnSaveMap) sru.btnSaveMap.addEventListener("click", ()=>{ save(); renderSru(); });
     if (sru.btnExport) sru.btnExport.addEventListener("click", exportSruNe);
   }
+
+  // Auto-refresh (no manual refresh button)
+  // - Updates list when returning to the tab
+  // - Syncs if another tab modifies localStorage
+  window.addEventListener("focus", ()=>{
+    try {
+      renderVoucherList();
+      updateFsUI();
+    } catch (_) {}
+  });
+
+  document.addEventListener("visibilitychange", ()=>{
+    if (document.hidden) return;
+    try {
+      renderVoucherList();
+      updateFsUI();
+    } catch (_) {}
+  });
+
+  window.addEventListener("storage", (e)=>{
+    if (!e || e.key !== STORAGE_KEY) return;
+    try {
+      state = load();
+      renderAll();
+    } catch (_) {}
+  });
 
   // --- Invoice helpers ---
   const invYearSelect = document.getElementById("invYearSelect");
