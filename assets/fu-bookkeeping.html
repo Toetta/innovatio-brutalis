@@ -2606,9 +2606,9 @@ if (!d.features) d.features = { sruEnabled: false };
     updateFsUI();
   }
 
-  async function fsLoadState(){
+  async function fsLoadState(requestPermission = true){
     if (!fsHandle) throw new Error("Ingen fil ansluten");
-    const ok = await fsEnsurePermission(true);
+    const ok = await fsEnsurePermission(!!requestPermission);
     if (!ok) throw new Error("Behörighet nekad");
 
     const file = await fsHandle.getFile();
@@ -2661,7 +2661,23 @@ if (!d.features) d.features = { sruEnabled: false };
       // Ask permission now (user click), and auto-load if possible
       const ok = await fsEnsurePermission(true);
       if (ok){
-        try { await fsLoadState(); } catch { /* empty/invalid => ignore */ }
+        let loaded = false;
+        try {
+          await fsLoadState();
+          loaded = true;
+        } catch {
+          /* empty/invalid => ignore */
+        }
+
+        // Auto-refresh after successful load so company/year/etc updates immediately
+        if (loaded){
+          try { fillYearSelectors(); } catch (e){ console.error(e); }
+          try { if (typeof newVoucher === "function") newVoucher(); } catch (e){ console.error(e); }
+          try { if (typeof newInvoice === "function") newInvoice(); } catch (e){ console.error(e); }
+          try { if (typeof newSupplierInvoice === "function") newSupplierInvoice(); } catch (e){ console.error(e); }
+          try { if (typeof renderAll === "function") renderAll(); } catch (e){ console.error(e); }
+          showToast("Laddade data från fil.", 3500);
+        }
       }
 
       updateFsUI();
@@ -6556,6 +6572,25 @@ idbGet("dataFileHandle").then(h=>{
     fsHandle = h;
     fsLastError = null;
     updateFsUI();
+
+    // Auto-load on startup (silent) if permission is already granted.
+    // Never request permission here (no prompts without a user gesture).
+    Promise.resolve().then(async ()=>{
+      try {
+        const ok = await fsEnsurePermission(false);
+        if (!ok) return;
+        await fsLoadState(false);
+        try { fillYearSelectors(); } catch (e){ console.error(e); }
+        try { if (typeof newVoucher === "function") newVoucher(); } catch (e){ console.error(e); }
+        try { if (typeof newInvoice === "function") newInvoice(); } catch (e){ console.error(e); }
+        try { if (typeof newSupplierInvoice === "function") newSupplierInvoice(); } catch (e){ console.error(e); }
+        try { if (typeof renderAll === "function") renderAll(); } catch (e){ console.error(e); }
+      } catch (e){
+        // Keep app usable even if file is missing/invalid.
+        fsLastError = e;
+        try { updateFsUI(); } catch {}
+      }
+    });
   }
 }).catch(()=>{});
 try { updateFsUI(); } catch (e){ /* ignore */ }
