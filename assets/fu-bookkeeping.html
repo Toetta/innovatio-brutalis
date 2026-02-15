@@ -71,9 +71,20 @@
       width:100%;
       text-align:left;
       display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      background:transparent;
+      color:var(--muted);
+      border:1px solid var(--line);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
     }
     .navGroupBtn:focus{
+      outline:none;
       border-color:rgba(96,165,250,.7);
+      box-shadow:0 0 0 3px rgba(96,165,250,.12);
     }
     .navGroup.open .navGroupBtn{
       border-color:rgba(96,165,250,.7);
