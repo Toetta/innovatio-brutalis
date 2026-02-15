@@ -928,9 +928,24 @@
 
   const bootPill = document.getElementById("bootPill");
   const setBoot = (text) => { if (bootPill) bootPill.textContent = text; };
-  setBoot("JS: OK");
-  window.addEventListener("error", () => setBoot("JS: fel (konsol)"));
-  window.addEventListener("unhandledrejection", () => setBoot("JS: fel (konsol)"));
+  setBoot("JS: init…");
+  window.addEventListener("error", (ev) => {
+    try {
+      const msg = (ev && (ev.message || ev.error?.message)) ? (ev.message || ev.error?.message) : "fel (konsol)";
+      setBoot(("JS: " + String(msg)).slice(0, 120));
+    } catch (_){
+      setBoot("JS: fel (konsol)");
+    }
+  });
+  window.addEventListener("unhandledrejection", (ev) => {
+    try {
+      const r = ev ? ev.reason : null;
+      const msg = (r && (r.message || r.name)) ? (r.message || r.name) : String(r ?? "fel (konsol)");
+      setBoot(("JS: " + String(msg)).slice(0, 120));
+    } catch (_){
+      setBoot("JS: fel (konsol)");
+    }
+  });
 
 
   // --- Utilities ---
@@ -1067,7 +1082,13 @@
   }
 
   function load(){
-    const raw = localStorage.getItem(STORAGE_KEY);
+    let raw = null;
+    try {
+      raw = localStorage.getItem(STORAGE_KEY);
+    } catch (e){
+      setBoot("JS: localStorage blockerad");
+      return defaultData();
+    }
     if (!raw) return defaultData();
     try {
       const d = JSON.parse(raw);
@@ -1098,7 +1119,12 @@ if (!d.features) d.features = { sruEnabled: false };
     }
   }
   function save(){
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e){
+      // Still keep the UI responsive even if persistence is blocked.
+      setBoot("JS: kunde inte spara (localStorage)");
+    }
     renderAll();
     scheduleFileAutosave();
   }
@@ -1161,8 +1187,19 @@ if (!d.features) d.features = { sruEnabled: false };
     const requireFile = !!(state.fileSync && state.fileSync.requireFile);
 
     if (!fsApiSupported()){
-      setFsStatus("bad", requireFile ? "Kräver HTTPS/localhost + Chrome/Edge (fil krävs)" : "Kräver HTTPS/localhost + Chrome/Edge");
-      setEditingLocked(requireFile);
+      // File System Access API is not available (e.g. Firefox/Safari, or insecure context).
+      // Never lock the whole app in that case; instead, auto-disable the "require file" guard.
+      if (requireFile){
+        try {
+          state.fileSync = state.fileSync || { autosave: true, requireFile: false };
+          state.fileSync.requireFile = false;
+          if (fsRequireFile) fsRequireFile.checked = false;
+          // Persist without triggering a full render loop.
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (_) {}
+      }
+      setFsStatus("bad", "Fil-synk kräver HTTPS/localhost + Chrome/Edge (krav avstängt här)");
+      setEditingLocked(false);
       return;
     }
 
@@ -1235,7 +1272,7 @@ if (!d.features) d.features = { sruEnabled: false };
 if (!state.features) state.features = { sruEnabled: false };
     if (typeof state.features.sruEnabled !== "boolean") state.features.sruEnabled = false;
     if (!state.fileSync) state.fileSync = { autosave: true, requireFile: false };
-    if (typeof state.fileSync.requireFile !== "boolean") state.fileSync.requireFile = true;
+    if (typeof state.fileSync.requireFile !== "boolean") state.fileSync.requireFile = false;
 
     save();
   }
@@ -3205,26 +3242,34 @@ if (rptYearSelect){
 
 
 // --- Init ---
-fillYearSelectors();
+try {
+  fillYearSelectors();
 
-if (yearSelect) yearSelect.value = state.activeYearId;
-if (vDate) vDate.value = todayISO();
+  if (yearSelect) yearSelect.value = state.activeYearId;
+  if (vDate) vDate.value = todayISO();
 
-newVoucher();
+  newVoucher();
 
-// Invoices init
-state.customers = state.customers || {};
-state.suppliers = state.suppliers || {};
-state.invoices = state.invoices || [];
-state.features = state.features || { sruEnabled: false };
+  // Invoices init
+  state.customers = state.customers || {};
+  state.suppliers = state.suppliers || {};
+  state.invoices = state.invoices || [];
+  state.features = state.features || { sruEnabled: false };
 
-if (invYearSelect) invYearSelect.value = state.activeYearId;
-if (invDate) invDate.value = todayISO();
-if (invDue) invDue.value = addDays(todayISO(), (state.company.payDays||30));
+  if (invYearSelect) invYearSelect.value = state.activeYearId;
+  if (invDate) invDate.value = todayISO();
+  if (invDue) invDue.value = addDays(todayISO(), (state.company.payDays||30));
 
-wireInvoiceEvents();
-newInvoice();
-renderAll();
+  wireInvoiceEvents();
+  newInvoice();
+  renderAll();
+
+  setBoot("JS: OK");
+} catch (e){
+  try { console.error(e); } catch (_) {}
+  const msg = (e && (e.message || e.name)) ? (e.message || e.name) : String(e || "fel");
+  setBoot(("JS: " + msg).slice(0, 120));
+}
 
 })();
 </script>
