@@ -2956,6 +2956,13 @@ if (!d.features) d.features = { sruEnabled: false };
     if (b) b.setAttribute("aria-expanded","true");
   }
 
+  function closeNavGroup(groupEl){
+    if (!groupEl) return;
+    groupEl.classList.remove("open");
+    const b = groupEl.querySelector(".navGroupBtn");
+    if (b) b.setAttribute("aria-expanded","false");
+  }
+
   function _escapeSel(s){
     try { return (window.CSS && CSS.escape) ? CSS.escape(String(s)) : String(s).replace(/"/g, '\\"'); }
     catch(e){ return String(s).replace(/"/g, '\\"'); }
@@ -2980,13 +2987,8 @@ if (!d.features) d.features = { sruEnabled: false };
       gb.addEventListener("click", (e)=>{
         e.preventDefault();
 
-        const activeTab = sidebar.querySelector("button.tab.active[data-tab]");
-        const activeGroup = activeTab ? activeTab.closest(".navGroup") : null;
-
         const isOpen = g.classList.contains("open");
-        if (isOpen && activeGroup === g) return; // keep current section visible
-
-        if (isOpen) closeAllNavGroups(activeGroup);
+        if (isOpen) closeNavGroup(g);
         else openNavGroup(g);
       });
     });
