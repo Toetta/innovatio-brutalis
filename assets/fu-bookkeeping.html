@@ -1209,7 +1209,10 @@ if (!d.features) d.features = { sruEnabled: false };
         setPillState(storagePill, fsLastError ? "bad" : "ok");
       } else {
         storagePill.textContent = localStorageOk ? "Lagring: localStorage (offline)" : "Lagring: localStorage blockerad";
-        const bad = (supported && requireFile && !connected) || !localStorageOk;
+        // Offline storage is considered an error state in this app.
+        // Green should mean "datafil ansluten och OK".
+        const bad = true;
+        void requireFile; // keep variable (used for readability)
         setPillState(storagePill, bad ? "bad" : "ok");
       }
     }
