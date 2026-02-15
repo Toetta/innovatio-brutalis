@@ -234,7 +234,7 @@
           <div class="row" style="justify-content:space-between; margin-bottom:10px;">
             <h2>Verifikationer i året</h2>
             <div class="row">
-              <select id="yearSelect"></select>
+              <span class="pill" id="voucherYearPill" aria-label="Visat räkenskapsår"></span>
               <button class="btn secondary" id="btnRefresh">Uppdatera</button>
             </div>
           </div>
@@ -1405,6 +1405,7 @@ if (!state.features) state.features = { sruEnabled: false };
   const yearPillSelect = document.getElementById("yearPillSelect");
 
   const yearSelect = document.getElementById("yearSelect");
+  const voucherYearPill = document.getElementById("voucherYearPill");
   const voucherList = document.getElementById("voucherList");
 
   const vDate = document.getElementById("vDate");
@@ -1715,7 +1716,6 @@ if (!state.features) state.features = { sruEnabled: false };
     // Only the header dropdown is used to change year.
     // All other year selectors follow the active year and are locked.
     fillSelectWithYears(yearPillSelect, { onlyWithVouchers: true, setDisabled: false });
-    fillSelectWithYears(yearSelect, { onlyActiveYear: true, setDisabled: true });
     fillSelectWithYears(invYearSelect, { onlyActiveYear: true, setDisabled: true });
     fillSelectWithYears(rptYearSelect, { onlyActiveYear: true, setDisabled: true });
     fillSelectWithYears(sieYearSelect, { onlyActiveYear: true, setDisabled: true });
@@ -1734,7 +1734,8 @@ if (!state.features) state.features = { sruEnabled: false };
   // --- Vouchers list ---
   function renderVoucherList(){
     if (!voucherList) return;
-    const yearId = (yearSelect && yearSelect.value) ? yearSelect.value : state.activeYearId;
+    const yearId = state.activeYearId;
+    if (voucherYearPill) voucherYearPill.textContent = String(yearId || "");
     const vs = (state.vouchers||[])
       .filter(v => v.yearId === yearId)
       .slice()
@@ -2391,8 +2392,8 @@ if (!state.features) state.features = { sruEnabled: false };
     if (companyNameEl) companyNameEl.textContent = state.company?.name || "FU-BOOKKEEPING";
     fillYearSelectors();
     // keep selectors in sync
-    if (yearSelect) yearSelect.value = state.activeYearId;
     if (yearPillSelect) yearPillSelect.value = state.activeYearId;
+    if (voucherYearPill) voucherYearPill.textContent = String(state.activeYearId || "");
     renderVoucherList();
     renderAccounts();
     updateFsUI();
@@ -3448,7 +3449,7 @@ if (!state.features) state.features = { sruEnabled: false };
   }
 
   function saveVoucher(){
-    const yearId = yearSelect.value || state.activeYearId;
+    const yearId = state.activeYearId;
     const date = vDate.value || todayISO();
     const series = (vSeries.value || "A").trim() || "A";
     const no = (vNo.value || "").trim() || nextVerno(yearId, series);
@@ -3490,7 +3491,9 @@ if (!state.features) state.features = { sruEnabled: false };
     const v = state.vouchers.find(x => x.id === id);
     if (!v) return;
     editingVoucherId = v.id;
-    yearSelect.value = v.yearId;
+    if (v.yearId && v.yearId !== state.activeYearId){
+      setActiveYear(v.yearId);
+    }
     vDate.value = v.date;
     vSeries.value = v.series;
     vNo.value = v.no;
@@ -4170,8 +4173,6 @@ if (rptYearSelect){
 // --- Init ---
 try {
   fillYearSelectors();
-
-  if (yearSelect) yearSelect.value = state.activeYearId;
   if (vDate) vDate.value = todayISO();
 
   newVoucher();
