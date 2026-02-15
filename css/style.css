@@ -106,11 +106,15 @@ small{color:var(--text-muted)}
   justify-content:center;
   align-items:center;
   padding: 6px 0 0 0;
+  line-height:0;
 }
 
+.brand-hero picture{display:block}
+
 .brand-hero img{
-  width: min(260px, 88%);
-  height: auto;
+  height: clamp(72px, 10vw, 96px);
+  width: auto;
+  max-width: min(260px, 88%);
   display:block;
   margin: 0 auto;
   object-fit: contain;
@@ -130,7 +134,9 @@ small{color:var(--text-muted)}
     grid-row: 1 / span 3;
   }
   .brand-hero img{
-    width: 200px;
+    height: 84px;
+    width: auto;
+    max-width: 200px;
     margin: 0;
   }
   .hero h1,
