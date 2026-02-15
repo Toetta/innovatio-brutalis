@@ -109,11 +109,35 @@ small{color:var(--text-muted)}
 }
 
 .brand-hero img{
-  width: min(520px, 96%);
+  width: min(260px, 88%);
   height: auto;
   display:block;
   margin: 0 auto;
   object-fit: contain;
+}
+
+/* Hero: logo to the side on larger screens */
+@media (min-width: 900px){
+  .hero{
+    grid-template-columns: 220px 1fr;
+    column-gap: 26px;
+    row-gap: 10px;
+    text-align:left;
+  }
+  .brand-hero{
+    justify-content:flex-start;
+    padding:0;
+    grid-row: 1 / span 3;
+  }
+  .brand-hero img{
+    width: 200px;
+    margin: 0;
+  }
+  .hero h1,
+  .hero .tagline,
+  .hero .cta-row{
+    grid-column: 2;
+  }
 }
 
 /* Typography */
