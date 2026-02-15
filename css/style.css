@@ -430,3 +430,69 @@ footer{
   padding:8px 12px;
   font-size:11px;
 }
+
+/* ===== FEEDBACK FORM (optional) ===== */
+
+.ib-feedback{
+  margin-top:12px;
+  padding-top:12px;
+  border-top:1px solid rgba(184,115,51,.12);
+}
+
+.ib-feedback h4{
+  margin:0 0 6px 0;
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  font-size:12px;
+  color: var(--text-main);
+}
+
+.ib-note{
+  margin:0;
+  color: var(--text-muted);
+  font-size:13px;
+  line-height:1.45;
+}
+
+.ib-feedback form{
+  margin-top:10px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.ib-row{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px;
+}
+
+.ib-feedback label{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-size:12px;
+  letter-spacing:.02em;
+  color: var(--text-muted);
+}
+
+.ib-feedback input,
+.ib-feedback textarea{
+  width:100%;
+  padding:10px 12px;
+  border-radius: 14px;
+  border:1px solid rgba(184,115,51,.28);
+  background: rgba(21,21,21,.60);
+  color: var(--text-main);
+  font: inherit;
+}
+
+.ib-feedback textarea{
+  min-height:92px;
+  resize:vertical;
+}
+
+@media (max-width: 560px){
+  .ib-row{grid-template-columns: 1fr;}
+}

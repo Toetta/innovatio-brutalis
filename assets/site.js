@@ -155,6 +155,35 @@
     }
   }, { capture: true });
 
+  // Optional: mailto-based feedback forms (no backend)
+  // Usage: <form data-ib-feedback="..." data-ib-to="..." data-ib-subject="..."> ... </form>
+  document.addEventListener("submit", (e) => {
+    const form = e.target?.closest?.("form[data-ib-feedback]");
+    if (!form) return;
+
+    const to = (form.dataset.ibTo || "").trim();
+    const subject = (form.dataset.ibSubject || (form.dataset.ibFeedback || "Feedback")).trim();
+    if (!to) return; // let the browser handle it if misconfigured
+
+    const name = (form.querySelector('input[name="name"]')?.value || "").trim();
+    const email = (form.querySelector('input[name="email"]')?.value || "").trim();
+    const message = (form.querySelector('textarea[name="message"]')?.value || "").trim();
+    if (!message) return;
+
+    e.preventDefault();
+
+    const lines = [];
+    lines.push(`Page: ${window.location.href}`);
+    if (name) lines.push(`Name: ${name}`);
+    if (email) lines.push(`Email: ${email}`);
+    lines.push("");
+    lines.push(message);
+
+    const body = lines.join("\n");
+    const mailto = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailto;
+  }, { capture: true });
+
   // Optional: keep year updated if footer uses #y
   const y = document.getElementById("y");
   if (y) y.textContent = new Date().getFullYear();

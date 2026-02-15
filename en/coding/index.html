@@ -121,12 +121,37 @@
           <div class="project-content">
             <h3 style="margin-top:0;">FU-Bookkeeping</h3>
             <p style="margin:0; color: var(--text-muted);">Bookkeeping without subscriptions, without cloud, without hassle — all data stays local on your machine.</p>
+            <p style="margin:6px 0 0; color: var(--text-main);"><strong>DEMO/DEBUG:</strong> This is a demo/debug build (work-in-progress) intended to show the approach and collect feedback. Not intended for real bookkeeping.</p>
             <ul class="project-meta">
               <li><strong>Tech:</strong> HTML/CSS/JS (no framework)</li>
               <li><strong>Storage:</strong> localStorage (offline)</li>
               <li><strong>Export:</strong> SIE4 + backup.json</li>
               <li><strong>Features:</strong> vouchers, chart of accounts (BAS-ish), invoices</li>
             </ul>
+
+            <div class="ib-feedback" aria-label="FU-Bookkeeping feedback">
+              <h4>Feedback (reply via email)</h4>
+              <p class="ib-note">Fill this in and click “Send” to open your email client with a pre-filled message. I can reply directly to your email.</p>
+              <form data-ib-feedback="FU-Bookkeeping" data-ib-subject="FU-Bookkeeping — demo/debug feedback" data-ib-to="m.arlemark@innovatio-brutalis.se" data-ib-lang="en">
+                <div class="ib-row">
+                  <label>
+                    Name (optional)
+                    <input name="name" autocomplete="name" inputmode="text" />
+                  </label>
+                  <label>
+                    Email (optional)
+                    <input name="email" autocomplete="email" inputmode="email" />
+                  </label>
+                </div>
+                <label>
+                  Comment / feedback
+                  <textarea name="message" required></textarea>
+                </label>
+                <div class="cta-row" style="justify-content:flex-start; margin-top:2px;">
+                  <button class="btn small secondary" type="submit">Send feedback (email)</button>
+                </div>
+              </form>
+            </div>
             <div class="cta-row" style="justify-content:flex-start; margin-top:6px;">
               <a class="btn small secondary" href="/assets/fu-bookkeeping.html?lang=en" data-popup="1240,820">Open (popup)</a>
             </div>

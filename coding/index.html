@@ -121,12 +121,37 @@
           <div class="project-content">
             <h3 style="margin-top:0;">FU-Bookkeeping</h3>
             <p style="margin:0; color: var(--text-muted);">Bokföring utan abonnemang, utan moln, utan krångel — all data lagras lokalt på din dator.</p>
+            <p style="margin:6px 0 0; color: var(--text-main);"><strong>DEMO/DEBUG:</strong> Detta är en demo-/debug-version (work-in-progress) för att visa upplägg och få feedback. Inte avsedd för skarp bokföring.</p>
             <ul class="project-meta">
               <li><strong>Teknik:</strong> HTML/CSS/JS (utan ramverk)</li>
               <li><strong>Lagring:</strong> localStorage (offline)</li>
               <li><strong>Export:</strong> SIE4 + backup.json</li>
               <li><strong>Funktioner:</strong> verifikationer, kontoplan (BAS-ish), fakturor</li>
             </ul>
+
+            <div class="ib-feedback" aria-label="Feedback för FU-Bookkeeping">
+              <h4>Feedback (svara via e-post)</h4>
+              <p class="ib-note">Fyll i och klicka “Skicka” så öppnas din e-postklient med ett färdigt meddelande. Jag kan svara direkt på ditt mail.</p>
+              <form data-ib-feedback="FU-Bookkeeping" data-ib-subject="FU-Bookkeeping — demo/debug feedback" data-ib-to="m.arlemark@innovatio-brutalis.se" data-ib-lang="sv">
+                <div class="ib-row">
+                  <label>
+                    Namn (valfritt)
+                    <input name="name" autocomplete="name" inputmode="text" />
+                  </label>
+                  <label>
+                    E-post (valfritt)
+                    <input name="email" autocomplete="email" inputmode="email" />
+                  </label>
+                </div>
+                <label>
+                  Kommentar / feedback
+                  <textarea name="message" required></textarea>
+                </label>
+                <div class="cta-row" style="justify-content:flex-start; margin-top:2px;">
+                  <button class="btn small secondary" type="submit">Skicka feedback (e-post)</button>
+                </div>
+              </form>
+            </div>
             <div class="cta-row" style="justify-content:flex-start; margin-top:6px;">
               <a class="btn small secondary" href="/assets/fu-bookkeeping.html?lang=sv" data-popup="1240,820">Öppna (popup)</a>
             </div>
