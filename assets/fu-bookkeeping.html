@@ -19,30 +19,6 @@
     *{ box-sizing:border-box; }
     *[hidden]{ display:none !important; }
     body{ margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:linear-gradient(180deg,#0b0f14,#070a0f); color:var(--text); }
-
-    /* Scrollbars: match dark theme (removes stark white bars) */
-    :root{ color-scheme: dark; }
-    html, body{
-      scrollbar-width: thin;
-      scrollbar-color: rgb(from var(--muted) r g b / 0.55) rgb(from var(--card) r g b / 0.85);
-    }
-    /* WebKit (Chrome/Edge/Safari) */
-    ::-webkit-scrollbar{ width:12px; height:12px; }
-    ::-webkit-scrollbar-track{
-      background: rgb(from var(--card) r g b / 0.85);
-      border:1px solid var(--line);
-      border-radius:999px;
-    }
-    ::-webkit-scrollbar-thumb{
-      background: rgb(from var(--muted) r g b / 0.35);
-      border:1px solid rgb(from var(--muted) r g b / 0.25);
-      border-radius:999px;
-    }
-    ::-webkit-scrollbar-thumb:hover{
-      background: rgb(from var(--accent) r g b / 0.22);
-      border-color: rgb(from var(--accent) r g b / 0.35);
-    }
-    ::-webkit-scrollbar-corner{ background: rgb(from var(--card) r g b / 0.85); }
     /* Header/nav: force-disable any lingering backdrop-filter (it can break clicks in some setups) */
     header{
       position:relative;
@@ -100,6 +76,11 @@
       color:var(--text);
       border-color:rgba(96,165,250,.7);
       box-shadow:0 0 0 3px rgba(96,165,250,.12);
+    }
+.navGroup.hasActive .navGroupBtn{
+      color:var(--text);
+      border-color:rgba(96,165,250,.35);
+      box-shadow:0 0 0 3px rgba(96,165,250,.08);
     }
     .navGroupBtn .chev{ transition: transform .15s ease; opacity:.8; }
     .navGroup.open .navGroupBtn .chev{ transform: rotate(90deg); }
@@ -256,6 +237,11 @@
     .modal .actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:12px; flex-wrap:wrap; }
 
   </style>
+
+  <!-- OCR (offline i webbläsaren: körs lokalt, inga filer laddas upp) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
+
 </head>
 <body>
 <header>
@@ -751,6 +737,65 @@
               <div class="muted small" style="margin-top:8px;">Tips: leverantörer skapas/uppdateras i fliken Leverantörer.</div>
             </div>
 
+            <div class="card" id="siOcrPanel" hidden style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
+              <div class="row" style="justify-content:space-between; margin-bottom:8px;">
+                <div class="muted small"><b>OCR (offline)</b> – läs av faktura/kvitto och granska innan du fyller i fälten</div>
+                <div class="row">
+                  <button class="btn secondary" type="button" id="btnSiOcrDiscard">Avvisa</button>
+                  <button class="btn" type="button" id="btnSiOcrApply">Använd valda fält</button>
+                </div>
+              </div>
+
+              <div class="row" style="gap:10px; align-items:center;">
+                <span class="status" id="siOcrStatus">–</span>
+                <div class="muted small" id="siOcrFileInfo"></div>
+              </div>
+
+              <div class="row" style="gap:10px; align-items:flex-end; margin-top:10px;">
+                <div class="field" style="min-width:220px;">
+                  <label>Språk (för OCR)</label>
+                  <select id="siOcrLang">
+                    <option value="swe+eng" selected>Svenska + engelska</option>
+                    <option value="swe">Svenska</option>
+                    <option value="eng">Engelska</option>
+                  </select>
+                </div>
+                <div class="field" style="min-width:220px;">
+                  <label>PDF-sidor</label>
+                  <select id="siOcrPdfPages">
+                    <option value="1" selected>Endast sida 1</option>
+                    <option value="2">Sida 1–2</option>
+                    <option value="5">Sida 1–5</option>
+                    <option value="all">Alla sidor (kan bli långsamt)</option>
+                  </select>
+                </div>
+                <button class="btn secondary" type="button" id="btnSiOcrRun">Kör OCR igen</button>
+              </div>
+
+              <div style="overflow:auto; margin-top:10px;">
+                <table>
+                  <thead>
+                    <tr>
+                      <th style="width:70px;">Använd</th>
+                      <th style="width:220px;">Fält</th>
+                      <th>Värde (redigerbart)</th>
+                      <th style="width:90px;" class="right">Träff</th>
+                    </tr>
+                  </thead>
+                  <tbody id="siOcrFieldsTbody"></tbody>
+                </table>
+              </div>
+
+              <details style="margin-top:10px;">
+                <summary class="muted small">Visa OCR-text</summary>
+                <textarea id="siOcrText" class="kbd" style="width:100%; min-height:140px;"></textarea>
+              </details>
+
+              <div class="muted small" style="margin-top:8px;">
+                Tips: kör OCR genom att klicka <b>OCR</b> på ett underlag nedan. OCR sker lokalt i webbläsaren (ingen fil laddas upp), men första gången kan motorn/språkfiler behöva laddas.
+              </div>
+            </div>
+
             <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
               <div class="muted small" style="margin-bottom:8px;">Belopp och kontering (förslag)</div>
               <div class="row" style="gap:10px; align-items:flex-end;">
@@ -797,7 +842,7 @@
                   <input id="siFiles" type="file" multiple accept="application/pdf,image/*" hidden />
                 </label>
               </div>
-              <div id="siUnderlagList" class="list"></div>
+              <div id="siUnderlagList" class="list" data-ocr="supplierinvoice"></div>
             </div>
 
             <div class="muted small">Detta flöde ger spårbarhet: leverantörsfaktura → underlag → verifikation.</div>
@@ -2198,7 +2243,23 @@
       const shaFile = await sha256HexBlob(blob);
       manifestLines.push(`${shaFile}  ${relPath}`);
 
-      underlagIndex.push({ ...u, relPath, sha256: shaFile });
+      // Optional: include OCR-text (if available) as a .ocr.txt file next to underlaget
+      let ocrRelPath = null;
+      let ocrSha256 = null;
+      try {
+        const ocr = await idbGet("underlagOcr:" + u.id);
+        if (ocr && ocr.text){
+          const baseName = String(fname).replace(/\.[A-Za-z0-9]{1,8}$/,"");
+          const ocrName = uniqueName(used, safeFileName(baseName + ".ocr.txt"));
+          const ocrText = String(ocr.text || "");
+          await writeText(dir, ocrName, ocrText, "text/plain;charset=utf-8");
+          ocrRelPath = folderPath + "/" + ocrName;
+          ocrSha256 = await sha256Hex(ocrText);
+          manifestLines.push(`${ocrSha256}  ${ocrRelPath}`);
+        }
+      } catch (e){ /* ignore OCR export failures */ }
+
+      underlagIndex.push({ ...u, relPath, sha256: shaFile, ocrRelPath, ocrSha256 });
     }
 
     // Write underlag index + manifest
@@ -2630,9 +2691,9 @@ if (!d.features) d.features = { sruEnabled: false };
     updateFsUI();
   }
 
-  async function fsLoadState(requestPermission = true){
+  async function fsLoadState(){
     if (!fsHandle) throw new Error("Ingen fil ansluten");
-    const ok = await fsEnsurePermission(!!requestPermission);
+    const ok = await fsEnsurePermission(true);
     if (!ok) throw new Error("Behörighet nekad");
 
     const file = await fsHandle.getFile();
@@ -2682,25 +2743,15 @@ if (!d.features) d.features = { sruEnabled: false };
       fsLastError = null;
       fsLastSavedAt = null;
 
-      // Ask permission now (user click), and auto-load if possible
+      // Ask permission now (user click), and auto-load immediately so state (inkl. företagsuppgifter) blir korrekt
       const ok = await fsEnsurePermission(true);
       if (ok){
-        let loaded = false;
         try {
           await fsLoadState();
-          loaded = true;
-        } catch {
-          /* empty/invalid => ignore */
-        }
-
-        // Auto-refresh after successful load so company/year/etc updates immediately
-        if (loaded){
-          try { fillYearSelectors(); } catch (e){ console.error(e); }
-          try { if (typeof newVoucher === "function") newVoucher(); } catch (e){ console.error(e); }
-          try { if (typeof newInvoice === "function") newInvoice(); } catch (e){ console.error(e); }
-          try { if (typeof newSupplierInvoice === "function") newSupplierInvoice(); } catch (e){ console.error(e); }
-          try { if (typeof renderAll === "function") renderAll(); } catch (e){ console.error(e); }
-          showToast("Laddade data från fil.", 3500);
+          showToast("Ansluten · laddade data från fil.", 3000);
+        } catch (err){
+          console.error(err);
+          showToast("Ansluten · men kunde inte läsa filen (tom/ogiltig).", 6500);
         }
       }
 
@@ -2980,13 +3031,6 @@ if (!d.features) d.features = { sruEnabled: false };
     if (b) b.setAttribute("aria-expanded","true");
   }
 
-  function closeNavGroup(groupEl){
-    if (!groupEl) return;
-    groupEl.classList.remove("open");
-    const b = groupEl.querySelector(".navGroupBtn");
-    if (b) b.setAttribute("aria-expanded","false");
-  }
-
   function _escapeSel(s){
     try { return (window.CSS && CSS.escape) ? CSS.escape(String(s)) : String(s).replace(/"/g, '\\"'); }
     catch(e){ return String(s).replace(/"/g, '\\"'); }
@@ -3000,6 +3044,17 @@ if (!d.features) d.features = { sruEnabled: false };
     if (group) openNavGroup(group);
   }
 
+  function setActiveGroupIndicator(tabKey){
+    // Marks the group that contains the active tab (without keeping the flyout open)
+    navGroups.forEach(g=>g.classList.remove("hasActive"));
+    if (!tabKey) return;
+    const key = _escapeSel(tabKey);
+    const btn = document.querySelector(`.sidebar button.tab[data-tab="${key}"]`);
+    const group = btn ? btn.closest(".navGroup") : null;
+    if (group) group.classList.add("hasActive");
+  }
+
+
   (function initGroupedNav(){
     if (!sidebar || !navGroups.length) return;
 
@@ -3010,27 +3065,27 @@ if (!d.features) d.features = { sruEnabled: false };
 
       gb.addEventListener("click", (e)=>{
         e.preventDefault();
-
         const isOpen = g.classList.contains("open");
-        if (isOpen) closeNavGroup(g);
+        if (isOpen) closeAllNavGroups();
         else openNavGroup(g);
       });
     });
 
-    // Click outside closes non-active groups (active group stays open)
+    // Click outside closes any open flyouts
     document.addEventListener("click", (e)=>{
       if (!sidebar.contains(e.target)){
-        const activeTab = sidebar.querySelector("button.tab.active[data-tab]");
-        const activeGroup = activeTab ? activeTab.closest(".navGroup") : null;
-        closeAllNavGroups(activeGroup);
-        if (activeGroup) openNavGroup(activeGroup);
+        closeAllNavGroups();
       }
     });
 
-    // Ensure correct open group on first load
+    // Mark active group on first load (but keep flyouts closed)
     const activeBtn = sidebar.querySelector("button.tab.active[data-tab]");
-    if (activeBtn && activeBtn.dataset && activeBtn.dataset.tab) openGroupForTab(activeBtn.dataset.tab);
-    else openNavGroup(navGroups[0]);
+    if (activeBtn && activeBtn.dataset && activeBtn.dataset.tab){
+      setActiveGroupIndicator(activeBtn.dataset.tab);
+    } else if (navGroups[0]){
+      navGroups[0].classList.add("hasActive");
+    }
+    closeAllNavGroups();
   })();
 
 
@@ -3049,15 +3104,91 @@ if (!d.features) d.features = { sruEnabled: false };
     catch (err) { console.error(err); }
   }
 
+
+  // --- UI sync helpers ---
+  function applyCompanyBranding(){
+    try {
+      if (!state.company) state.company = defaultData().company;
+      if (companyNameEl) companyNameEl.textContent = state.company.name || "FU-BOOKKEEPING";
+    } catch (e){ /* ignore */ }
+  }
+
+  function renderSettings(){
+    // Populate settings form from current state (prevents "blank settings" from overwriting data)
+    try { if (!state.company) state.company = defaultData().company; } catch {}
+    const c = state.company || {};
+
+    if (sCompany) sCompany.value = c.name || "";
+    if (sOrgnr) sOrgnr.value = c.orgnr || "";
+    if (sCurrency) sCurrency.value = c.currency || "SEK";
+    if (sSign) sSign.value = c.defaultSign || "";
+
+    if (sAddr) sAddr.value = c.addr || "";
+    if (sZip) sZip.value = c.zip || "";
+    if (sCity) sCity.value = c.city || "";
+    if (sCountry) sCountry.value = c.country || "";
+
+    if (sEmail) sEmail.value = c.email || "";
+    if (sPhone) sPhone.value = c.phone || "";
+    if (sWeb) sWeb.value = c.web || "";
+    if (sVat) sVat.value = c.vat || "";
+    if (sPayDays) sPayDays.value = String((c.payDays ?? 30));
+
+    if (sBg) sBg.value = c.bankgiro || "";
+    if (sPg) sPg.value = c.plusgiro || "";
+    if (sSwish) sSwish.value = c.swishPhone || "";
+    if (sBankAccount) sBankAccount.value = c.bankAccountNo || "";
+    if (sIban) sIban.value = c.iban || "";
+    if (sSwift) sSwift.value = c.swift || "";
+
+    if (sInvNote) sInvNote.value = c.invoiceNote || "";
+    if (sInvFooter) sInvFooter.value = c.invoiceFooter || "";
+
+    if (sSruEnabled) sSruEnabled.checked = !!(state.features && state.features.sruEnabled);
+
+    // File sync controls reflect state
+    if (fsAutosave){
+      fsAutosave.checked = !!(state.fileSync && state.fileSync.autosave);
+      fsAutosave.disabled = !fsApiSupported();
+    }
+    if (fsRequireFile){
+      fsRequireFile.checked = !!(state.fileSync && state.fileSync.requireFile);
+      fsRequireFile.disabled = false;
+    }
+
+    try { renderLogoPreview(); } catch (e){ console.error(e); }
+    applyCompanyBranding();
+    try { updateFsUI(); } catch (e){ /* ignore */ }
+  }
+
+  function renderAll(){
+    // Safe "refresh everything" used by save(), imports and file reloads.
+    applyCompanyBranding();
+    safeUiCall(typeof fillYearSelectors === "function" ? fillYearSelectors : null);
+    safeUiCall(typeof renderVouchers === "function" ? renderVouchers : null);
+
+    // These are heavier; keep safe and optional
+    safeUiCall(typeof renderAccounts === "function" ? renderAccounts : null);
+    safeUiCall(typeof renderCustomers === "function" ? renderCustomers : null);
+    safeUiCall(typeof renderSuppliers === "function" ? renderSuppliers : null);
+    safeUiCall(typeof renderSupplierInvoices === "function" ? renderSupplierInvoices : null);
+    safeUiCall(typeof renderInvoices === "function" ? renderInvoices : null);
+
+    // Only hydrate settings fields if Settings tab is currently visible (avoid overriding user typing)
+    try { if (sections && sections.settings && !sections.settings.hidden) renderSettings(); } catch {}
+    try { updateFsUI(); } catch {}
+  }
+
   function activateTab(tabKey){
     if (!tabKey) return;
 
-    tabs.forEach(b => b.classList.remove("active"));
+    tabs.forEach(b => { b.classList.remove("active"); b.removeAttribute("aria-current"); });
     const btn = tabs.find(b => (b.dataset && b.dataset.tab) === tabKey);
-    if (btn) btn.classList.add("active");
+    if (btn){ btn.classList.add("active"); btn.setAttribute("aria-current","page"); }
 
-    // Keep the correct group open in the fly-out menu
-    try { if (typeof openGroupForTab === "function") openGroupForTab(tabKey); } catch(e){}
+    // Mark the correct group as active, but close any open flyouts so they don't cover content
+    try { if (typeof setActiveGroupIndicator === "function") setActiveGroupIndicator(tabKey); } catch(e){}
+    try { if (typeof closeAllNavGroups === "function") closeAllNavGroups(); } catch(e){}
 
     Object.entries(sections).forEach(([k, el]) => {
       if (el) el.hidden = (k !== tabKey);
@@ -3645,6 +3776,20 @@ if (!d.features) d.features = { sruEnabled: false };
   const btnSiToVoucher = document.getElementById("btnSiToVoucher");
   const btnSiRefresh = document.getElementById("btnSiRefresh");
 
+  // Supplier invoice OCR (offline, via Tesseract.js)
+  const siOcrPanel = document.getElementById("siOcrPanel");
+  const siOcrStatus = document.getElementById("siOcrStatus");
+  const siOcrFileInfo = document.getElementById("siOcrFileInfo");
+  const siOcrLang = document.getElementById("siOcrLang");
+  const siOcrPdfPages = document.getElementById("siOcrPdfPages");
+  const btnSiOcrRun = document.getElementById("btnSiOcrRun");
+  const btnSiOcrApply = document.getElementById("btnSiOcrApply");
+  const btnSiOcrDiscard = document.getElementById("btnSiOcrDiscard");
+  const siOcrFieldsTbody = document.getElementById("siOcrFieldsTbody");
+  const siOcrText = document.getElementById("siOcrText");
+
+  let siOcrCtx = { underlagId: null, lang: "swe+eng", pdfPages: "1", fields: {}, text: "", textSha256: "" };
+  let currentSiOcrMeta = null;
 
 
   let editingSupplierInvoiceId = null;
@@ -4468,6 +4613,8 @@ if (!d.features) d.features = { sruEnabled: false };
     siRecalcNet();
 
     setSiAttachTarget(null);
+    hideSiOcrPanel(true);
+    currentSiOcrMeta = null;
     siSetSaveEnabled();
   }
 
@@ -4500,6 +4647,8 @@ if (!d.features) d.features = { sruEnabled: false };
     setSiAttachTarget(siUnderlagKeyFor(si));
 
     // disable save until changes
+    hideSiOcrPanel(true);
+    currentSiOcrMeta = null;
     siSetSaveEnabled();
   }
 
@@ -4605,7 +4754,8 @@ if (!d.features) d.features = { sruEnabled: false };
         createdAt: nowIso,
         createdBy: actor,
         updatedAt: null,
-        updatedBy: ""
+        updatedBy: "",
+        ocrMeta: currentSiOcrMeta || null
       };
 
       // If files were added before saving (draft doc id) -> relink to real docId
@@ -4656,7 +4806,8 @@ if (!d.features) d.features = { sruEnabled: false };
       supplierEmail,
       supplierPayout,
       updatedAt: nowIso,
-      updatedBy: actor
+      updatedBy: actor,
+      ocrMeta: (currentSiOcrMeta || before.ocrMeta || null)
     };
 
     // if not booked, keep underlag meta in sync on docId target
@@ -4859,6 +5010,18 @@ if (!d.features) d.features = { sruEnabled: false };
     if (btnSiRefresh) btnSiRefresh.addEventListener("click", (e)=>{ e.preventDefault(); renderSupplierInvoices(); });
     if (siYearSelect) siYearSelect.addEventListener("change", renderSupplierInvoices);
 
+    // OCR panel (leverantörsfaktura)
+    if (btnSiOcrDiscard) btnSiOcrDiscard.addEventListener("click", (e)=>{ e.preventDefault(); hideSiOcrPanel(true); });
+    if (btnSiOcrApply) btnSiOcrApply.addEventListener("click", (e)=>{ e.preventDefault(); applySiOcrToForm(); });
+    if (btnSiOcrRun) btnSiOcrRun.addEventListener("click", async (e)=>{
+      e.preventDefault();
+      if (!siOcrCtx || !siOcrCtx.underlagId) return showToast("Välj ett underlag och klicka OCR först.", 4500);
+      await ocrUnderlagToSupplierInvoice(siOcrCtx.underlagId, { rerun: true });
+    });
+    if (siOcrLang) siOcrLang.addEventListener("change", ()=>{ siOcrCtx.lang = siOcrLang.value; });
+    if (siOcrPdfPages) siOcrPdfPages.addEventListener("change", ()=>{ siOcrCtx.pdfPages = siOcrPdfPages.value; });
+
+
     if (btnSiToVoucher) btnSiToVoucher.addEventListener("click", async (e)=>{
       e.preventDefault();
       // save (if needed) and then create voucher
@@ -4952,6 +5115,7 @@ if (!d.features) d.features = { sruEnabled: false };
         const id = b.dataset.id;
         if (!id) return;
         if (act === "open-underlag") await openUnderlag(id);
+        if (act === "ocr-underlag") await ocrUnderlagToSupplierInvoice(id);
         if (act === "detach-underlag") await detachUnderlag(id);
       });
     }
@@ -5450,12 +5614,16 @@ if (!d.features) d.features = { sruEnabled: false };
         u.ref ? ("ID: " + u.ref) : "",
         u.note ? ("Not: " + u.note) : "",
         u.createdAt ? ("Tillagd: " + String(u.createdAt).slice(0,10)) : "",
+        u.ocrTs ? ("OCR: " + String(u.ocrTs).slice(0,10)) : "",
         (u.size ? ("Storlek: " + Math.round((Number(u.size)||0)/1024) + " KB") : "")
       ].filter(Boolean).join(" · ");
 
       const canDetach = (st !== "detached"); // we keep blob for traceability; detaching just changes status + audit
       const detachBtn = canDetach ? `<button type="button" class="btn danger" data-act="detach-underlag" data-id="${escapeAttr(u.id)}">Koppla bort</button>` : "";
       const openBtn = `<button type="button" class="btn secondary" data-act="open-underlag" data-id="${escapeAttr(u.id)}">Öppna</button>`;
+      const ocrBtn = (targetEl && targetEl.dataset && targetEl.dataset.ocr === "supplierinvoice" && st !== "detached")
+        ? `<button type="button" class="btn secondary" data-act="ocr-underlag" data-id="${escapeAttr(u.id)}">OCR</button>`
+        : "";
 
       div.innerHTML = `
         <div class="top">
@@ -5465,6 +5633,7 @@ if (!d.features) d.features = { sruEnabled: false };
           </div>
           <div class="row">
             ${openBtn}
+            ${ocrBtn}
             ${detachBtn}
           </div>
         </div>
@@ -5549,6 +5718,577 @@ if (!d.features) d.features = { sruEnabled: false };
     save();
     renderUnderlag();
     try { renderVouchers(); } catch (e){}
+  }
+
+
+  // --- OCR (offline) for Leverantörsfakturor ---
+  let _pdfjsConfigured = false;
+  function ensurePdfjs(){
+    try {
+      if (_pdfjsConfigured) return true;
+      if (typeof pdfjsLib === "undefined") return false;
+      // Configure worker (CDN)
+      try { pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js"; } catch {}
+      _pdfjsConfigured = true;
+      return true;
+    } catch (e){
+      return false;
+    }
+  }
+
+  function setSiOcrStatus(kind, msg){
+    if (!siOcrStatus) return;
+    siOcrStatus.className = "status" + (kind ? (" " + kind) : "");
+    siOcrStatus.textContent = msg || "–";
+  }
+
+  function hideSiOcrPanel(clear){
+    if (siOcrPanel) siOcrPanel.hidden = true;
+    if (clear){
+      siOcrCtx = { underlagId: null, lang: (siOcrLang ? (siOcrLang.value||"swe+eng") : "swe+eng"), pdfPages: (siOcrPdfPages ? (siOcrPdfPages.value||"1") : "1"), fields: {}, text: "", textSha256: "" };
+      if (siOcrText) siOcrText.value = "";
+      if (siOcrFileInfo) siOcrFileInfo.textContent = "";
+      if (siOcrFieldsTbody) siOcrFieldsTbody.innerHTML = "";
+      setSiOcrStatus("", "–");
+      if (btnSiOcrRun) btnSiOcrRun.disabled = true;
+    }
+  }
+
+  function round2(n){ return Math.round((Number(n)||0) * 100) / 100; }
+
+  function isoFromAnyDate(s){
+    const str = String(s||"").trim();
+    if (!str) return "";
+    // yyyy-mm-dd
+    let m = str.match(/\b(20\d{2})[-\/.](\d{2})[-\/.](\d{2})\b/);
+    if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+    // dd-mm-yyyy or dd/mm/yyyy
+    m = str.match(/\b(\d{2})[-\/.](\d{2})[-\/.](\d{2,4})\b/);
+    if (m){
+      let yy = String(m[3]);
+      if (yy.length === 2) yy = "20" + yy;
+      const dd = m[1], mm = m[2];
+      // basic sanity
+      if (Number(mm) >= 1 && Number(mm) <= 12 && Number(dd) >= 1 && Number(dd) <= 31){
+        return `${yy}-${mm}-${dd}`;
+      }
+    }
+    return "";
+  }
+
+  function normalizeOcrText(t){
+    return String(t||"")
+      .replace(/\u00a0/g, " ")
+      .replace(/\r/g, "")
+      .replace(/[ \t]+/g, " ")
+      .trim();
+  }
+
+  function findLines(t){
+    return normalizeOcrText(t).split("\n").map(x=>String(x||"").trim()).filter(Boolean);
+  }
+
+  function findByLabel(lines, labelRe, valueRe){
+    for (let i=0;i<lines.length;i++){
+      const line = lines[i];
+      if (!labelRe.test(line)) continue;
+
+      // try same line
+      let m = valueRe ? line.match(valueRe) : null;
+      if (m && (m[1] || m[0])) return { value: (m[1] || m[0]).trim(), score: 0.92, src: "sameLine" };
+
+      // after colon
+      const idx = line.indexOf(":");
+      if (idx >= 0){
+        const after = line.slice(idx+1).trim();
+        if (after){
+          if (valueRe){
+            m = after.match(valueRe);
+            if (m && (m[1] || m[0])) return { value: (m[1] || m[0]).trim(), score: 0.9, src: "afterColon" };
+          }
+          return { value: after, score: 0.85, src: "afterColon" };
+        }
+      }
+
+      // try next line
+      const nxt = lines[i+1] || "";
+      if (nxt){
+        m = valueRe ? nxt.match(valueRe) : null;
+        if (m && (m[1] || m[0])) return { value: (m[1] || m[0]).trim(), score: 0.8, src: "nextLine" };
+        return { value: nxt.trim(), score: 0.7, src: "nextLine" };
+      }
+    }
+    return { value:"", score:0, src:"" };
+  }
+
+  function extractAmountsFromLine(line){
+    const s = String(line||"");
+    const re = /(\d{1,3}(?:[ \u00a0]\d{3})*(?:[.,]\d{2})|\d+(?:[.,]\d{2}))/g;
+    const out = [];
+    let m;
+    while ((m = re.exec(s))){
+      const raw = m[1];
+      const val = round2(parseMoney(raw));
+      if (Number.isFinite(val) && val > 0 && val < 1e9) out.push({ raw, val });
+    }
+    return out;
+  }
+
+  function findAmountByKeywords(lines, keywords, preferLargest){
+    let best = { value:"", score:0, num:0 };
+    for (const line of lines){
+      const low = line.toLowerCase();
+      const hits = keywords.filter(k => low.includes(k)).length;
+      if (!hits) continue;
+      const amts = extractAmountsFromLine(line);
+      if (!amts.length) continue;
+      for (const a of amts){
+        // score: keyword hits + reasonableness
+        let sc = 0.6 + Math.min(0.35, hits*0.12);
+        // prefer "larger" for total
+        const val = a.val;
+        if (preferLargest) sc += Math.min(0.2, Math.log10(1+val)/10);
+        if (sc > best.score || (Math.abs(sc-best.score) < 0.02 && val > best.num)){
+          best = { value: String(val).replace(".", ","), score: Math.min(0.95, sc), num: val };
+        }
+      }
+    }
+    return best;
+  }
+
+  function normalizeOrgnr(s){
+    const t = String(s||"").replace(/\s+/g,"").trim();
+    const m = t.match(/^(\d{6})-?(\d{4})$/);
+    if (!m) return "";
+    return m[1] + "-" + m[2];
+  }
+
+  function guessSupplierName(lines){
+    const bad = ["faktura","invoice","kvitto","kvitt","org.nr","organisations","moms","vat","summa","totalt","att betala","bankgiro","plusgiro","bg","pg","ocr","förfall","due","datum","fakturadatum","kund","kundnr"];
+    for (const line of lines.slice(0,12)){
+      const t = line.trim();
+      if (!t) continue;
+      const low = t.toLowerCase();
+      if (bad.some(b=> low.includes(b))) continue;
+      if (/\d/.test(t)) continue;
+      if (t.length < 3 || t.length > 60) continue;
+      return { value: t, score: 0.55, src:"topGuess" };
+    }
+    return { value:"", score:0, src:"" };
+  }
+
+  function parseInvoiceFieldsFromOcr(text){
+    const lines = findLines(text);
+
+    const supplierName = (() => {
+      const v = findByLabel(lines, /(leverantör|supplier|från|from)\b/i, /:\s*(.+)$/i);
+      if (v.value) return { value: clampText(v.value, 120), score: v.score, src:"label" };
+      return guessSupplierName(lines);
+    })();
+
+    const orgnr = (() => {
+      const lbl = findByLabel(lines, /(org\.?nr|organisations?nummer|vat\s*nr|momsreg\.?nr)\b/i, /(\d{6}[- ]?\d{4})/);
+      if (lbl.value) return { value: normalizeOrgnr(lbl.value), score: lbl.score, src:"label" };
+      // fallback scan
+      for (const line of lines){
+        const m = line.match(/\b(\d{6})[- ]?(\d{4})\b/);
+        if (m) return { value: `${m[1]}-${m[2]}`, score: 0.6, src:"scan" };
+      }
+      return { value:"", score:0, src:"" };
+    })();
+
+    const payout = (() => {
+      const lbl = findByLabel(lines, /(bankgiro|plusgiro|bg|pg)\b/i, /(\d{3,4}-\d{3,4})/);
+      if (lbl.value) return { value: clampText(lbl.value, 80), score: lbl.score, src:"label" };
+      for (const line of lines){
+        const m = line.match(/\b(\d{3,4}-\d{3,4})\b/);
+        if (m) return { value: m[1], score: 0.55, src:"scan" };
+      }
+      return { value:"", score:0, src:"" };
+    })();
+
+    const invoiceNo = (() => {
+      const v = findByLabel(lines, /(faktura\s*(nr|nummer)|fakturanr|invoice\s*(no|nr)|faktura#)\b/i, /([A-Za-z0-9\-\/]{3,30})/);
+      if (v.value) return { value: clampText(v.value, 80), score: v.score, src:"label" };
+      return { value:"", score:0, src:"" };
+    })();
+
+    const ocrRef = (() => {
+      const v = findByLabel(lines, /\bocr\b|referens|reference/i, /(\d{6,25})/);
+      if (v.value) return { value: clampText(v.value, 80), score: v.score, src:"label" };
+      return { value:"", score:0, src:"" };
+    })();
+
+    const date = (() => {
+      const v = findByLabel(lines, /(fakturadatum|invoice\s*date|datum)\b/i, /(\d{2,4}[-\/.]\d{2}[-\/.]\d{2,4})/);
+      const iso = isoFromAnyDate(v.value);
+      if (iso) return { value: iso, score: v.score || 0.8, src:"label" };
+      // fallback: first date on doc
+      for (const line of lines){
+        const m = line.match(/\b(20\d{2}[-\/.]\d{2}[-\/.]\d{2})\b/);
+        if (m) return { value: isoFromAnyDate(m[1]), score:0.55, src:"scan" };
+        const m2 = line.match(/\b(\d{2}[-\/.]\d{2}[-\/.]\d{2,4})\b/);
+        if (m2){
+          const d = isoFromAnyDate(m2[1]);
+          if (d) return { value: d, score:0.5, src:"scan" };
+        }
+      }
+      return { value:"", score:0, src:"" };
+    })();
+
+    const due = (() => {
+      const v = findByLabel(lines, /(förfallodatum|due\s*date|betalas\s*senast|förfaller)\b/i, /(\d{2,4}[-\/.]\d{2}[-\/.]\d{2,4})/);
+      const iso = isoFromAnyDate(v.value);
+      if (iso) return { value: iso, score: v.score || 0.75, src:"label" };
+      return { value:"", score:0, src:"" };
+    })();
+
+    const vat = findAmountByKeywords(lines, ["moms","vat"], false);
+    const gross = findAmountByKeywords(lines, ["summa att betala","att betala","totalt","total","belopp","summa"], true);
+
+    // sanity: if vat > gross, un-use vat
+    let vatOut = vat;
+    if (vatOut.num && gross.num && vatOut.num > gross.num){
+      vatOut = { value:"", score:0, num:0 };
+    }
+
+    return {
+      supplierName,
+      supplierOrgnr: orgnr,
+      supplierPayout: payout,
+      invoiceNo,
+      ocr: ocrRef,
+      date,
+      due,
+      gross,
+      vat: vatOut
+    };
+  }
+
+  function siOcrFieldConfig(){
+    return [
+      { key:"supplierName", label:"Leverantör (namn)", target: siSupplierName },
+      { key:"supplierOrgnr", label:"Org.nr", target: siSupplierOrgnr },
+      { key:"supplierPayout", label:"BG/PG", target: siSupplierPayout },
+      { key:"invoiceNo", label:"Fakturanr", target: siInvoiceNo },
+      { key:"ocr", label:"OCR/Referens", target: siOcr },
+      { key:"date", label:"Fakturadatum", target: siDate },
+      { key:"due", label:"Förfallodatum", target: siDue },
+      { key:"gross", label:"Belopp inkl moms", target: siGross },
+      { key:"vat", label:"Momsbelopp", target: siVat },
+    ];
+  }
+
+  function renderSiOcrFields(){
+    if (!siOcrFieldsTbody) return;
+    const cfg = siOcrFieldConfig();
+    siOcrFieldsTbody.innerHTML = "";
+    cfg.forEach(c=>{
+      const f = siOcrCtx.fields?.[c.key] || { value:"", score:0, use:false };
+      const tr = document.createElement("tr");
+
+      const tdUse = document.createElement("td");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.checked = !!f.use;
+      cb.addEventListener("change", ()=>{ siOcrCtx.fields[c.key].use = cb.checked; });
+      tdUse.appendChild(cb);
+
+      const tdLabel = document.createElement("td");
+      tdLabel.textContent = c.label;
+
+      const tdVal = document.createElement("td");
+      const inp = document.createElement("input");
+      inp.value = f.value || "";
+      inp.placeholder = "–";
+      inp.addEventListener("input", ()=>{ siOcrCtx.fields[c.key].value = inp.value; });
+      tdVal.appendChild(inp);
+
+      const tdScore = document.createElement("td");
+      tdScore.className = "right muted";
+      const pct = Math.round((Number(f.score)||0) * 100);
+      tdScore.textContent = (pct ? (pct + "%") : "–");
+
+      tr.appendChild(tdUse);
+      tr.appendChild(tdLabel);
+      tr.appendChild(tdVal);
+      tr.appendChild(tdScore);
+      siOcrFieldsTbody.appendChild(tr);
+    });
+  }
+
+  function showSiOcrPanelFor(underlagRec){
+    if (!siOcrPanel) return;
+    siOcrPanel.hidden = false;
+    if (siOcrLang) siOcrLang.value = siOcrCtx.lang || (siOcrLang.value || "swe+eng");
+    if (siOcrPdfPages) siOcrPdfPages.value = siOcrCtx.pdfPages || (siOcrPdfPages.value || "1");
+    if (siOcrFileInfo) siOcrFileInfo.textContent = underlagRec ? (`Fil: ${underlagRec.fileName||""}`) : "";
+    if (btnSiOcrRun) btnSiOcrRun.disabled = !siOcrCtx.underlagId;
+  }
+
+  function matchSupplierId(name, orgnr){
+    const org = normalizeOrgnr(orgnr);
+    const n = String(name||"").trim().toLowerCase();
+    const sups = state.suppliers || {};
+    // exact orgnr match wins
+    if (org){
+      for (const [id, s] of Object.entries(sups)){
+        if (!s) continue;
+        if (normalizeOrgnr(s.orgnr) === org) return id;
+      }
+    }
+    if (n){
+      for (const [id, s] of Object.entries(sups)){
+        const sn = String(s?.name||"").trim().toLowerCase();
+        if (!sn) continue;
+        if (sn === n) return id;
+      }
+      for (const [id, s] of Object.entries(sups)){
+        const sn = String(s?.name||"").trim().toLowerCase();
+        if (!sn) continue;
+        if (sn.includes(n) || n.includes(sn)) return id;
+      }
+    }
+    return "";
+  }
+
+  function applySiOcrToForm(){
+    if (!siOcrCtx || !siOcrCtx.fields) return;
+    const cfg = siOcrFieldConfig();
+    const applied = {};
+    for (const c of cfg){
+      const f = siOcrCtx.fields[c.key];
+      if (!f || !f.use) continue;
+      const val = String(f.value||"").trim();
+      if (!val) continue;
+      if (c.target){
+        c.target.value = val;
+        // trigger dependent calc
+        try { c.target.dispatchEvent(new Event("input", { bubbles:true })); } catch {}
+        applied[c.key] = val;
+      }
+    }
+
+    // try auto-match supplier from registry
+    try {
+      const sid = matchSupplierId(siSupplierName?.value, siSupplierOrgnr?.value);
+      if (sid && siSupplierSelect){
+        siSupplierSelect.value = sid;
+        try { siSupplierSelect.dispatchEvent(new Event("change", { bubbles:true })); } catch {}
+      }
+    } catch {}
+
+    // keep net in sync
+    try { siRecalcNet(); } catch {}
+    try { siSetSaveEnabled(); } catch {}
+
+    const actor = clampText((state.company?.defaultSign || "").trim(), 60);
+    currentSiOcrMeta = {
+      ts: new Date().toISOString(),
+      engine: "tesseract.js",
+      underlagId: siOcrCtx.underlagId,
+      lang: siOcrCtx.lang,
+      pdfPages: siOcrCtx.pdfPages,
+      ocrTextSha256: siOcrCtx.textSha256 || "",
+      confirmedFields: applied
+    };
+    appendAudit({ action:"supplierInvoice.ocr.apply", actor: actor || undefined, entityType:"supplierInvoice", entityId: editingSupplierInvoiceId || "draft", yearId: (state.activeYearId||""), details:{ underlagId: siOcrCtx.underlagId, confirmedFields: applied } });
+    save();
+
+    showToast(Object.keys(applied).length ? "OCR-fält infyllda. Granska och spara leverantörsfakturan." : "Inga OCR-fält valda att använda.", 5500);
+  }
+
+  async function blobToCanvasImage(blob){
+    // Convert an image blob to canvas (scaled to a reasonable size)
+    const maxDim = 2400;
+    let bmp = null;
+    try { bmp = await createImageBitmap(blob); } catch {}
+    if (bmp){
+      const w0 = bmp.width || 1, h0 = bmp.height || 1;
+      const scale = Math.min(1, maxDim / Math.max(w0, h0));
+      const w = Math.max(1, Math.round(w0 * scale));
+      const h = Math.max(1, Math.round(h0 * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(bmp, 0, 0, w, h);
+      try { bmp.close(); } catch {}
+      return canvas;
+    }
+
+    // fallback via <img>
+    const url = URL.createObjectURL(blob);
+    try {
+      const img = await new Promise((resolve, reject)=>{
+        const im = new Image();
+        im.onload = ()=> resolve(im);
+        im.onerror = reject;
+        im.src = url;
+      });
+      const w0 = img.naturalWidth || 1, h0 = img.naturalHeight || 1;
+      const scale = Math.min(1, maxDim / Math.max(w0, h0));
+      const w = Math.max(1, Math.round(w0 * scale));
+      const h = Math.max(1, Math.round(h0 * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, w, h);
+      return canvas;
+    } finally {
+      try { URL.revokeObjectURL(url); } catch {}
+    }
+  }
+
+  async function pdfBlobToCanvases(blob, pageChoice){
+    if (!ensurePdfjs()) throw new Error("pdfjs-missing");
+    const ab = await blob.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+    const maxPages = pdf.numPages || 1;
+    let want = 1;
+    if (pageChoice === "all") want = maxPages;
+    else want = Math.max(1, Number(pageChoice)||1);
+    want = Math.min(want, maxPages);
+
+    const canvases = [];
+    for (let p=1; p<=want; p++){
+      setSiOcrStatus("", `Renderar PDF sida ${p}/${want}…`);
+      const page = await pdf.getPage(p);
+      // scale up a bit for OCR, but cap size
+      const v1 = page.getViewport({ scale: 2.0 });
+      let w = Math.round(v1.width), h = Math.round(v1.height);
+      const maxDim = 2600;
+      const scale2 = Math.min(1, maxDim / Math.max(w, h));
+      const viewport = page.getViewport({ scale: 2.0 * scale2 });
+      w = Math.round(viewport.width); h = Math.round(viewport.height);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      canvases.push(canvas);
+    }
+    return canvases;
+  }
+
+  async function ocrUnderlagToSupplierInvoice(underlagId, opts){
+    const u = (state.underlag||[]).find(x=>x && x.id===underlagId);
+    if (!u) return showToast("Underlaget hittades inte.", 4500);
+
+    if (typeof Tesseract === "undefined"){
+      showToast("OCR-motorn (Tesseract.js) kunde inte laddas. Kontrollera att du har internet första gången, eller bädda in biblioteket lokalt.", 8000);
+      return;
+    }
+
+    const blob = await idbGet("underlagBlob:" + underlagId);
+    if (!blob) return showToast("Filen finns inte kvar lokalt (IndexedDB).", 6500);
+
+    // show panel + bind context
+    siOcrCtx.underlagId = underlagId;
+    siOcrCtx.lang = (siOcrLang ? (siOcrLang.value || siOcrCtx.lang || "swe+eng") : (siOcrCtx.lang || "swe+eng"));
+    siOcrCtx.pdfPages = (siOcrPdfPages ? (siOcrPdfPages.value || siOcrCtx.pdfPages || "1") : (siOcrCtx.pdfPages || "1"));
+    showSiOcrPanelFor(u);
+
+    setSiOcrStatus("", "Förbereder OCR…");
+    if (btnSiOcrRun) btnSiOcrRun.disabled = false;
+
+    // Try reuse cached OCR unless rerun requested
+    const rerun = !!(opts && opts.rerun);
+    if (!rerun){
+      try {
+        const cached = await idbGet("underlagOcr:" + underlagId);
+        if (cached && cached.text && cached.sha256){
+          siOcrCtx.text = String(cached.text||"");
+          siOcrCtx.textSha256 = String(cached.sha256||"");
+          const parsed = parseInvoiceFieldsFromOcr(siOcrCtx.text);
+          siOcrCtx.fields = {};
+          Object.entries(parsed).forEach(([k,v])=>{
+            const value = String(v.value||"").trim();
+            const score = Number(v.score||0);
+            siOcrCtx.fields[k] = { value, score, use: !!value && score >= 0.6 };
+          });
+          if (siOcrText) siOcrText.value = siOcrCtx.text;
+          renderSiOcrFields();
+          setSiOcrStatus("ok", "OCR (cache) klar");
+          return;
+        }
+      } catch {}
+    }
+
+    // Build canvases
+    let canvases = [];
+    const isPdf = (String(u.mime||"").includes("pdf") || String(u.fileName||"").toLowerCase().endsWith(".pdf"));
+    try {
+      if (isPdf){
+        canvases = await pdfBlobToCanvases(blob, siOcrCtx.pdfPages || "1");
+      } else {
+        canvases = [ await blobToCanvasImage(blob) ];
+      }
+    } catch (e){
+      console.error(e);
+      showToast("Kunde inte förbereda filen för OCR. Prova en bild (JPG/PNG) eller en enklare PDF.", 8000);
+      setSiOcrStatus("bad", "OCR misslyckades");
+      return;
+    }
+
+    // Run OCR
+    let combined = "";
+    const lang = siOcrCtx.lang || "swe+eng";
+    for (let i=0;i<canvases.length;i++){
+      const pageNo = i+1;
+      const totalPages = canvases.length;
+      let lastPct = 0;
+      setSiOcrStatus("", `OCR sida ${pageNo}/${totalPages}…`);
+      const res = await Tesseract.recognize(canvases[i], lang, {
+        logger: (m)=>{
+          try {
+            if (!m || !m.status) return;
+            if (m.status === "recognizing text" && typeof m.progress === "number"){
+              const pct = Math.round(m.progress * 100);
+              if (pct !== lastPct){
+                lastPct = pct;
+                setSiOcrStatus("", `OCR sida ${pageNo}/${totalPages}… ${pct}%`);
+              }
+            }
+          } catch {}
+        }
+      });
+      const t = (res && res.data && res.data.text) ? String(res.data.text) : "";
+      combined += (combined ? "\n\n" : "") + (totalPages > 1 ? (`--- SIDA ${pageNo}/${totalPages} ---\n`) : "") + t;
+    }
+
+    siOcrCtx.text = combined;
+    siOcrCtx.textSha256 = await sha256Hex(combined);
+
+    // Parse fields
+    const parsed = parseInvoiceFieldsFromOcr(combined);
+    siOcrCtx.fields = {};
+    Object.entries(parsed).forEach(([k,v])=>{
+      const value = String(v.value||"").trim();
+      const score = Number(v.score||0);
+      // default-use: decent confidence AND non-empty
+      siOcrCtx.fields[k] = { value, score, use: !!value && score >= 0.6 };
+    });
+
+    // Update UI
+    if (siOcrText) siOcrText.value = combined;
+    renderSiOcrFields();
+    setSiOcrStatus("ok", "OCR klar (granska fälten)");
+
+    // Persist OCR (for traceability + faster re-open)
+    try {
+      const nowIso = new Date().toISOString();
+      await idbSet("underlagOcr:" + underlagId, { ts: nowIso, lang, pdfPages: siOcrCtx.pdfPages, sha256: siOcrCtx.textSha256, text: combined, fields: parsed });
+      u.ocrTs = nowIso;
+      u.ocrLang = lang;
+      u.ocrTextSha256 = siOcrCtx.textSha256;
+      u.ocrFields = Object.fromEntries(Object.entries(parsed).map(([k,v])=> [k, String(v.value||"").trim()] ));
+      appendAudit({ action:"underlag.ocr", entityType:"underlag", entityId: underlagId, yearId: u.yearId, details:{ fileName: u.fileName, lang, pdfPages: siOcrCtx.pdfPages, ocrTextSha256: siOcrCtx.textSha256 } });
+      save();
+      try { renderUnderlagInto(siUnderlagList, currentSiAttachTargetId); } catch {}
+    } catch (e){
+      console.error(e);
+      // non-fatal
+    }
   }
 
   function syncUnderlagVoucherMeta(voucher){
@@ -6592,31 +7332,40 @@ if (btnDisconnectFile) btnDisconnectFile.addEventListener("click", async (e)=>{ 
 if (fsAutosave) fsAutosave.addEventListener("change", ()=>{ state.fileSync = state.fileSync || { autosave:true, requireFile:false }; state.fileSync.autosave = !!fsAutosave.checked; save(); updateFsUI(); });
 if (fsRequireFile) fsRequireFile.addEventListener("change", ()=>{ state.fileSync = state.fileSync || { autosave:true, requireFile:false }; state.fileSync.requireFile = !!fsRequireFile.checked; save(); updateFsUI(); });
 
-// Restore file handle if previously connected
-idbGet("dataFileHandle").then(h=>{
+// Restore file handle if previously connected + auto-reload on startup
+idbGet("dataFileHandle").then(async (h)=>{
   if (h){
     fsHandle = h;
     fsLastError = null;
     updateFsUI();
 
-    // Auto-load on startup (silent) if permission is already granted.
-    // Never request permission here (no prompts without a user gesture).
-    Promise.resolve().then(async ()=>{
-      try {
-        const ok = await fsEnsurePermission(false);
-        if (!ok) return;
-        await fsLoadState(false);
-        try { fillYearSelectors(); } catch (e){ console.error(e); }
-        try { if (typeof newVoucher === "function") newVoucher(); } catch (e){ console.error(e); }
-        try { if (typeof newInvoice === "function") newInvoice(); } catch (e){ console.error(e); }
-        try { if (typeof newSupplierInvoice === "function") newSupplierInvoice(); } catch (e){ console.error(e); }
-        try { if (typeof renderAll === "function") renderAll(); } catch (e){ console.error(e); }
-      } catch (e){
-        // Keep app usable even if file is missing/invalid.
-        fsLastError = e;
-        try { updateFsUI(); } catch {}
+    // 1) Silent auto-load (no permission prompts) if permission already granted
+    try {
+      const ok = await fsEnsurePermission(false);
+      if (ok){
+        await fsLoadState();
+        showToast("Auto-laddade data från datafil.", 2500);
+        return;
       }
-    });
+
+      // 2) Otherwise: load on first user interaction (prompts once)
+      const once = async ()=>{
+        document.removeEventListener("pointerdown", once, true);
+        try {
+          const ok2 = await fsEnsurePermission(true);
+          if (ok2){
+            await fsLoadState();
+            showToast("Laddade data från datafil.", 2500);
+          }
+        } catch (err){
+          console.error(err);
+        }
+        try { updateFsUI(); } catch (e){ /* ignore */ }
+      };
+      document.addEventListener("pointerdown", once, true);
+    } catch (err){
+      console.error(err);
+    }
   }
 }).catch(()=>{});
 try { updateFsUI(); } catch (e){ /* ignore */ }
