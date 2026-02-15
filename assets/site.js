@@ -65,12 +65,24 @@
   ];
 
   // Build nav HTML
-  const navLinks = navItems.map(item => {
+  let navLinks = navItems.map(item => {
     const label = isEN ? item.labelEN : item.labelSV;
     const href  = isEN ? item.hrefEN  : item.hrefSV;
     const active = (item.key === section) || (item.key === "" && section === "");
     return `<a ${active ? 'class="active"' : ""} href="${href}">${label}</a>`;
   }).join("");
+
+  // Optional: add a single extra link into the MAIN nav (page-controlled)
+  // Usage (in <head>):
+  // <meta name="ib-topbar-cta-label" content="Kontakt">
+  // <meta name="ib-topbar-cta-href" content="#kontakt">
+  try {
+    const ctaLabel = document.querySelector('meta[name="ib-topbar-cta-label"]')?.getAttribute("content")?.trim();
+    const ctaHref = document.querySelector('meta[name="ib-topbar-cta-href"]')?.getAttribute("content")?.trim();
+    if (ctaLabel && ctaHref) {
+      navLinks += `<a href="${ctaHref}">${ctaLabel}</a>`;
+    }
+  } catch (_) {}
 
   const langLinks = `
     <a ${!isEN ? 'class="active"' : ""} href="${svUrl}">SV</a>
