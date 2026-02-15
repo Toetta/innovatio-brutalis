@@ -112,9 +112,9 @@ small{color:var(--text-muted)}
 .brand-hero picture{display:block}
 
 .brand-hero img{
-  height: clamp(72px, 10vw, 96px);
+  height: clamp(88px, 12vw, 112px);
   width: auto;
-  max-width: min(260px, 88%);
+  max-width: min(320px, 88%);
   display:block;
   margin: 0 auto;
   object-fit: contain;
@@ -123,7 +123,7 @@ small{color:var(--text-muted)}
 /* Hero: logo to the side on larger screens */
 @media (min-width: 900px){
   .hero{
-    grid-template-columns: 220px 1fr;
+    grid-template-columns: 260px 1fr;
     column-gap: 26px;
     row-gap: 10px;
     text-align:left;
@@ -134,9 +134,9 @@ small{color:var(--text-muted)}
     grid-row: 1 / span 3;
   }
   .brand-hero img{
-    height: 84px;
+    height: 112px;
     width: auto;
-    max-width: 200px;
+    max-width: 240px;
     margin: 0;
   }
   .hero h1,
