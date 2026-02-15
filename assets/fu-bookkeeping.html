@@ -960,6 +960,14 @@
     const v = Number(t);
     return Number.isFinite(v) ? v : 0;
   };
+  const escapeHtml = (s) => {
+    return String(s ?? "")
+      .replaceAll("&", "&amp;")
+      .replaceAll("<", "&lt;")
+      .replaceAll(">", "&gt;")
+      .replaceAll('"', "&quot;")
+      .replaceAll("'", "&#39;");
+  };
   const ymd = (d) => d.replaceAll("-", "");
   const todayISO = () => new Date().toISOString().slice(0,10);
   const clampText = (s, max=120) => String(s ?? "").slice(0,max);
