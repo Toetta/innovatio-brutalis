@@ -52,6 +52,8 @@
     .row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
     h1{ margin:0; font-size:18px; font-weight:700; }
     .pill{ font-size:12px; color:var(--muted); border:1px solid var(--line); padding:6px 10px; border-radius:999px; }
+    .pill.ok{ border:3px solid rgba(34,197,94,.7); background:rgba(34,197,94,.08); color:var(--text); }
+    .pill.bad{ border:3px solid rgba(239,68,68,.7); background:rgba(239,68,68,.08); color:var(--text); }
     /* Header year dropdown should look like a pill */
     select.pill{
       appearance:none;
@@ -928,8 +930,21 @@
   const APP_VERSION = "1.1"; // bump when adding new data fields
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
+  let localStorageOk = true;
+
+  const setPillState = (el, state) => {
+    if (!el) return;
+    el.classList.remove("ok", "bad");
+    if (state === "ok" || state === "bad") el.classList.add(state);
+  };
+
   const bootPill = document.getElementById("bootPill");
-  const setBoot = (text) => { if (bootPill) bootPill.textContent = text; };
+  const setBoot = (text) => {
+    if (!bootPill) return;
+    bootPill.textContent = text;
+    const t = String(text || "").trim().toUpperCase();
+    setPillState(bootPill, t.startsWith("JS: OK") ? "ok" : "bad");
+  };
   setBoot("JS: init…");
   window.addEventListener("error", (ev) => {
     try {
@@ -1096,6 +1111,7 @@
     try {
       raw = localStorage.getItem(STORAGE_KEY);
     } catch (e){
+      localStorageOk = false;
       setBoot("JS: localStorage blockerad");
       return defaultData();
     }
@@ -1131,7 +1147,9 @@ if (!d.features) d.features = { sruEnabled: false };
   function save(){
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorageOk = true;
     } catch (e){
+      localStorageOk = false;
       // Still keep the UI responsive even if persistence is blocked.
       setBoot("JS: kunde inte spara (localStorage)");
     }
@@ -1181,11 +1199,18 @@ if (!d.features) d.features = { sruEnabled: false };
 
     // Header storage indicator (reacts to file connection)
     if (storagePill){
-      if (fsApiSupported() && fsHandle){
+      const supported = fsApiSupported();
+      const connected = !!fsHandle;
+      const requireFile = !!(state.fileSync && state.fileSync.requireFile);
+
+      if (supported && connected){
         const name = fsHandle && fsHandle.name ? fsHandle.name : "datafil";
         storagePill.textContent = `Lagring: datafil (${name})`;
+        setPillState(storagePill, fsLastError ? "bad" : "ok");
       } else {
-        storagePill.textContent = "Lagring: localStorage (offline)";
+        storagePill.textContent = localStorageOk ? "Lagring: localStorage (offline)" : "Lagring: localStorage blockerad";
+        const bad = (supported && requireFile && !connected) || !localStorageOk;
+        setPillState(storagePill, bad ? "bad" : "ok");
       }
     }
 
