@@ -1154,7 +1154,7 @@ if (!d.features) d.features = { sruEnabled: false };
   function setEditingLocked(locked){
     // Lock core editing actions if user requires a file but none is connected.
     const ids = [
-      "btnNewVoucher","btnAddLine","btnClearVoucher","btnSaveVoucher",
+      "btnAddLine","btnClearVoucher","btnSaveVoucher",
       "btnAddAccount",
       "btnAddYear","btnCarry",
       "btnWipe"
@@ -1528,6 +1528,11 @@ if (!state.features) state.features = { sruEnabled: false };
     if (t === "settings") renderSettings();
     if (t === "sru") renderSru();
     if (t === "accounts") renderAccounts();
+  }
+
+  function activateTab(tabName){
+    const btn = tabs.find(b => (b && b.dataset && b.dataset.tab === tabName));
+    if (btn) activateTabByButton(btn);
   }
 
   // Direct handler
@@ -3197,6 +3202,12 @@ if (!state.features) state.features = { sruEnabled: false };
   let currentLines = [];
 
   function newVoucher(){
+    // If user has enabled "Kräv datafil" but no file is connected yet, guide them.
+    if (fsApiSupported() && state.fileSync && state.fileSync.requireFile && !fsHandle){
+      alert("Du har 'Kräv datafil' påslaget men ingen fil är ansluten. Gå till Import/Export och välj/skapa datafil, eller avmarkera 'Kräv datafil'.");
+      activateTab("export");
+      return;
+    }
     editingVoucherId = null;
     vDate.value = todayISO();
     vSeries.value = "A";
