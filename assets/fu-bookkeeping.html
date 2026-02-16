@@ -74,22 +74,12 @@
       align-items:center;
       justify-content:space-between;
       gap:10px;
-
-      /* Basnivå-knappar i sidomenyn: mörk “pill”-design som matchar resten */
-      background: rgba(11,18,32,.92);
-      color: var(--text);
-      border: 1px solid rgba(34,48,68,.9);
-
+      background:transparent;
+      color:var(--muted);
+      border:1px solid var(--line);
       padding:10px 12px;
       border-radius:12px;
       cursor:pointer;
-    }
-    .navGroupBtn:hover{
-      border-color: rgba(96,165,250,.55);
-      box-shadow: 0 0 0 3px rgba(96,165,250,.08);
-    }
-    .navGroupBtn:active{
-      transform: translateY(0.5px);
     }
     .navGroupBtn:focus{
       outline:none;
@@ -97,15 +87,13 @@
       box-shadow:0 0 0 3px rgba(96,165,250,.12);
     }
     .navGroup.open .navGroupBtn{
-      background: rgba(96,165,250,.12);
-      border-color: rgba(96,165,250,.7);
-      box-shadow: 0 0 0 3px rgba(96,165,250,.12);
+      border-color:rgba(96,165,250,.7);
+      box-shadow:0 0 0 3px rgba(96,165,250,.12);
     }
 .navGroup.hasActive .navGroupBtn{
       color:var(--text);
     }
     .navGroupBtn .chev{ transition: transform .15s ease; opacity:.8; }
-    .navGroup.open .chev{ transform: rotate(90deg); }
     .navGroup.open .navGroupBtn .chev{ transform: rotate(90deg); }
 
     .navFlyout{
@@ -1123,11 +1111,15 @@
             </select>
             <label class="btn secondary" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
               Välj SIE-fil
-              <input id="sieImportFile" type="file" hidden />
+              <input id="sieImportFile" type="file" hidden multiple accept=".se,.sie,.txt" />
             </label>
+            <span id="sieImportFileName" class="muted small" style="margin-left:10px; max-width:360px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block; vertical-align:middle;">Ingen fil vald</span>
             <button class="btn" id="btnImportSie">Importera</button>
             <label class="muted small" style="display:flex; align-items:center; gap:8px;">
               <input id="sieImportWipe" type="checkbox" /> Rensa innan import
+            </label>
+            <label class="muted small" style="display:flex; align-items:center; gap:8px;">
+              <input id="sieImportParallel" type="checkbox" /> Läs filer parallellt (snabbare)
             </label>
           </div>
           <p class="muted small" style="margin-top:10px;">
@@ -1901,19 +1893,11 @@
     downloadText(filename, lines.join("\n") + "\n", "text/plain");
   }
 
-  async function importSieFile(file, encoding, wipe){
-    if (!file) return showToast("Välj en SIE-fil först.", 3500);
+  
+  async function importSieText(txt, wipe, fileName){
     if (wipe && !(await confirmAsync("Rensa innan import? (Rekommenderas endast om du vill ersätta allt.)"))) return;
 
-    const buf = await file.arrayBuffer();
-    const preferred = String(encoding || "utf-8");
-    const dec = decodeWithBestEncoding(buf, preferred);
-    const txt = dec.text;
-    if (dec.enc && String(dec.enc) !== String(preferred)){
-      showToast(`Teckenkodning: använde ${dec.enc} (i stället för ${preferred}) för att undvika "�".`, 6500);
-    }
-
-    if (wipe){
+if (wipe){
       // Keep company defaults but wipe data.
       const keepCompany = state?.company || defaultData().company;
       state = defaultData();
@@ -1924,12 +1908,46 @@
 
     const importedAccounts = {};
     const importedYears = [];
-    const importedVouchers = [];
+        const importedVouchers = [];
 
-    let currentYearId = "";
+    // SIE uses relative year identifiers in #RAR (often 0, -1, -2 ...).
+    // We normalize them to an absolute year key (YYYY) based on the #RAR start date,
+    // so fiscal years don’t show up as duplicates like -1/0 alongside 2024/2025.
+    let currentSieYearId = "";
+    const yearIdMap = Object.create(null);
+    const normalizeYearKey = (sieId, startIso, endIso)=>{
+      const s = (startIso || "").slice(0,4);
+      const e = (endIso || "").slice(0,4);
+      const y = (s || e || "").trim();
+      if (y && /^\d{4}$/.test(y)) return y;
+      const sid = String(sieId || "").trim();
+      if (/^\d{4}$/.test(sid)) return sid;
+      return (new Date().getFullYear()).toString();
+    };
+    const resolveYearIdForDate = (isoDate)=>{
+      const d8 = isoToYmd8(isoDate);
+      if (d8){
+        // Prefer fiscal years declared in the currently imported SIE file (#RAR)
+        for (const y of (importedYears||[])){
+          const s8 = isoToYmd8(y.start);
+          const e8 = isoToYmd8(y.end);
+          if (s8 && e8 && s8 <= d8 && d8 <= e8) return String(y.id);
+        }
+        // Fallback to already existing years in state
+        for (const y of (state.fiscalYears||[])){
+          const s8 = isoToYmd8(y.start);
+          const e8 = isoToYmd8(y.end);
+          if (s8 && e8 && s8 <= d8 && d8 <= e8) return String(y.id);
+        }
+        return String(isoDate||"").slice(0,4) || (new Date().getFullYear()).toString();
+      }
+      return String(isoDate||"").slice(0,4) || (new Date().getFullYear()).toString();
+    };
+
+
     let cur = null;
 
-    const flush = ()=>{
+const flush = ()=>{
       if (!cur) return;
       if (!Array.isArray(cur.lines)) cur.lines = [];
       // skip empty
@@ -1950,6 +1968,20 @@
 
       const t = sieTokens(line);
       const tag = t[0];
+
+      if (tag === "#RAR"){
+        // Fiscal year definition: #RAR <yearId> <startYYYYMMDD> <endYYYYMMDD>
+        const sieYid = String(t[1] || "").trim();
+        const start = ymd8ToIso(t[2]) || "";
+        const end = ymd8ToIso(t[3]) || "";
+        if (sieYid){
+          currentSieYearId = sieYid;
+          const normY = normalizeYearKey(sieYid, start, end);
+          yearIdMap[sieYid] = normY;
+          currentYearId = normY;
+          importedYears.push({ id: normY, sieId: sieYid, start, end });}
+        continue;
+      }
 
       if (tag === "#FNAMN" && t[1] != null){
         state.company = state.company || defaultData().company;
@@ -1987,9 +2019,10 @@
         const date = ymd8ToIso(t[3]) || todayISO();
         const text = (t[4] != null ? String(t[4]) : "").trim();
         const sign = (t[5] != null ? String(t[5]) : "").trim();
-        const yid = currentYearId || date.slice(0,4);
+        const yid = resolveYearIdForDate(date);
         currentYearId = yid;
-        cur = {
+        // don’t overwrite currentSieYearId here; it tracks the last #RAR seen
+cur = {
           id: crypto.randomUUID(),
           yearId: yid,
           series,
@@ -2022,6 +2055,17 @@
       }
     }
     flush();
+    // Ensure fiscal years exist for imported vouchers (some SIE files omit #RAR)
+    try{
+      const yearIds = new Set();
+      if (currentYearId) yearIds.add(String(currentYearId));
+      importedVouchers.forEach(v=>{ if (v && v.yearId) yearIds.add(String(v.yearId)); });
+      yearIds.forEach(yid=>{
+        if (!yid) return;
+        const exists = importedYears.find(y=>String(y.id)===String(yid));
+        if (!exists) importedYears.push({ id: yid, start:"", end:"" });
+      });
+    } catch {}
 
     // Merge fiscal years
     state.fiscalYears = state.fiscalYears || [];
@@ -2031,6 +2075,48 @@
       if (!exists) state.fiscalYears.push(y);
     });
     state.fiscalYears.sort((a,b)=>String(a.id).localeCompare(String(b.id),"sv"));
+
+    // De-dup fiscal years (SIE can use relative ids like 0 / -1; we keep one per period)
+    try{
+      const byPeriod = new Map(); // key=start|end -> {keep, dropIds[]}
+      (state.fiscalYears||[]).forEach(y=>{
+        const s = (y.start||"").trim();
+        const e = (y.end||"").trim();
+        const key = s + "|" + e;
+        if (!byPeriod.has(key)){
+          byPeriod.set(key, { keep: y, drop: [] });
+        } else {
+          const cur = byPeriod.get(key);
+          const prefer = (obj)=> (/^\d{4}$/.test(String(obj.id||"")) ? 2 : 1);
+          // prefer absolute year id (YYYY)
+          if (prefer(y) > prefer(cur.keep)){
+            cur.drop.push(cur.keep);
+            cur.keep = y;
+          } else {
+            cur.drop.push(y);
+          }
+          byPeriod.set(key, cur);
+        }
+      });
+
+      const dropIds = new Map(); // oldId -> newId
+      byPeriod.forEach(v=>{
+        v.drop.forEach(d=>{
+          if (d && d.id != null) dropIds.set(String(d.id), String(v.keep.id));
+        });
+      });
+
+      if (dropIds.size){
+        state.fiscalYears = (state.fiscalYears||[]).filter(y=> !dropIds.has(String(y.id)));
+        // rewrite vouchers to kept ids
+        (state.vouchers||[]).forEach(v=>{
+          const nid = dropIds.get(String(v.yearId));
+          if (nid) v.yearId = nid;
+        });
+        const aid = dropIds.get(String(state.activeYearId||""));
+        if (aid) state.activeYearId = aid;
+      }
+    }catch(e){}
 
     // Merge accounts
     state.accounts = state.accounts || {};
@@ -2062,9 +2148,21 @@
       entityType: "system",
       entityId: "sie",
       yearId: state.activeYearId || currentYearId || "",
-      details: { importedAccounts: Object.keys(importedAccounts).length, importedVouchers: importedVouchers.length }
+      details: { file: fileName || "", importedAccounts: Object.keys(importedAccounts).length, importedVouchers: importedVouchers.length }
     });
-    showToast(`SIE-import klar. Importerade ${Object.keys(importedAccounts).length} konton och ${importedVouchers.length} verifikationer.`, 5500);
+    showToast(`SIE-import${fileName ? " ("+fileName+")" : ""} klar. Importerade ${Object.keys(importedAccounts).length} konton och ${importedVouchers.length} verifikationer.`, 5500);  }
+
+  async function importSieFile(file, encoding, wipe){
+    if (!file) return showToast("Välj en SIE-fil först.", 3500);
+
+    const buf = await file.arrayBuffer();
+    const preferred = String(encoding || "utf-8");
+    const dec = decodeWithBestEncoding(buf, preferred);
+    const txt = dec.text;
+    if (dec.enc && String(dec.enc) !== String(preferred)){
+      showToast(`Teckenkodning: använde ${dec.enc} (i stället för ${preferred}) för att undvika "�".`, 6500);
+    }
+    return importSieText(txt, wipe, file && file.name ? file.name : "");
   }
 
   async function sha256Hex(text){
@@ -2584,6 +2682,28 @@ if (!d.features) d.features = { sruEnabled: false };
     return persisted;
   }
 
+
+  // När användaren väljer en NY datafil ska inget gammalt ligga kvar lokalt och riskera att blandas ihop.
+  // Detta körs automatiskt innan filen laddas/ansluts.
+  async function wipeLocalDataForNewDataFile(){
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e){ /* ignore */ }
+    // Reset in-memory state (UI kommer ändå att uppdateras av fil-inläsningen)
+    try { state = defaultData(); } catch (e){ /* ignore */ }
+
+    // Rensa IndexedDB (underlag/ocr-cache + ev. gamla file-handles)
+    try {
+      await new Promise((resolve)=>{
+        const req = indexedDB.deleteDatabase(IDB_DB);
+        req.onsuccess = ()=> resolve(true);
+        req.onerror = ()=> resolve(false);
+        req.onblocked = ()=> resolve(false);
+      });
+    } catch (e){ /* ignore */ }
+
+    // Spara ett rent state (om localStorage är aktivt) så UI inte visar gammal data innan fil laddas
+    try { save(); } catch (e){ /* ignore */ }
+  }
+
   // --- Fil-synk (Drive-synkad mapp) ---
   // OBS: Om hela UI:t "dör" beror det nästan alltid på att scriptet inte kan parsas
   // (SyntaxError). Den här sektionen är avsiktligt skriven utan dubletter/konstiga block.
@@ -2761,6 +2881,8 @@ if (!d.features) d.features = { sruEnabled: false };
       const handle = picked && picked[0] ? picked[0] : null;
       if (!handle) return;
 
+      await wipeLocalDataForNewDataFile();
+
       fsHandle = handle;
       await idbSet("dataFileHandle", fsHandle);
       fsLastError = null;
@@ -2795,6 +2917,8 @@ if (!d.features) d.features = { sruEnabled: false };
         types: [{ description: "Bokföringsdata (JSON)", accept: { "application/json": [".json"] } }]
       });
       if (!handle) return;
+
+      await wipeLocalDataForNewDataFile();
 
       fsHandle = handle;
       await idbSet("dataFileHandle", fsHandle);
@@ -2925,8 +3049,11 @@ if (!d.features) d.features = { sruEnabled: false };
   const btnImportSie = document.getElementById("btnImportSie");
   const sieImportEncoding = document.getElementById("sieImportEncoding");
   const sieImportWipe = document.getElementById("sieImportWipe");
+  const sieImportParallel = document.getElementById("sieImportParallel");
 
-  // File sync (Drive-synkad mapp via File System Access API)
+  
+  const sieImportFileName = document.getElementById("sieImportFileName");
+// File sync (Drive-synkad mapp via File System Access API)
   const btnConnectFile = document.getElementById("btnConnectFile");
   const btnCreateFile = document.getElementById("btnCreateFile");
   const btnLoadFromFile = document.getElementById("btnLoadFromFile");
@@ -7325,11 +7452,57 @@ if (btnExportSie4) btnExportSie4.addEventListener("click", (e)=>{
   e.preventDefault();
   exportSie4((sieYearSelect && sieYearSelect.value) || state.activeYearId);
 });
+
+if (sieImportFile) sieImportFile.addEventListener("change", ()=>{
+  try{
+    const fs = sieImportFile.files ? Array.from(sieImportFile.files) : [];
+    const names = fs.map(f=>f && f.name ? f.name : "").filter(Boolean);
+    const txt = names.length ? (names.length === 1 ? names[0] : (names.length + " filer: " + names.join(", "))) : "Ingen fil vald";
+    if (sieImportFileName) sieImportFileName.textContent = txt;
+  } catch(e){ console.error(e); }
+});
 if (btnImportSie) btnImportSie.addEventListener("click", async (e)=>{
   e.preventDefault();
-  const f = sieImportFile && sieImportFile.files && sieImportFile.files[0];
-  try { await importSieFile(f, (sieImportEncoding && sieImportEncoding.value) || "utf-8", !!(sieImportWipe && sieImportWipe.checked)); }
-  catch(err){ console.error(err); showToast("Kunde inte importera SIE. Se konsolen.", 8000); }
+  const fs = (sieImportFile && sieImportFile.files) ? Array.from(sieImportFile.files) : [];
+  if (!fs.length) return showToast("Välj en SIE-fil först.", 3500);
+  const enc = (sieImportEncoding && sieImportEncoding.value) || "utf-8";
+  const wipe = !!(sieImportWipe && sieImportWipe.checked);
+
+  try{
+    const parallel = !!(sieImportParallel && sieImportParallel.checked);
+
+    if (parallel){
+      // Read/decode files in parallel for speed, then apply merges sequentially (safe for state mutation).
+      const decoded = await Promise.all(fs.map(async (f)=>{
+        const buf = await f.arrayBuffer();
+        const preferred = String(enc || "utf-8");
+        const dec = decodeWithBestEncoding(buf, preferred);
+        if (dec.enc && String(dec.enc) !== String(preferred)){
+          showToast(`Teckenkodning (${f.name}): använde ${dec.enc} (i stället för ${preferred}) för att undvika "�".`, 6500);
+        }
+        return { file: f, text: dec.text };
+      }));
+      for (let i = 0; i < decoded.length; i++){
+        const d = decoded[i];
+        await importSieText(d.text, wipe && i===0, d.file && d.file.name ? d.file.name : "");
+      }
+    } else {
+      // Import each file in order. If wipe is checked, we wipe once before the first import.
+      for (let i = 0; i < fs.length; i++){
+        const f = fs[i];
+        await importSieFile(f, enc, wipe && i===0);
+      }
+    }
+  } catch(err){
+    console.error(err);
+    showToast("Kunde inte importera SIE. Se konsolen.", 8000);
+  } finally {
+    // Reset so user can pick another file (and so we don't accidentally re-import an old selection)
+    try { if (sieImportFile) sieImportFile.value = ""; } catch {}
+    try { if (sieImportFileName) sieImportFileName.textContent = "Ingen fil vald"; } catch {}
+    try { if (sieImportWipe) sieImportWipe.checked = false; } catch {}
+    try { if (sieImportParallel) sieImportParallel.checked = false; } catch {}
+  }
 });
 
 // --- File Sync wiring (UI moved to Settings) ---
