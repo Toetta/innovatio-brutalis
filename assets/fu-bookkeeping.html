@@ -555,7 +555,8 @@
               <select id="rptType">
                 <option value="is">Resultaträkning (period)</option>
                 <option value="bs">Balansräkning (per datum)</option>
-                <option value="trial">Saldolista (period + ack)</option>
+                                <option value="br">Balansrapport (från/förändring/till)</option>
+<option value="trial">Saldolista (period + ack)</option>
                 <option value="gl">Huvudbok (period)</option>
                 <option value="vj">Verifikationsjournal (period)</option>
               </select>
@@ -6908,7 +6909,231 @@ if (!d.features) d.features = { sruEnabled: false };
     return { title:"Balansräkning", html, columns:["Sektion","Konto","Namn","Belopp"], rows: rawRows };
   }
 
-  function reportSaldolista(yearId, from, to){
+  function reportBalansrapport(yearId, from, to){
+  // Balansrapport = Ingående saldo (per dagen före från) + Förändring (från..till) + Utgående saldo (till)
+  const fy = getYear(yearId);
+  const start = fiscalYearStart(yearId);
+  const end = fiscalYearEnd(yearId);
+
+  // Clamp is already done in generateReport, but be defensive
+  const range = clampRangeToFY(yearId, from, to);
+  from = range.from; to = range.to;
+
+  const opening = openingBalances(yearId, from);            // saldo före perioden
+  const change = balancesInRange(yearId, from, to);         // periodens förändring
+  const closing = balancesAsOf(yearId, to);                 // saldo t.o.m. till
+
+  const keys = new Set([
+    ...Object.keys(opening||{}),
+    ...Object.keys(change||{}),
+    ...Object.keys(closing||{})
+  ]);
+
+  function accType(acc){
+    return (state.accounts[acc]?.type) || guessTypeFromAccountNo(acc);
+  }
+
+  // Helpers: grouping by BAS-ish ranges
+  function accNo(acc){ return String(acc||"").replace(/\D/g,""); }
+  function first2(acc){ const n=accNo(acc); return n.length>=2 ? Number(n.slice(0,2)) : NaN; }
+  function first1(acc){ const n=accNo(acc); return n.length>=1 ? Number(n.slice(0,1)) : NaN; }
+
+  const assetsAcc = [];
+  const eqLiabAcc = [];
+  for (const acc of Array.from(keys).sort((a,b)=>a.localeCompare(b,"sv"))){
+    const t = accType(acc);
+    if (t !== "asset" && t !== "liability") continue;
+    const o = opening[acc]||0, c = change[acc]||0, cl = closing[acc]||0;
+    // keep accounts that have any activity / saldo
+    if (Math.abs(o) < 0.005 && Math.abs(c) < 0.005 && Math.abs(cl) < 0.005) continue;
+    if (t === "asset") assetsAcc.push(acc);
+    else eqLiabAcc.push(acc);
+  }
+
+  // Group definitions (good-enough BAS headings)
+  const ASSET_GROUPS = [
+    { key:"10-13", title:"Anläggningstillgångar", sub:null, ranges:[[10,13]] },
+    { key:"14", title:"Omsättningstillgångar", sub:[
+        { key:"14", title:"Varulager m. m.", ranges:[[14,14]] },
+        { key:"15-18", title:"Fordringar m. m.", ranges:[[15,18]] },
+        { key:"19", title:"Kassa och bank", ranges:[[19,19]] },
+      ], ranges:[[14,19]] }
+  ];
+
+  const EQLIAB_GROUPS = [
+    { key:"20", title:"Eget kapital", ranges:[[20,20]] },
+    { key:"21", title:"Obeskattade reserver", ranges:[[21,21]] },
+    { key:"22", title:"Avsättningar", ranges:[[22,22]] },
+    { key:"23", title:"Långfristiga skulder", ranges:[[23,23]] },
+    { key:"24-29", title:"Kortfristiga skulder", ranges:[[24,29]] }
+  ];
+
+  function inRanges(acc, ranges){
+    const x = first2(acc);
+    if (Number.isNaN(x)) return false;
+    return ranges.some(([a,b])=> x>=a && x<=b);
+  }
+
+  function sumAcc(accList){
+    let so=0, sc=0, scl=0;
+    for (const acc of accList){
+      so += (opening[acc]||0);
+      sc += (change[acc]||0);
+      scl += (closing[acc]||0);
+    }
+    return {
+      o: Math.round(so*100)/100,
+      c: Math.round(sc*100)/100,
+      cl: Math.round(scl*100)/100
+    };
+  }
+
+  // Build HTML rows
+  const rows = [];
+  function addRow(kind, label, o, c, cl, acc=null){
+    rows.push({ kind, label, o, c, cl, acc });
+  }
+
+  // ASSETS section
+  addRow("h1", "TILLGÅNGAR", null,null,null);
+  let sumAssets = {o:0,c:0,cl:0};
+
+  // Include accounts not covered by groups in a fallback bucket
+  const usedAssets = new Set();
+  for (const g of ASSET_GROUPS){
+    const gAcc = assetsAcc.filter(a=>inRanges(a, g.ranges));
+    if (!gAcc.length) continue;
+    // group title line (if has sub) else just section header
+    if (g.sub) addRow("h2", g.title, null,null,null);
+    // subgroups or direct accounts
+    if (g.sub){
+      for (const sg of g.sub){
+        const sgAcc = gAcc.filter(a=>inRanges(a, sg.ranges));
+        if (!sgAcc.length) continue;
+        addRow("h3", sg.title, null,null,null);
+        for (const acc of sgAcc){
+          usedAssets.add(acc);
+          addRow("acc", `${acc} ${state.accounts[acc]?.name||""}`.trim(), opening[acc]||0, change[acc]||0, closing[acc]||0, acc);
+        }
+        const s = sumAcc(sgAcc);
+        addRow("sum", `Summa ${sg.title.toLowerCase()}`, s.o, s.c, s.cl);
+      }
+      const sG = sumAcc(gAcc);
+      addRow("sum", `Summa ${g.title.toLowerCase()}`, sG.o, sG.c, sG.cl);
+    } else {
+      addRow("h2", g.title, null,null,null);
+      for (const acc of gAcc){
+        usedAssets.add(acc);
+        addRow("acc", `${acc} ${state.accounts[acc]?.name||""}`.trim(), opening[acc]||0, change[acc]||0, closing[acc]||0, acc);
+      }
+      const sG = sumAcc(gAcc);
+      addRow("sum", `Summa ${g.title.toLowerCase()}`, sG.o, sG.c, sG.cl);
+    }
+  }
+
+  const leftoverAssets = assetsAcc.filter(a=>!usedAssets.has(a));
+  if (leftoverAssets.length){
+    addRow("h2", "Övriga tillgångar", null,null,null);
+    for (const acc of leftoverAssets){
+      addRow("acc", `${acc} ${state.accounts[acc]?.name||""}`.trim(), opening[acc]||0, change[acc]||0, closing[acc]||0, acc);
+    }
+    const s = sumAcc(leftoverAssets);
+    addRow("sum", "Summa övriga tillgångar", s.o, s.c, s.cl);
+  }
+
+  sumAssets = sumAcc(assetsAcc);
+  addRow("sumStrong", "SUMMA TILLGÅNGAR", sumAssets.o, sumAssets.c, sumAssets.cl);
+
+  // EQUITY + LIAB
+  addRow("spacer","",null,null,null);
+  addRow("h1", "EGET KAPITAL OCH SKULDER", null,null,null);
+
+  let sumEqLiab = {o:0,c:0,cl:0};
+  const usedEL = new Set();
+  for (const g of EQLIAB_GROUPS){
+    const gAcc = eqLiabAcc.filter(a=>inRanges(a, g.ranges));
+    if (!gAcc.length) continue;
+    addRow("h2", g.title, null,null,null);
+    for (const acc of gAcc){
+      usedEL.add(acc);
+      addRow("acc", `${acc} ${state.accounts[acc]?.name||""}`.trim(), opening[acc]||0, change[acc]||0, closing[acc]||0, acc);
+    }
+    const sG = sumAcc(gAcc);
+    addRow("sum", `Summa ${g.title.toLowerCase()}`, sG.o, sG.c, sG.cl);
+  }
+  const leftoverEL = eqLiabAcc.filter(a=>!usedEL.has(a));
+  if (leftoverEL.length){
+    addRow("h2", "Övriga skulder", null,null,null);
+    for (const acc of leftoverEL){
+      addRow("acc", `${acc} ${state.accounts[acc]?.name||""}`.trim(), opening[acc]||0, change[acc]||0, closing[acc]||0, acc);
+    }
+    const s = sumAcc(leftoverEL);
+    addRow("sum", "Summa övriga skulder", s.o, s.c, s.cl);
+  }
+
+  sumEqLiab = sumAcc(eqLiabAcc);
+  addRow("sumStrong", "SUMMA EGET KAPITAL OCH SKULDER", sumEqLiab.o, sumEqLiab.c, sumEqLiab.cl);
+
+  // Render HTML table
+  const head = reportMetaHtml("Balansrapport", yearId, from, to);
+  const colFrom = escapeHtml(from);
+  const colTo = escapeHtml(to);
+
+  const tableRows = rows.map(r=>{
+    if (r.kind==="spacer") return `<tr><td colspan="4" style="height:14px;border:0;"></td></tr>`;
+    if (r.kind==="h1") return `<tr><td colspan="4" style="padding-top:12px; font-weight:900; font-size:15px; border:0;">${escapeHtml(r.label)}</td></tr>`;
+    if (r.kind==="h2") return `<tr><td colspan="4" style="padding-top:8px; font-weight:800; border:0;">${escapeHtml(r.label)}</td></tr>`;
+    if (r.kind==="h3") return `<tr><td colspan="4" style="padding-top:4px; font-weight:700; color:#222; border:0;">${escapeHtml(r.label)}</td></tr>`;
+
+    const cls = (r.kind==="sumStrong") ? "font-weight:900; text-transform:uppercase;" :
+                (r.kind==="sum") ? "font-weight:800;" : "";
+    const labelPad = (r.kind==="acc") ? "padding-left:14px;" : "";
+    const o = (r.o==null)?"":fmtSEK(r.o);
+    const c = (r.c==null)?"":fmtSEK(r.c);
+    const cl = (r.cl==null)?"":fmtSEK(r.cl);
+
+    return `<tr>
+      <td style="${labelPad}${cls}">${escapeHtml(r.label)}</td>
+      <td class="right" style="${cls}">${o}</td>
+      <td class="right" style="${cls}">${c}</td>
+      <td class="right" style="${cls}">${cl}</td>
+    </tr>`;
+  }).join("");
+
+  const htmlOut = `
+    ${head}
+    <table>
+      <thead>
+        <tr>
+          <th style="text-align:left; width:55%;">Balansrapport</th>
+          <th style="text-align:right; width:15%;">${colFrom}</th>
+          <th style="text-align:right; width:15%;">Förändring</th>
+          <th style="text-align:right; width:15%;">${colTo}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${tableRows}
+      </tbody>
+    </table>
+    <div class="muted small" style="margin-top:10px;">
+      Not: Ingående kolumn visar saldo per dagen före <b>${colFrom}</b>. Förändring är perioden <b>${colFrom}–${colTo}</b>. Utgående visar saldo per <b>${colTo}</b>.
+    </div>
+  `;
+
+  // Exportable flat rows (account-level only + totals)
+  const exportRows = rows
+    .filter(r=>["acc","sum","sumStrong"].includes(r.kind))
+    .map(r=>({
+      label: r.label,
+      opening: (r.o==null?0:r.o),
+      change: (r.c==null?0:r.c),
+      closing: (r.cl==null?0:r.cl)
+    }));
+
+  return { title:`Balansrapport ${yearId}`, html: htmlOut, rows: exportRows };
+}
+
+function reportSaldolista(yearId, from, to){
     const period = balancesInRange(yearId, from, to);
     const asof = balancesAsOf(yearId, to);
     const keys = Array.from(new Set([...Object.keys(period), ...Object.keys(asof), ...Object.keys(state.accounts||{})]))
@@ -7069,6 +7294,7 @@ if (!d.features) d.features = { sruEnabled: false };
     let rep;
     if (type === "is") rep = reportResultatrakning(yearId, from, to);
     else if (type === "bs") rep = reportBalansrakning(yearId, to);
+    else if (type === "br") rep = reportBalansrapport(yearId, from, to);
     else if (type === "trial") rep = reportSaldolista(yearId, from, to);
     else if (type === "gl") rep = reportHuvudbok(yearId, from, to);
     else if (type === "vj") rep = reportVerJournal(yearId, from, to);
