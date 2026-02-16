@@ -1429,7 +1429,7 @@
 (function(){
  
 
-  const APP_VERSION = "1.2"; // bump when adding new data fields
+  const APP_VERSION = "1.2.1"; // bump when adding new data fields
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -1705,6 +1705,19 @@
     if (!Array.isArray(o.fiscalYears)) o.fiscalYears = base.fiscalYears;
     if (!o.activeYearId) o.activeYearId = o.fiscalYears[0]?.id ?? String(new Date().getFullYear());
     if (!o.accounts) o.accounts = demoAccounts();
+
+    // Repair account types (common when importing SIE into older versions)
+    try{
+      Object.entries(o.accounts || {}).forEach(([acc, meta])=>{
+        if (!acc || !meta) return;
+        const inferred = guessTypeFromAccountNo(acc);
+        if (inferred === "asset" || inferred === "liability"){
+          if (meta.type !== inferred) meta.type = inferred;
+        } else {
+          if (!meta.type || meta.type === "other") meta.type = inferred;
+        }
+      });
+    }catch(e){}
 
     if (!Array.isArray(o.vouchers)) o.vouchers = [];
     // Voucher fields: add new compliance fields without destroying old content
@@ -2009,7 +2022,11 @@ const flush = ()=>{
       if (tag === "#KONTO" && t.length >= 3){
         const acc = String(t[1] || "").trim();
         const name = String(t[2] || "").trim();
-        if (acc) importedAccounts[acc] = { name, type: (state.accounts && state.accounts[acc] && state.accounts[acc].type) ? state.accounts[acc].type : "other" };
+        if (acc){
+          const prevType = (state.accounts && state.accounts[acc] && state.accounts[acc].type) ? state.accounts[acc].type : "";
+          const inferred = guessTypeFromAccountNo(acc);
+          importedAccounts[acc] = { name, type: (prevType && prevType !== "other") ? prevType : inferred };
+        }
         continue;
       }
 
@@ -2125,6 +2142,17 @@ cur = {
       if (!acc) return;
       state.accounts[acc] = state.accounts[acc] || { name: meta.name || "", type: meta.type || "other" };
       if (meta.name) state.accounts[acc].name = meta.name;
+    });
+
+    // Repair account types inferred from account number (prevents wrong "type" from breaking reports)
+    Object.entries(state.accounts).forEach(([acc, meta])=>{
+      if (!acc || !meta) return;
+      const inferred = guessTypeFromAccountNo(acc);
+      if (inferred === "asset" || inferred === "liability"){
+        if (meta.type !== inferred) meta.type = inferred;
+      } else {
+        if (!meta.type || meta.type === "other") meta.type = inferred;
+      }
     });
 
     // Merge vouchers
@@ -6671,7 +6699,7 @@ if (!d.features) d.features = { sruEnabled: false };
     let expense = 0;
 
     for (const [acc, amt] of Object.entries(bal)){
-      const t = (state.accounts[acc]?.type) || guessTypeFromAccountNo(acc);
+      const t = (state.accounts[acc]?.type && state.accounts[acc].type !== "other") ? state.accounts[acc].type : guessTypeFromAccountNo(acc);
       if (t === "asset") assets += amt;
       else if (t === "liability") eqLiab += amt;
       else if (t === "income") income += amt; // typically negative
@@ -6804,7 +6832,7 @@ if (!d.features) d.features = { sruEnabled: false };
     const keys = Object.keys(bal).sort((a,b)=>a.localeCompare(b,"sv"));
     for (const acc of keys){
       const amt = bal[acc] || 0;
-      const t = (state.accounts[acc]?.type) || guessTypeFromAccountNo(acc);
+      const t = (state.accounts[acc]?.type && state.accounts[acc].type !== "other") ? state.accounts[acc].type : guessTypeFromAccountNo(acc);
       if (t !== "income" && t !== "expense") continue;
 
       // Display as positive for income (credit) and as positive for expense (debit)
@@ -6855,7 +6883,7 @@ if (!d.features) d.features = { sruEnabled: false };
     const keys = Object.keys(bal).sort((a,b)=>a.localeCompare(b,"sv"));
     for (const acc of keys){
       const amt = bal[acc] || 0;
-      const t = (state.accounts[acc]?.type) || guessTypeFromAccountNo(acc);
+      const t = (state.accounts[acc]?.type && state.accounts[acc].type !== "other") ? state.accounts[acc].type : guessTypeFromAccountNo(acc);
       if (t !== "asset" && t !== "liability") continue;
 
       if (t === "asset"){
@@ -6930,7 +6958,11 @@ if (!d.features) d.features = { sruEnabled: false };
   ]);
 
   function accType(acc){
-    return (state.accounts[acc]?.type) || guessTypeFromAccountNo(acc);
+    // For reports, don’t let a stored "other" override BAS inference (1=asset, 2=liability, 3=income, 4–8=expense).
+    const inferred = guessTypeFromAccountNo(acc);
+    const stored = state.accounts[acc]?.type;
+    if (inferred === "asset" || inferred === "liability") return inferred; // always trust BAS for balance sheet classes
+    return stored || inferred;
   }
 
   // Helpers: grouping by BAS-ish ranges
