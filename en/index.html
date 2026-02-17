@@ -167,9 +167,7 @@
         location.hostname === "localhost" ||   // ok att det finns här som detection
         location.hostname === "::1";
 
-      const REDIRECT_URI = isLocal
-        ? "http://127.0.0.1:8000/callback.html"
-        : "https://www.innovatio-brutalis.se/callback.html";
+      const REDIRECT_URI = `${location.origin}/callback.html`;
 
       const statusEl = document.getElementById("spotifyStatus");
       const playBtn  = document.getElementById("spotifyPlayBtn");

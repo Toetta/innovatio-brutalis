@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Spotify tracks builder</title>
-  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
   <div class="container" style="max-width: 860px;">
@@ -44,7 +44,7 @@
     </footer>
   </div>
 
-  <script src="/spotify-player.js"></script>
+  <script src="../spotify-player.js"></script>
   <script>
     const statusEl = document.getElementById('status');
     const outEl = document.getElementById('out');
@@ -60,9 +60,7 @@
       location.hostname === 'localhost' ||
       location.hostname === '::1';
 
-    const REDIRECT_URI = isLocal
-      ? 'http://127.0.0.1:8000/callback.html'
-      : 'https://www.innovatio-brutalis.se/callback.html';
+    const REDIRECT_URI = `${location.origin}/callback.html`;
 
     let SPOTIFY_CLIENT_ID = 'c8efeac0956c4a9f831bb9238e23f5c3';
     try {

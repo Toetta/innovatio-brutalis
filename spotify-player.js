@@ -4,6 +4,8 @@ window.SpotifySite = (() => {
   const LS_TOKEN = "spotify_access_token";
   const LS_EXP   = "spotify_token_expires_at";
   const LS_VERIF = "spotify_pkce_verifier";
+  const LS_STATE = "spotify_pkce_state";
+  const LS_VERIF_PREFIX = "spotify_pkce_verifier_";
   const LS_CLIENT_ID = "spotify_client_id";
   const LS_REDIRECT_URI = "spotify_redirect_uri";
 
@@ -88,7 +90,12 @@ window.SpotifySite = (() => {
 
   async function login({ clientId, redirectUri, showDialog = false }) {
     const verifier = randomString(64);
+    const state = randomString(20);
+
+    // Backward compatible: keep the old key, but prefer state-keyed verifier.
     localStorage.setItem(LS_VERIF, verifier);
+    localStorage.setItem(LS_STATE, state);
+    localStorage.setItem(LS_VERIF_PREFIX + state, verifier);
     localStorage.setItem(LS_CLIENT_ID, clientId);
     localStorage.setItem(LS_REDIRECT_URI, redirectUri);
 
@@ -104,6 +111,7 @@ window.SpotifySite = (() => {
       redirect_uri: redirectUri,
       code_challenge_method: "S256",
       code_challenge: challenge,
+      state,
     });
 
     if (showDialog) params.set("show_dialog", "true");
@@ -115,8 +123,23 @@ window.SpotifySite = (() => {
     const url = new URL(location.href);
     const code = url.searchParams.get("code");
     if (!code) throw new Error("Missing code");
-    const verifier = localStorage.getItem(LS_VERIF);
+
+    const state = url.searchParams.get("state") || "";
+    let verifier = null;
+    try {
+      if (state) {
+        verifier = localStorage.getItem(LS_VERIF_PREFIX + state);
+        if (verifier) localStorage.removeItem(LS_VERIF_PREFIX + state);
+      }
+    } catch (_) {}
+
+    if (!verifier) {
+      verifier = localStorage.getItem(LS_VERIF);
+    }
+
     if (!verifier) throw new Error("Missing PKCE verifier");
+
+    try { localStorage.removeItem(LS_STATE); } catch (_) {}
 
     const clientId = getStoredClientId();
     const redirectUri = getStoredRedirectUri();
