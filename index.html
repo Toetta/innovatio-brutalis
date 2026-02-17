@@ -248,29 +248,16 @@
 
       const statusEl = document.getElementById("spotifyStatus");
       const playBtn  = document.getElementById("spotifyPlayBtn");
-      const embedEl = document.getElementById("spotifyEmbed");
       let lockedTrackUrl = null;
 
       function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
 
-      function toEmbedUrl(url){
-        const s = String(url || "").trim();
-        let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
-        if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
-        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
-        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
-        return null;
-      }
-
       function showEmbed(url){
-        if (!embedEl) return false;
-        // Play only one track; never replace once shown.
-        if (embedEl.querySelector("iframe")) return true;
-        const embedUrl = toEmbedUrl(url);
-        if (!embedUrl) return false;
-        embedEl.style.display = "";
-        embedEl.innerHTML = `<iframe title="Spotify" src="${embedUrl}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
-        return true;
+        try {
+          return Boolean(window.IBSpotifyPlayer?.show?.(url));
+        } catch (_) {
+          return false;
+        }
       }
 
       function hasClientId(){
@@ -398,11 +385,6 @@
 
       if (playBtn) {
         playBtn.addEventListener("click", async () => {
-          if (embedEl?.querySelector("iframe")) {
-            setStatus("Spelar redan.");
-            return;
-          }
-
           setStatus("Spotify: klick…");
           setStatus("Spotify: spelar en låt…");
           openDailyPublicTrackInSpotify();

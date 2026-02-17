@@ -347,4 +347,14 @@
   applyWithRetry();
   setupEventSync();
   setupPermalinks();
+
+  // Expose a small refresh hook for SPA/PJAX navigation.
+  // This re-applies deep links and mounts permalink pills in newly injected DOM.
+  try {
+    window.SiteDeepLinks = window.SiteDeepLinks || {};
+    window.SiteDeepLinks.refresh = () => {
+      try { applyWithRetry(); } catch (_) {}
+      try { setupPermalinks(); } catch (_) {}
+    };
+  } catch (_) {}
 })();

@@ -8,108 +8,191 @@
     }
   } catch (_) {}
 
-  // --- Helpers ---
-  const pathname = window.location.pathname;
-  const params = new URLSearchParams(window.location.search);
-  const langOverride = (params.get("lang") || "").toLowerCase();
-
-  // Normalize only directory-like paths (avoid corrupting file paths like /assets/foo.html)
-  const norm = (p) => {
-    if (p.endsWith("/")) return p;
-    const last = p.split("/").filter(Boolean).slice(-1)[0] || "";
-    return last.includes(".") ? p : (p + "/");
+  const lower = (s) => (typeof s === "string" ? s.toLowerCase() : "");
+  const shouldNoopApp = () => {
+    try {
+      const pathLower = lower(window.location.pathname || "");
+      if (pathLower.startsWith("/assets/")) return true;
+      if (pathLower.includes("fu-bookkeeping")) return true;
+      if (lower(document.body?.dataset?.app || "") === "fu-bookkeeping") return true;
+      return false;
+    } catch (_) {
+      return true;
+    }
   };
 
-  const path = norm(pathname);
+  // --- Helpers ---
+  const computeState = () => {
+    const pathname = window.location.pathname;
+    const params = new URLSearchParams(window.location.search);
+    const langOverride = (params.get("lang") || "").toLowerCase();
 
-  // Detect language: /en/ prefix => EN, otherwise SV
-  let isEN = path.startsWith("/en/");
-  if (langOverride === "en") isEN = true;
-  if (langOverride === "sv") isEN = false;
-  const root = isEN ? "/en/" : "/";
+    // Normalize only directory-like paths (avoid corrupting file paths like /assets/foo.html)
+    const norm = (p) => {
+      if (p.endsWith("/")) return p;
+      const last = p.split("/").filter(Boolean).slice(-1)[0] || "";
+      return last.includes(".") ? p : (p + "/");
+    };
 
-  // Map "current section" based on pathname
-  // Examples: /cnc/, /en/engineering/, etc.
-  let section = (() => {
-    const p = path.replace(/^\/en\//, "/");
-    const parts = p.split("/").filter(Boolean);
-    return parts[0] || ""; // "" means home
-  })();
+    const path = norm(pathname);
 
-  // Allow pages to override which nav item should be marked active.
-  // Example: <meta name="ib-nav-section" content="coding" />
-  try {
-    const override = document.querySelector('meta[name="ib-nav-section"]')?.getAttribute("content")?.trim();
-    if (override) section = override;
-  } catch (_) {}
+    // Detect language: /en/ prefix => EN, otherwise SV
+    let isEN = path.startsWith("/en/");
+    if (langOverride === "en") isEN = true;
+    if (langOverride === "sv") isEN = false;
+    const root = isEN ? "/en/" : "/";
 
-  // Where to switch language (paired pages)
-  // Special-case /assets/ popups: use ?lang=sv/en because /en/assets/... doesn't exist.
-  const svUrl = pathname.startsWith("/assets/")
-    ? `${pathname}?lang=sv`
-    : path.replace(/^\/en\//, "/");
+    // Map "current section" based on pathname
+    let section = (() => {
+      const p = path.replace(/^\/en\//, "/");
+      const parts = p.split("/").filter(Boolean);
+      return parts[0] || ""; // "" means home
+    })();
 
-  const enUrl = pathname.startsWith("/assets/")
-    ? `${pathname}?lang=en`
-    : (path.startsWith("/en/") ? path : "/en" + path);
+    // Allow pages to override which nav item should be marked active.
+    try {
+      const override = document.querySelector('meta[name="ib-nav-section"]')?.getAttribute("content")?.trim();
+      if (override) section = override;
+    } catch (_) {}
 
-  // Nav items (edit THIS list only, future-proof)
-  const navItems = [
-    { key: "",        labelSV: "Start",        labelEN: "Home",          hrefSV: "/",              hrefEN: "/en/" },
-    { key: "cnc",     labelSV: "CNC & Laser",  labelEN: "CNC & Laser",   hrefSV: "/cnc/",          hrefEN: "/en/cnc/" },
-    { key: "print",   labelSV: "3D-print",     labelEN: "3D Printing",   hrefSV: "/print/",        hrefEN: "/en/print/" },
-    { key: "scan",    labelSV: "3D-scanning",  labelEN: "3D Scanning",   hrefSV: "/scan/",         hrefEN: "/en/scan/" },
-    { key: "engineering", labelSV: "Engineering", labelEN: "Engineering", hrefSV: "/engineering/", hrefEN: "/en/engineering/" },
-    { key: "coding",      labelSV: "AI + CODING", labelEN: "AI + CODING", hrefSV: "/coding/",      hrefEN: "/en/coding/" },
-    { key: "automotive",  labelSV: "Automotive",  labelEN: "Automotive",  hrefSV: "/automotive/",  hrefEN: "/en/automotive/" }
-  ];
+    // Where to switch language (paired pages)
+    const svUrl = pathname.startsWith("/assets/")
+      ? `${pathname}?lang=sv`
+      : path.replace(/^\/en\//, "/");
 
-  // Build nav HTML
-  let navLinks = navItems.map(item => {
-    const label = isEN ? item.labelEN : item.labelSV;
-    const href  = isEN ? item.hrefEN  : item.hrefSV;
-    const active = (item.key === section) || (item.key === "" && section === "");
-    return `<a ${active ? 'class="active"' : ""} href="${href}">${label}</a>`;
-  }).join("");
+    const enUrl = pathname.startsWith("/assets/")
+      ? `${pathname}?lang=en`
+      : (path.startsWith("/en/") ? path : "/en" + path);
 
-  // Optional: add a single extra link into the MAIN nav (page-controlled)
-  // Usage (in <head>):
-  // <meta name="ib-topbar-cta-label" content="Kontakt">
-  // <meta name="ib-topbar-cta-href" content="#kontakt">
-  try {
-    const ctaLabel = document.querySelector('meta[name="ib-topbar-cta-label"]')?.getAttribute("content")?.trim();
-    const ctaHref = document.querySelector('meta[name="ib-topbar-cta-href"]')?.getAttribute("content")?.trim();
-    if (ctaLabel && ctaHref) {
-      navLinks += `<a href="${ctaHref}">${ctaLabel}</a>`;
+    return { pathname, path, isEN, root, section, svUrl, enUrl };
+  };
+
+  const buildTopbarHTML = () => {
+    const { isEN, section, svUrl, enUrl } = computeState();
+
+    // Nav items (edit THIS list only, future-proof)
+    const navItems = [
+      { key: "",        labelSV: "Start",        labelEN: "Home",          hrefSV: "/",              hrefEN: "/en/" },
+      { key: "cnc",     labelSV: "CNC & Laser",  labelEN: "CNC & Laser",   hrefSV: "/cnc/",          hrefEN: "/en/cnc/" },
+      { key: "print",   labelSV: "3D-print",     labelEN: "3D Printing",   hrefSV: "/print/",        hrefEN: "/en/print/" },
+      { key: "scan",    labelSV: "3D-scanning",  labelEN: "3D Scanning",   hrefSV: "/scan/",         hrefEN: "/en/scan/" },
+      { key: "engineering", labelSV: "Engineering", labelEN: "Engineering", hrefSV: "/engineering/", hrefEN: "/en/engineering/" },
+      { key: "coding",      labelSV: "AI + CODING", labelEN: "AI + CODING", hrefSV: "/coding/",      hrefEN: "/en/coding/" },
+      { key: "automotive",  labelSV: "Automotive",  labelEN: "Automotive",  hrefSV: "/automotive/",  hrefEN: "/en/automotive/" }
+    ];
+
+    let navLinks = navItems.map(item => {
+      const label = isEN ? item.labelEN : item.labelSV;
+      const href  = isEN ? item.hrefEN  : item.hrefSV;
+      const active = (item.key === section) || (item.key === "" && section === "");
+      return `<a ${active ? 'class="active"' : ""} href="${href}">${label}</a>`;
+    }).join("");
+
+    // Optional: add a single extra link into the MAIN nav (page-controlled)
+    try {
+      const ctaLabel = document.querySelector('meta[name="ib-topbar-cta-label"]')?.getAttribute("content")?.trim();
+      const ctaHref = document.querySelector('meta[name="ib-topbar-cta-href"]')?.getAttribute("content")?.trim();
+      if (ctaLabel && ctaHref) {
+        navLinks += `<a href="${ctaHref}">${ctaLabel}</a>`;
+      }
+    } catch (_) {}
+
+    const langLinks = `
+      <a ${!isEN ? 'class="active"' : ""} href="${svUrl}">SV</a>
+      <a ${isEN ? 'class="active"' : ""} href="${enUrl}">EN</a>
+    `;
+
+    return `
+      <div class="topbar">
+        <nav class="site-nav" aria-label="Site">
+          ${navLinks}
+        </nav>
+        <nav class="lang" aria-label="Language">
+          ${langLinks}
+        </nav>
+      </div>
+    `;
+  };
+
+  const refreshTopbar = () => {
+    // Inject into #site-topbar.
+    // If a page forgot to include the mount node, create it at the top of the main container.
+    let mount = document.getElementById("site-topbar");
+    if (!mount) {
+      const container = document.querySelector(".container") || document.body;
+      mount = document.createElement("div");
+      mount.id = "site-topbar";
+      container.insertBefore(mount, container.firstChild);
     }
-  } catch (_) {}
+    mount.innerHTML = buildTopbarHTML();
+  };
 
-  const langLinks = `
-    <a ${!isEN ? 'class="active"' : ""} href="${svUrl}">SV</a>
-    <a ${isEN ? 'class="active"' : ""} href="${enUrl}">EN</a>
-  `;
+  refreshTopbar();
 
-  const topbarHTML = `
-    <div class="topbar">
-      <nav class="site-nav" aria-label="Site">
-        ${navLinks}
-      </nav>
-      <nav class="lang" aria-label="Language">
-        ${langLinks}
-      </nav>
-    </div>
-  `;
+  // Persistent Spotify embed player (main-site only)
+  if (!shouldNoopApp()) {
+    try {
+      if (!document.getElementById("ib-spotify-player")) {
+        const wrap = document.createElement("div");
+        wrap.id = "ib-spotify-player";
+        wrap.className = "ib-spotify-player";
+        wrap.style.display = "none";
+        wrap.innerHTML = `
+          <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
+            <iframe id="ib-spotify-frame" title="Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+          </div>
+        `;
+        document.body.appendChild(wrap);
+      }
 
-  // Inject into #site-topbar.
-  // If a page forgot to include the mount node, create it at the top of the main container.
-  let mount = document.getElementById("site-topbar");
-  if (!mount) {
-    const container = document.querySelector(".container") || document.body;
-    mount = document.createElement("div");
-    mount.id = "site-topbar";
-    container.insertBefore(mount, container.firstChild);
+      const toEmbedUrl = (url) => {
+        const s = String(url || "").trim();
+        let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
+        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
+        m = s.match(/open\.spotify\.com\/embed\/(track|playlist)\/([A-Za-z0-9]+)/);
+        if (m?.[1] && m?.[2]) return `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
+        return null;
+      };
+
+      const getEls = () => {
+        const root = document.getElementById("ib-spotify-player");
+        const frame = document.getElementById("ib-spotify-frame");
+        return { root, frame };
+      };
+
+      const show = (url) => {
+        const embed = toEmbedUrl(url);
+        if (!embed) return false;
+        const { root, frame } = getEls();
+        if (!root || !frame) return false;
+        const prev = String(frame.getAttribute("src") || "").trim();
+        if (prev !== embed) frame.setAttribute("src", embed);
+        root.style.display = "";
+        try { sessionStorage.setItem("ib_spotify_embed_src", embed); } catch (_) {}
+        return true;
+      };
+
+      const restore = () => {
+        try {
+          const embed = String(sessionStorage.getItem("ib_spotify_embed_src") || "").trim();
+          if (!embed) return;
+          const { root, frame } = getEls();
+          if (!root || !frame) return;
+          frame.setAttribute("src", embed);
+          root.style.display = "";
+        } catch (_) {}
+      };
+
+      window.IBSpotifyPlayer = {
+        show,
+        restore,
+      };
+
+      restore();
+    } catch (_) {}
   }
-  mount.innerHTML = topbarHTML;
 
   // Optional: open links in a centered popup window.
   // Usage: <a href="..." data-popup="1240,820">Open</a>
@@ -197,6 +280,104 @@
   }, { capture: true });
 
   // Optional: keep year updated if footer uses #y
-  const y = document.getElementById("y");
-  if (y) y.textContent = new Date().getFullYear();
+  const refreshYear = () => {
+    const y = document.getElementById("y");
+    if (y) y.textContent = new Date().getFullYear();
+  };
+  refreshYear();
+
+  // Minimal PJAX navigation for main-site pages, so the Spotify iframe can keep playing.
+  // Notes:
+  // - Only same-origin links.
+  // - Never runs on /assets/* or fu-bookkeeping.
+  // - Does not attempt to execute scripts from destination pages.
+  if (!shouldNoopApp()) {
+    const isHijackableLink = (a) => {
+      try {
+        if (!a) return false;
+        if (a.target && a.target !== "_self") return false;
+        if (a.hasAttribute("download")) return false;
+        const href = a.getAttribute("href") || "";
+        if (!href) return false;
+        const h = href.trim();
+        if (h.startsWith("mailto:") || h.startsWith("tel:")) return false;
+        if (h.startsWith("#")) return false;
+
+        const url = new URL(h, window.location.origin);
+        if (url.origin !== window.location.origin) return false;
+        const p = lower(url.pathname || "");
+        if (p.startsWith("/assets/")) return false;
+        if (p.includes("fu-bookkeeping")) return false;
+        // Avoid hijacking direct file downloads
+        const last = p.split("/").filter(Boolean).slice(-1)[0] || "";
+        if (last.includes(".") && !last.endsWith(".html")) return false;
+        return true;
+      } catch (_) {
+        return false;
+      }
+    };
+
+    const swapFromDoc = (doc) => {
+      const newContainer = doc.querySelector(".container");
+      const curContainer = document.querySelector(".container");
+      if (!newContainer || !curContainer) throw new Error("Missing .container");
+
+      curContainer.innerHTML = newContainer.innerHTML;
+      document.title = doc.title || document.title;
+
+      refreshTopbar();
+      refreshYear();
+      try { window.SiteDeepLinks?.refresh?.(); } catch (_) {}
+    };
+
+    const navigate = async (url, { replace = false } = {}) => {
+      const u = (url instanceof URL) ? url : new URL(String(url), window.location.origin);
+      const res = await fetch(u.toString(), {
+        method: "GET",
+        headers: { "X-IB-PJAX": "1" },
+        cache: "no-store",
+      });
+      if (!res.ok) throw new Error(`Navigation failed: ${res.status}`);
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, "text/html");
+      swapFromDoc(doc);
+      if (replace) history.replaceState({}, "", u.toString());
+      else history.pushState({}, "", u.toString());
+
+      if (u.hash) {
+        const id = u.hash.slice(1);
+        const el = id ? document.getElementById(id) : null;
+        if (el && typeof el.scrollIntoView === "function") {
+          try { el.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) { el.scrollIntoView(true); }
+        }
+      } else {
+        try { window.scrollTo({ top: 0, behavior: "auto" }); } catch (_) { window.scrollTo(0, 0); }
+      }
+    };
+
+    document.addEventListener("click", (e) => {
+      const a = e.target?.closest?.("a");
+      if (!isHijackableLink(a)) return;
+      try {
+        const href = a.getAttribute("href");
+        if (!href) return;
+        const u = new URL(href, window.location.origin);
+        // If only the hash changes on the same page, let the browser handle it.
+        if (u.pathname === window.location.pathname && u.search === window.location.search && u.hash) return;
+
+        e.preventDefault();
+        navigate(u).catch(() => {
+          // Fallback to normal navigation
+          window.location.href = u.toString();
+        });
+      } catch (_) {}
+    }, { capture: true });
+
+    window.addEventListener("popstate", () => {
+      const u = new URL(window.location.href);
+      navigate(u, { replace: true }).catch(() => {
+        // If PJAX fails, do nothing; user can refresh.
+      });
+    });
+  }
 })();
