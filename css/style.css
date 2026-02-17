@@ -99,6 +99,7 @@ small{color:var(--text-muted)}
   padding: 34px;
   box-shadow: var(--shadow);
   text-align:center;
+  overflow:hidden;
 }
 
 .brand-hero{
@@ -123,7 +124,7 @@ small{color:var(--text-muted)}
 /* Hero: logo to the side on larger screens */
 @media (min-width: 900px){
   .hero{
-    grid-template-columns: 390px 1fr auto;
+    grid-template-columns: minmax(0, 390px) minmax(0, 1fr) minmax(0, 360px);
     column-gap: 26px;
     row-gap: 10px;
     text-align:left;
@@ -170,8 +171,8 @@ small{color:var(--text-muted)}
 }
 
 .spotify-embed{
-  width: 360px;
-  max-width: 100%;
+  width: 100%;
+  max-width: 360px;
 }
 
 .spotify-embed iframe{
