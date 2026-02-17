@@ -127,8 +127,7 @@
       </p>
 
       <div class="spotify-hero" aria-label="Spotify">
-        <button id="spotifyLoginBtn" class="btn small secondary" type="button">Logga in med Spotify</button>
-        <button id="spotifyPlayBtn" class="btn small" type="button" disabled>▶ Spela veckans låt</button>
+        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Spela veckans låt</button>
         <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
       </div>
 
@@ -240,7 +239,6 @@
         : "https://www.innovatio-brutalis.se/callback.html";
 
       const statusEl = document.getElementById("spotifyStatus");
-      const loginBtn = document.getElementById("spotifyLoginBtn");
       const playBtn  = document.getElementById("spotifyPlayBtn");
 
       function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
@@ -264,7 +262,6 @@
 
           if (!hasClientId()) {
             setStatus("Spotify: fyll i SPOTIFY_CLIENT_ID.");
-            if (loginBtn) loginBtn.disabled = true;
             return;
           }
 
@@ -275,47 +272,42 @@
 
           if (ok) {
             setStatus("Spotify: inloggad.");
-            if (playBtn) playBtn.disabled = false;
           } else {
-            setStatus("Spotify: ej inloggad.");
+            setStatus("Spotify: ej inloggad — klicka Spela för att logga in.");
           }
-
-          if (loginBtn) loginBtn.disabled = false;
         } catch (e) {
           console.error(e);
           setStatus("Spotify: init-fel (se console).");
         }
       })();
 
-      if (loginBtn) {
-        loginBtn.addEventListener("click", () => {
-          setStatus("Spotify: startar login…");
-          const s = getSpotifySite();
-          if (!s) return setStatus("Spotify: script saknas (spotify-player.js laddades inte). ");
-          if (!hasClientId()) {
-            setStatus("Spotify: fyll i SPOTIFY_CLIENT_ID.");
-            loginBtn.disabled = true;
-            return;
-          }
-
-          try {
-            s.login({
-              clientId: SPOTIFY_CLIENT_ID,
-              redirectUri: REDIRECT_URI,
-            });
-          } catch (e) {
-            console.error(e);
-            setStatus("Spotify: login-fel (se console).");
-          }
-        });
-      }
-
       if (playBtn) {
         playBtn.addEventListener("click", async () => {
-          setStatus("Startar… (kräver Premium för web-uppspelning)");
           const s = getSpotifySite();
           if (!s) return setStatus("Spotify: script saknas (spotify-player.js laddades inte). ");
           if (!hasClientId()) return setStatus("Spotify: fyll i SPOTIFY_CLIENT_ID.");
+
+          // Om ej inloggad: trigga login direkt
+          try {
+            const ok = await s.init({
+              clientId: SPOTIFY_CLIENT_ID,
+              redirectUri: REDIRECT_URI,
+            });
+            if (!ok) {
+              setStatus("Spotify: loggar in…");
+              s.login({
+                clientId: SPOTIFY_CLIENT_ID,
+                redirectUri: REDIRECT_URI,
+              });
+              return;
+            }
+          } catch (e) {
+            console.error(e);
+            setStatus("Spotify: init/login-fel (se console).");
+            return;
+          }
+
+          setStatus("Startar… (kräver Premium för web-uppspelning)");
 
           try {
             const track = await s.chooseOneTrack({

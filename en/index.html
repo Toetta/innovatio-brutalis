@@ -62,8 +62,7 @@
       <p class="tagline">Innovatio Brutalis works early in the development chain — from needs analysis and problem framing to concept development, CAD design, prototyping and low-volume manufacturing.</p>
 
       <div class="spotify-hero" aria-label="Spotify">
-        <button id="spotifyLoginBtn" class="btn small secondary" type="button">Log in with Spotify</button>
-        <button id="spotifyPlayBtn" class="btn small" type="button" disabled>▶ Play this week’s track</button>
+        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Play this week’s track</button>
         <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
       </div>
     </section>
@@ -168,7 +167,6 @@
         : "https://www.innovatio-brutalis.se/callback.html";
 
       const statusEl = document.getElementById("spotifyStatus");
-      const loginBtn = document.getElementById("spotifyLoginBtn");
       const playBtn  = document.getElementById("spotifyPlayBtn");
 
       function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
@@ -191,7 +189,6 @@
 
           if (!hasClientId()) {
             setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
-            if (loginBtn) loginBtn.disabled = true;
             return;
           }
 
@@ -202,47 +199,42 @@
 
           if (ok) {
             setStatus("Spotify: logged in.");
-            if (playBtn) playBtn.disabled = false;
           } else {
-            setStatus("Spotify: not logged in.");
+            setStatus("Spotify: not logged in — press Play to log in.");
           }
-
-          if (loginBtn) loginBtn.disabled = false;
         } catch (e) {
           console.error(e);
           setStatus("Spotify: init error (see console).");
         }
       })();
 
-      if (loginBtn) {
-        loginBtn.addEventListener("click", () => {
-          setStatus("Spotify: starting login…");
-          const s = getSpotifySite();
-          if (!s) return setStatus("Spotify: script missing (spotify-player.js did not load).");
-          if (!hasClientId()) {
-            setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
-            loginBtn.disabled = true;
-            return;
-          }
-
-          try {
-            s.login({
-              clientId: SPOTIFY_CLIENT_ID,
-              redirectUri: REDIRECT_URI,
-            });
-          } catch (e) {
-            console.error(e);
-            setStatus("Spotify: login error (see console).");
-          }
-        });
-      }
-
       if (playBtn) {
         playBtn.addEventListener("click", async () => {
-          setStatus("Starting… (Premium required for in-browser playback)");
           const s = getSpotifySite();
           if (!s) return setStatus("Spotify: script missing (spotify-player.js did not load).");
           if (!hasClientId()) return setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
+
+          // If not logged in: trigger login right away
+          try {
+            const ok = await s.init({
+              clientId: SPOTIFY_CLIENT_ID,
+              redirectUri: REDIRECT_URI,
+            });
+            if (!ok) {
+              setStatus("Spotify: logging in…");
+              s.login({
+                clientId: SPOTIFY_CLIENT_ID,
+                redirectUri: REDIRECT_URI,
+              });
+              return;
+            }
+          } catch (e) {
+            console.error(e);
+            setStatus("Spotify: init/login error (see console).");
+            return;
+          }
+
+          setStatus("Starting… (Premium required for in-browser playback)");
 
           try {
             const track = await s.chooseOneTrack({
