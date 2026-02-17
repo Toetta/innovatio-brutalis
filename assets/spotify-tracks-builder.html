@@ -60,6 +60,8 @@
       location.hostname === 'localhost' ||
       location.hostname === '::1';
 
+    const isServedOverHttp = location.protocol === 'http:' || location.protocol === 'https:';
+
     const REDIRECT_URI = `${location.origin}/callback.html`;
 
     let SPOTIFY_CLIENT_ID = 'c8efeac0956c4a9f831bb9238e23f5c3';
@@ -92,7 +94,19 @@
 
     function updateUi(){
       const ok = hasValidToken();
-      if (loginBtn) loginBtn.style.display = ok ? 'none' : '';
+      if (loginBtn) {
+        loginBtn.style.display = '';
+        loginBtn.textContent = ok ? 'Logga in igen' : 'Logga in med Spotify';
+      }
+    }
+
+    // OAuth/PKCE requires a stable http(s) origin. Running this page via file:// cannot work.
+    if (!isServedOverHttp) {
+      if (loginBtn) loginBtn.disabled = true;
+      if (generateBtn) generateBtn.disabled = true;
+      if (autoSaveBtn) autoSaveBtn.disabled = true;
+
+      setStatus('Du har öppnat sidan via file://. Starta en lokal webbserver och öppna via http://127.0.0.1:8000/assets/spotify-tracks-builder.html (t.ex. "python -m http.server 8000").');
     }
 
     function getToken(){
@@ -121,6 +135,11 @@
         });
         if (!r.ok) {
           const txt = await r.text().catch(()=> '');
+          if (r.status === 403) {
+            throw new Error(
+              `Spotify API 403 (Forbidden). Det betyder oftast att kontot saknar access till playlisten eller att appen är i Development mode och kontot inte är tillåtet (Spotify Dashboard → Users & Access). Prova “Logga in igen”.\n\nDetalj: ${txt}`
+            );
+          }
           throw new Error(`Spotify API ${r.status}: ${txt}`);
         }
         const j = await r.json();
@@ -241,6 +260,10 @@
 
     loginBtn?.addEventListener('click', async () => {
       try {
+        if (!isServedOverHttp) {
+          setStatus('OAuth fungerar inte via file://. Kör en lokal webbserver och öppna sidan via http://127.0.0.1:8000/assets/spotify-tracks-builder.html');
+          return;
+        }
         if (!window.SpotifySite) {
           setStatus('spotify-player.js saknas/laddades inte.');
           return;
@@ -254,11 +277,13 @@
         // Tell callback.html where to return after login.
         try { localStorage.setItem('spotify_post_login_redirect', location.pathname); } catch (_) {}
 
-        setStatus('Öppnar Spotify login…');
+        const relogin = hasValidToken();
+        setStatus(relogin ? 'Öppnar Spotify login (re-consent)…' : 'Öppnar Spotify login…');
         window.SpotifySite.login({
           clientId: SPOTIFY_CLIENT_ID,
           redirectUri: REDIRECT_URI,
-          showDialog: false,
+          // If the user already has a token but hits 403, re-consent is usually needed.
+          showDialog: relogin,
         });
       } catch (e) {
         console.error(e);
@@ -268,8 +293,11 @@
 
     // Initial state
     updateUi();
-    if (!hasValidToken()) {
-      setStatus('Inte inloggad. Klicka “Logga in med Spotify”.');
+    if (isServedOverHttp) {
+      setStatus(hasValidToken()
+        ? 'Inloggad. Klicka “Generate JSON”. Vid 403: klicka “Logga in igen”.'
+        : 'Inte inloggad. Klicka “Logga in med Spotify”.'
+      );
     }
   </script>
 </body>
