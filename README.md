@@ -151,10 +151,11 @@ Deep links target elements by `data-card-id` (or `id=`). That means:
 
 The homepage “Play” button supports a public mode so **any visitor** can play without OAuth.
 
-## Public random track (no OAuth)
+## Public “today’s track” (no OAuth)
 
 - File: `/assets/spotify-tracks.json`
-- The homepage loads this file and picks a random entry.
+- The homepage loads this file and picks a deterministic “today” entry.
+- It changes once per UTC day (every ~24h) and is stable across users.
 - If the list is empty/missing, it falls back to opening the playlist.
 
 `spotify-tracks.json` format:

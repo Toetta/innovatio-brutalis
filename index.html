@@ -127,7 +127,7 @@
       </p>
 
       <div class="spotify-hero" aria-label="Spotify">
-        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Spela en slumpad låt</button>
+        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Spela dagens låt</button>
         <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
       </div>
 
@@ -269,9 +269,26 @@
 
       let PUBLIC_TRACK_URLS = [];
 
-      function pickRandom(arr){
+      function utcDayKey(){
+        // Stable across users/timezones; changes once per UTC day.
+        return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+      }
+
+      function hashStringToUint32(str){
+        // Simple FNV-1a 32-bit
+        let h = 0x811c9dc5;
+        for (let i = 0; i < str.length; i++) {
+          h ^= str.charCodeAt(i);
+          h = Math.imul(h, 0x01000193);
+        }
+        return h >>> 0;
+      }
+
+      function pickDaily(arr, salt = ""){
         if (!Array.isArray(arr) || arr.length === 0) return null;
-        return arr[Math.floor(Math.random() * arr.length)];
+        const key = `${utcDayKey()}|${salt}`;
+        const idx = hashStringToUint32(key) % arr.length;
+        return arr[idx];
       }
 
       function normalizeTrackUrlOrUri(v){
@@ -301,12 +318,12 @@
         return openUrlInSpotify(`https://open.spotify.com/playlist/${PLAYLIST_ID}`);
       }
 
-      function openRandomPublicTrackInSpotify(){
+      function openDailyPublicTrackInSpotify(){
         // If you set WEEKLY_TRACK to a track URL/URI, it overrides randomness.
         const weekly = normalizeTrackUrlOrUri(WEEKLY_TRACK);
         if (weekly) return openUrlInSpotify(weekly);
 
-        const pick = normalizeTrackUrlOrUri(pickRandom(PUBLIC_TRACK_URLS));
+        const pick = normalizeTrackUrlOrUri(pickDaily(PUBLIC_TRACK_URLS, PLAYLIST_ID));
         if (pick) return openUrlInSpotify(pick);
 
         return openPlaylistInSpotify();
@@ -332,7 +349,7 @@
           // For public visitors: no login required; Play will open Spotify.
           // If the user already has a token, we can attempt in-browser playback.
           if (!hasValidToken()) {
-            setStatus("Spotify: klicka Spela (öppnar en slumpad låt i Spotify). ");
+            setStatus("Spotify: klicka Spela (öppnar dagens låt i Spotify). ");
             return;
           }
 
@@ -356,8 +373,8 @@
           const s = getSpotifySite();
           // Public mode: if no valid token, just open Spotify (works for everyone)
           if (!hasValidToken() || !s || !hasClientId()) {
-            setStatus("Spotify: öppnar en slumpad låt i Spotify…");
-            openRandomPublicTrackInSpotify();
+            setStatus("Spotify: öppnar dagens låt i Spotify…");
+            openDailyPublicTrackInSpotify();
             return;
           }
 
@@ -370,7 +387,7 @@
           } catch (e) {
             console.error(e);
             setStatus("Spotify: init-fel — öppnar i Spotify.");
-            openRandomPublicTrackInSpotify();
+            openDailyPublicTrackInSpotify();
             return;
           }
 
@@ -413,7 +430,7 @@
               try {
                 // keep tokens as-is; user might still be able to play via app
               } catch (_) {}
-              openRandomPublicTrackInSpotify();
+              openDailyPublicTrackInSpotify();
             } else {
               setStatus(msg ? ("Fel: " + msg) : "Kunde inte spela just nu.");
             }
