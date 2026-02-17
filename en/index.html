@@ -62,7 +62,7 @@
       <p class="tagline">Innovatio Brutalis works early in the development chain — from needs analysis and problem framing to concept development, CAD design, prototyping and low-volume manufacturing.</p>
 
       <div class="spotify-hero" aria-label="Spotify">
-        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Play today’s track</button>
+        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Play track</button>
         <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
         <div id="spotifyEmbed" class="spotify-embed" style="display:none"></div>
       </div>
@@ -173,6 +173,7 @@
       const statusEl = document.getElementById("spotifyStatus");
       const playBtn  = document.getElementById("spotifyPlayBtn");
       const embedEl = document.getElementById("spotifyEmbed");
+      let lockedTrackUrl = null;
 
       function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
 
@@ -180,13 +181,12 @@
         const s = String(url || "").trim();
         let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
         if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
-        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
-        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
         return null;
       }
 
       function showEmbed(url){
         if (!embedEl) return false;
+        if (embedEl.querySelector("iframe")) return true;
         const embedUrl = toEmbedUrl(url);
         if (!embedUrl) return false;
         embedEl.style.display = "";
@@ -263,16 +263,24 @@
       }
 
       function openPlaylistInSpotify(){
-        return showEmbed(`https://open.spotify.com/playlist/${PLAYLIST_ID}`);
+        setStatus("No track found.");
+        return false;
       }
 
       function openDailyPublicTrackInSpotify(){
-        // If you set WEEKLY_TRACK to a track URL/URI, it overrides randomness.
-        const weekly = normalizeTrackUrlOrUri(WEEKLY_TRACK);
-        if (weekly) return showEmbed(weekly);
+        if (lockedTrackUrl) return showEmbed(lockedTrackUrl);
 
-        const pick = normalizeTrackUrlOrUri(pickDaily(PUBLIC_TRACK_URLS, PLAYLIST_ID));
-        if (pick) return showEmbed(pick);
+        const weekly = normalizeTrackUrlOrUri(WEEKLY_TRACK);
+        if (weekly) {
+          lockedTrackUrl = weekly;
+          return showEmbed(lockedTrackUrl);
+        }
+
+        const first = normalizeTrackUrlOrUri(PUBLIC_TRACK_URLS?.[0]);
+        if (first) {
+          lockedTrackUrl = first;
+          return showEmbed(lockedTrackUrl);
+        }
 
         return openPlaylistInSpotify();
       }
@@ -296,7 +304,7 @@
           // For public visitors: no login required; Play will open Spotify.
           // If the user already has a token, we can attempt in-browser playback.
           if (!hasValidToken()) {
-            setStatus("Spotify: press Play (opens today’s track in Spotify)." );
+            setStatus("Spotify: press Play (plays one track)." );
             return;
           }
 
@@ -316,11 +324,16 @@
 
       if (playBtn) {
         playBtn.addEventListener("click", async () => {
+          if (embedEl?.querySelector("iframe")) {
+            setStatus("Already playing.");
+            return;
+          }
+
           setStatus("Spotify: click…");
           const s = getSpotifySite();
           // Public mode: no token needed; just open a random track in Spotify.
           if (!hasValidToken() || !s || !hasClientId()) {
-            setStatus("Spotify: opening today’s track in Spotify…");
+            setStatus("Spotify: playing one track…");
             openDailyPublicTrackInSpotify();
             return;
           }
@@ -353,21 +366,19 @@
             return;
           }
 
-          setStatus("Starting… (Premium required for in-browser playback)");
+          setStatus("Starting…");
 
           try {
-            const track = await s.chooseOneTrack({
-              weeklyTrack: WEEKLY_TRACK,
-              playlistId: PLAYLIST_ID,
-            });
+            if (!lockedTrackUrl) {
+              const track = await s.chooseOneTrack({ weeklyTrack: WEEKLY_TRACK, playlistId: PLAYLIST_ID });
+              if (track?.url) lockedTrackUrl = track.url;
+            }
 
-            const playedInWeb = await s.playInBrowser(track.uri);
-
-            if (playedInWeb) {
-              setStatus(`Playing in browser: ${track.name || "track"}`);
+            if (lockedTrackUrl) {
+              showEmbed(lockedTrackUrl);
+              setStatus("Playing one track.");
             } else {
-              showEmbed(track.url);
-              setStatus("Showing in Spotify (embed)." );
+              setStatus("No track found.");
             }
           } catch (e) {
             console.error(e);
@@ -385,7 +396,7 @@
 
               try { sessionStorage.setItem("spotify_403_relogin_at", String(now)); } catch (_) {}
 
-              setStatus("Spotify: 403 Forbidden — opening in Spotify.");
+              setStatus("Spotify: 403 Forbidden — playing public track.");
               openDailyPublicTrackInSpotify();
             } else {
               setStatus(msg ? ("Error: " + msg) : "Could not play right now.");

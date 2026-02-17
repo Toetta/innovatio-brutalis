@@ -127,7 +127,7 @@
       </p>
 
       <div class="spotify-hero" aria-label="Spotify">
-        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Spela dagens låt</button>
+        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Spela låt</button>
         <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
         <div id="spotifyEmbed" class="spotify-embed" style="display:none"></div>
       </div>
@@ -245,6 +245,7 @@
       const statusEl = document.getElementById("spotifyStatus");
       const playBtn  = document.getElementById("spotifyPlayBtn");
       const embedEl = document.getElementById("spotifyEmbed");
+      let lockedTrackUrl = null;
 
       function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
 
@@ -252,13 +253,13 @@
         const s = String(url || "").trim();
         let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
         if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
-        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
-        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
         return null;
       }
 
       function showEmbed(url){
         if (!embedEl) return false;
+        // Play only one track; never replace once shown.
+        if (embedEl.querySelector("iframe")) return true;
         const embedUrl = toEmbedUrl(url);
         if (!embedUrl) return false;
         embedEl.style.display = "";
@@ -337,16 +338,27 @@
       }
 
       function openPlaylistInSpotify(){
-        return showEmbed(`https://open.spotify.com/playlist/${PLAYLIST_ID}`);
+        // Spec: only a single track (no playlist embed)
+        setStatus("Ingen låt hittades.");
+        return false;
       }
 
       function openDailyPublicTrackInSpotify(){
-        // If you set WEEKLY_TRACK to a track URL/URI, it overrides randomness.
-        const weekly = normalizeTrackUrlOrUri(WEEKLY_TRACK);
-        if (weekly) return openUrlInSpotify(weekly);
+        // Lock to one track; never rotate/change.
+        if (lockedTrackUrl) return showEmbed(lockedTrackUrl);
 
-        const pick = normalizeTrackUrlOrUri(pickDaily(PUBLIC_TRACK_URLS, PLAYLIST_ID));
-        if (pick) return showEmbed(pick);
+        const weekly = normalizeTrackUrlOrUri(WEEKLY_TRACK);
+        if (weekly) {
+          lockedTrackUrl = weekly;
+          return showEmbed(lockedTrackUrl);
+        }
+
+        // Default: first track in the static list (same for everyone).
+        const first = normalizeTrackUrlOrUri(PUBLIC_TRACK_URLS?.[0]);
+        if (first) {
+          lockedTrackUrl = first;
+          return showEmbed(lockedTrackUrl);
+        }
 
         return openPlaylistInSpotify();
       }
@@ -371,7 +383,7 @@
           // For public visitors: no login required; Play will open Spotify.
           // If the user already has a token, we can attempt in-browser playback.
           if (!hasValidToken()) {
-            setStatus("Spotify: klicka Spela (öppnar dagens låt i Spotify). ");
+            setStatus("Spotify: klicka Spela (spelar en låt). ");
             return;
           }
 
@@ -391,11 +403,16 @@
 
       if (playBtn) {
         playBtn.addEventListener("click", async () => {
+          if (embedEl?.querySelector("iframe")) {
+            setStatus("Spelar redan.");
+            return;
+          }
+
           setStatus("Spotify: klick…");
           const s = getSpotifySite();
           // Public mode: if no valid token, just open Spotify (works for everyone)
           if (!hasValidToken() || !s || !hasClientId()) {
-            setStatus("Spotify: öppnar dagens låt i Spotify…");
+            setStatus("Spotify: spelar en låt…");
             openDailyPublicTrackInSpotify();
             return;
           }
@@ -413,23 +430,19 @@
             return;
           }
 
-          setStatus("Startar… (kräver Premium för web-uppspelning)");
+          setStatus("Startar…");
 
           try {
-            const track = await s.chooseOneTrack({
-              weeklyTrack: WEEKLY_TRACK,
-              playlistId: PLAYLIST_ID,
-            });
+            if (!lockedTrackUrl) {
+              const track = await s.chooseOneTrack({ weeklyTrack: WEEKLY_TRACK, playlistId: PLAYLIST_ID });
+              if (track?.url) lockedTrackUrl = track.url;
+            }
 
-            // Försök spela i webbläsaren via Web Playback SDK
-            const playedInWeb = await s.playInBrowser(track.uri);
-
-            if (playedInWeb) {
-              setStatus(`Spelar i webben: ${track.name || "låt"}`);
+            if (lockedTrackUrl) {
+              showEmbed(lockedTrackUrl);
+              setStatus("Spelar en låt.");
             } else {
-              // Fallback: embed inline
-              showEmbed(track.url);
-              setStatus("Visar i Spotify (embed). ");
+              setStatus("Ingen låt hittades.");
             }
           } catch (e) {
             console.error(e);
@@ -448,7 +461,7 @@
               try { sessionStorage.setItem("spotify_403_relogin_at", String(now)); } catch (_) {}
 
               // In practice, 403 is often playlist access. Avoid looping; open Spotify instead.
-              setStatus("Spotify: 403 Forbidden — öppnar i Spotify.");
+              setStatus("Spotify: 403 Forbidden — spelar en låt offentligt.");
               try {
                 // keep tokens as-is; user might still be able to play via app
               } catch (_) {}
