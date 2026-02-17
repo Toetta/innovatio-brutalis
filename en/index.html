@@ -149,7 +149,13 @@
       const WEEKLY_TRACK = null;
 
       // Your Spotify Client ID from the dashboard
-      const SPOTIFY_CLIENT_ID = "FYLL_I_DIN_CLIENT_ID";
+      // Tip: you can also store it in the browser (clientId is not secret):
+      // localStorage.setItem("spotify_client_id", "YOUR_CLIENT_ID");
+      let SPOTIFY_CLIENT_ID = "FYLL_I_DIN_CLIENT_ID";
+      try {
+        const savedClientId = localStorage.getItem("spotify_client_id");
+        if (savedClientId) SPOTIFY_CLIENT_ID = String(savedClientId).trim();
+      } catch (_) {}
 
       // Must match exactly a Redirect URI you have added in the Spotify dashboard
       const isLocal =
@@ -185,6 +191,7 @@
 
           if (!hasClientId()) {
             setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
+            if (loginBtn) loginBtn.disabled = true;
             return;
           }
 
@@ -199,6 +206,8 @@
           } else {
             setStatus("Spotify: not logged in.");
           }
+
+          if (loginBtn) loginBtn.disabled = false;
         } catch (e) {
           console.error(e);
           setStatus("Spotify: init error (see console).");
@@ -210,7 +219,11 @@
           setStatus("Spotify: starting login…");
           const s = getSpotifySite();
           if (!s) return setStatus("Spotify: script missing (spotify-player.js did not load).");
-          if (!hasClientId()) return setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
+          if (!hasClientId()) {
+            setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
+            loginBtn.disabled = true;
+            return;
+          }
 
           try {
             s.login({

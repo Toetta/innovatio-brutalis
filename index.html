@@ -221,7 +221,13 @@
       const WEEKLY_TRACK = null;
 
       // Din Spotify Client ID från dashboard
-      const SPOTIFY_CLIENT_ID = "FYLL_I_DIN_CLIENT_ID";
+      // Tips: du kan även spara den i webbläsaren (clientId är inte hemlig):
+      // localStorage.setItem("spotify_client_id", "DIN_CLIENT_ID");
+      let SPOTIFY_CLIENT_ID = "FYLL_I_DIN_CLIENT_ID";
+      try {
+        const savedClientId = localStorage.getItem("spotify_client_id");
+        if (savedClientId) SPOTIFY_CLIENT_ID = String(savedClientId).trim();
+      } catch (_) {}
 
       // Viktigt: måste matcha exakt en Redirect URI du lagt in i Spotify dashboard
       const isLocal =
@@ -258,6 +264,7 @@
 
           if (!hasClientId()) {
             setStatus("Spotify: fyll i SPOTIFY_CLIENT_ID.");
+            if (loginBtn) loginBtn.disabled = true;
             return;
           }
 
@@ -272,6 +279,8 @@
           } else {
             setStatus("Spotify: ej inloggad.");
           }
+
+          if (loginBtn) loginBtn.disabled = false;
         } catch (e) {
           console.error(e);
           setStatus("Spotify: init-fel (se console).");
@@ -283,7 +292,11 @@
           setStatus("Spotify: startar login…");
           const s = getSpotifySite();
           if (!s) return setStatus("Spotify: script saknas (spotify-player.js laddades inte). ");
-          if (!hasClientId()) return setStatus("Spotify: fyll i SPOTIFY_CLIENT_ID.");
+          if (!hasClientId()) {
+            setStatus("Spotify: fyll i SPOTIFY_CLIENT_ID.");
+            loginBtn.disabled = true;
+            return;
+          }
 
           try {
             s.login({
