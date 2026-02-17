@@ -237,53 +237,95 @@
       const loginBtn = document.getElementById("spotifyLoginBtn");
       const playBtn  = document.getElementById("spotifyPlayBtn");
 
-      function setStatus(t){ statusEl.textContent = t || ""; }
+      function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
+
+      function hasClientId(){
+        return SPOTIFY_CLIENT_ID && SPOTIFY_CLIENT_ID !== "FYLL_I_DIN_CLIENT_ID";
+      }
+
+      function getSpotifySite(){
+        return window.SpotifySite;
+      }
 
       // Init: läs token om den redan finns i localStorage
       (async () => {
-        const ok = await SpotifySite.init({
-          clientId: SPOTIFY_CLIENT_ID,
-          redirectUri: REDIRECT_URI,
-        });
-
-        if (ok) {
-          setStatus("Spotify: inloggad.");
-          playBtn.disabled = false;
-        } else {
-          setStatus("Spotify: ej inloggad.");
-        }
-      })();
-
-      loginBtn.addEventListener("click", () => {
-        SpotifySite.login({
-          clientId: SPOTIFY_CLIENT_ID,
-          redirectUri: REDIRECT_URI,
-        });
-      });
-
-      playBtn.addEventListener("click", async () => {
-        setStatus("Startar… (kräver Premium för web-uppspelning)");
         try {
-          const track = await SpotifySite.chooseOneTrack({
-            weeklyTrack: WEEKLY_TRACK,
-            playlistId: PLAYLIST_ID,
+          const s = getSpotifySite();
+          if (!s) {
+            setStatus("Spotify: script saknas (spotify-player.js laddades inte). ");
+            return;
+          }
+
+          if (!hasClientId()) {
+            setStatus("Spotify: fyll i SPOTIFY_CLIENT_ID.");
+            return;
+          }
+
+          const ok = await s.init({
+            clientId: SPOTIFY_CLIENT_ID,
+            redirectUri: REDIRECT_URI,
           });
 
-          // Försök spela i webbläsaren via Web Playback SDK
-          const playedInWeb = await SpotifySite.playInBrowser(track.uri);
-
-          if (playedInWeb) {
-            setStatus(`Spelar i webben: ${track.name || "låt"}`);
+          if (ok) {
+            setStatus("Spotify: inloggad.");
+            if (playBtn) playBtn.disabled = false;
           } else {
-            // Fallback: öppna i Spotify
-            SpotifySite.openInSpotify(track);
-            setStatus("Öppnade i Spotify (fallback).");
+            setStatus("Spotify: ej inloggad.");
           }
         } catch (e) {
           console.error(e);
-          setStatus("Kunde inte spela just nu.");
+          setStatus("Spotify: init-fel (se console).");
         }
-      });
+      })();
+
+      if (loginBtn) {
+        loginBtn.addEventListener("click", () => {
+          setStatus("Spotify: startar login…");
+          const s = getSpotifySite();
+          if (!s) return setStatus("Spotify: script saknas (spotify-player.js laddades inte). ");
+          if (!hasClientId()) return setStatus("Spotify: fyll i SPOTIFY_CLIENT_ID.");
+
+          try {
+            s.login({
+              clientId: SPOTIFY_CLIENT_ID,
+              redirectUri: REDIRECT_URI,
+            });
+          } catch (e) {
+            console.error(e);
+            setStatus("Spotify: login-fel (se console).");
+          }
+        });
+      }
+
+      if (playBtn) {
+        playBtn.addEventListener("click", async () => {
+          setStatus("Startar… (kräver Premium för web-uppspelning)");
+          const s = getSpotifySite();
+          if (!s) return setStatus("Spotify: script saknas (spotify-player.js laddades inte). ");
+          if (!hasClientId()) return setStatus("Spotify: fyll i SPOTIFY_CLIENT_ID.");
+
+          try {
+            const track = await s.chooseOneTrack({
+              weeklyTrack: WEEKLY_TRACK,
+              playlistId: PLAYLIST_ID,
+            });
+
+            // Försök spela i webbläsaren via Web Playback SDK
+            const playedInWeb = await s.playInBrowser(track.uri);
+
+            if (playedInWeb) {
+              setStatus(`Spelar i webben: ${track.name || "låt"}`);
+            } else {
+              // Fallback: öppna i Spotify
+              s.openInSpotify(track);
+              setStatus("Öppnade i Spotify (fallback).");
+            }
+          } catch (e) {
+            console.error(e);
+            setStatus("Kunde inte spela just nu.");
+          }
+        });
+      }
     </script>
 
   </div>

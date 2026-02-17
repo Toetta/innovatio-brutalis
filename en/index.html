@@ -165,50 +165,92 @@
       const loginBtn = document.getElementById("spotifyLoginBtn");
       const playBtn  = document.getElementById("spotifyPlayBtn");
 
-      function setStatus(t){ statusEl.textContent = t || ""; }
+      function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
+
+      function hasClientId(){
+        return SPOTIFY_CLIENT_ID && SPOTIFY_CLIENT_ID !== "FYLL_I_DIN_CLIENT_ID";
+      }
+
+      function getSpotifySite(){
+        return window.SpotifySite;
+      }
 
       (async () => {
-        const ok = await SpotifySite.init({
-          clientId: SPOTIFY_CLIENT_ID,
-          redirectUri: REDIRECT_URI,
-        });
-
-        if (ok) {
-          setStatus("Spotify: logged in.");
-          playBtn.disabled = false;
-        } else {
-          setStatus("Spotify: not logged in.");
-        }
-      })();
-
-      loginBtn.addEventListener("click", () => {
-        SpotifySite.login({
-          clientId: SPOTIFY_CLIENT_ID,
-          redirectUri: REDIRECT_URI,
-        });
-      });
-
-      playBtn.addEventListener("click", async () => {
-        setStatus("Starting… (Premium required for in-browser playback)");
         try {
-          const track = await SpotifySite.chooseOneTrack({
-            weeklyTrack: WEEKLY_TRACK,
-            playlistId: PLAYLIST_ID,
+          const s = getSpotifySite();
+          if (!s) {
+            setStatus("Spotify: script missing (spotify-player.js did not load).");
+            return;
+          }
+
+          if (!hasClientId()) {
+            setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
+            return;
+          }
+
+          const ok = await s.init({
+            clientId: SPOTIFY_CLIENT_ID,
+            redirectUri: REDIRECT_URI,
           });
 
-          const playedInWeb = await SpotifySite.playInBrowser(track.uri);
-
-          if (playedInWeb) {
-            setStatus(`Playing in browser: ${track.name || "track"}`);
+          if (ok) {
+            setStatus("Spotify: logged in.");
+            if (playBtn) playBtn.disabled = false;
           } else {
-            SpotifySite.openInSpotify(track);
-            setStatus("Opened in Spotify (fallback)." );
+            setStatus("Spotify: not logged in.");
           }
         } catch (e) {
           console.error(e);
-          setStatus("Could not play right now.");
+          setStatus("Spotify: init error (see console).");
         }
-      });
+      })();
+
+      if (loginBtn) {
+        loginBtn.addEventListener("click", () => {
+          setStatus("Spotify: starting login…");
+          const s = getSpotifySite();
+          if (!s) return setStatus("Spotify: script missing (spotify-player.js did not load).");
+          if (!hasClientId()) return setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
+
+          try {
+            s.login({
+              clientId: SPOTIFY_CLIENT_ID,
+              redirectUri: REDIRECT_URI,
+            });
+          } catch (e) {
+            console.error(e);
+            setStatus("Spotify: login error (see console).");
+          }
+        });
+      }
+
+      if (playBtn) {
+        playBtn.addEventListener("click", async () => {
+          setStatus("Starting… (Premium required for in-browser playback)");
+          const s = getSpotifySite();
+          if (!s) return setStatus("Spotify: script missing (spotify-player.js did not load).");
+          if (!hasClientId()) return setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
+
+          try {
+            const track = await s.chooseOneTrack({
+              weeklyTrack: WEEKLY_TRACK,
+              playlistId: PLAYLIST_ID,
+            });
+
+            const playedInWeb = await s.playInBrowser(track.uri);
+
+            if (playedInWeb) {
+              setStatus(`Playing in browser: ${track.name || "track"}`);
+            } else {
+              s.openInSpotify(track);
+              setStatus("Opened in Spotify (fallback)." );
+            }
+          } catch (e) {
+            console.error(e);
+            setStatus("Could not play right now.");
+          }
+        });
+      }
     </script>
   </div>
 </body>
