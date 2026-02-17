@@ -127,7 +127,133 @@
     mount.innerHTML = buildTopbarHTML();
   };
 
+  const ensureSpotifySpacer = () => {
+    try {
+      const container = document.querySelector(".container");
+      const topbarMount = document.getElementById("site-topbar");
+      if (!container || !topbarMount) return null;
+
+      let spacer = document.getElementById("ib-spotify-spacer");
+      if (!spacer) {
+        spacer = document.createElement("div");
+        spacer.id = "ib-spotify-spacer";
+        spacer.setAttribute("aria-hidden", "true");
+      }
+
+      // Keep it directly under the topbar mount.
+      const desiredParent = container;
+      if (spacer.parentNode !== desiredParent) desiredParent.appendChild(spacer);
+      if (topbarMount.nextSibling !== spacer) {
+        desiredParent.insertBefore(spacer, topbarMount.nextSibling);
+      }
+      return spacer;
+    } catch (_) {
+      return null;
+    }
+  };
+
   refreshTopbar();
+
+  // Persistent Spotify embed player (survives PJAX navigation)
+  if (!shouldNoopApp()) {
+    try {
+      const PLAYER_HEIGHT_PX = 152;
+      const PLAYER_GAP_PX = 12;
+
+      if (!document.getElementById("ib-spotify-player")) {
+        const wrap = document.createElement("div");
+        wrap.id = "ib-spotify-player";
+        wrap.className = "ib-spotify-player";
+        wrap.style.display = "none";
+        wrap.innerHTML = `
+          <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
+            <iframe id="ib-spotify-frame" title="Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+          </div>
+        `;
+        document.body.appendChild(wrap);
+      }
+
+      const updateDockPosition = () => {
+        try {
+          const root = document.getElementById("ib-spotify-player");
+          if (!root || root.style.display === "none") return;
+
+          const topbar = document.querySelector("#site-topbar .topbar") || document.getElementById("site-topbar");
+          if (!topbar) return;
+          const rect = topbar.getBoundingClientRect();
+          const top = Math.max(8, Math.round(rect.bottom + 8));
+          document.documentElement.style.setProperty("--ib-spotify-top", `${top}px`);
+        } catch (_) {}
+      };
+
+      const setSpacerVisible = (visible) => {
+        const spacer = ensureSpotifySpacer();
+        if (!spacer) return;
+        spacer.style.height = visible ? `${PLAYER_HEIGHT_PX + PLAYER_GAP_PX}px` : "0px";
+      };
+
+      const toEmbedUrl = (url) => {
+        const s = String(url || "").trim();
+        let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
+        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
+        m = s.match(/open\.spotify\.com\/embed\/(track|playlist)\/([A-Za-z0-9]+)/);
+        if (m?.[1] && m?.[2]) return `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
+        return null;
+      };
+
+      const getEls = () => {
+        const root = document.getElementById("ib-spotify-player");
+        const frame = document.getElementById("ib-spotify-frame");
+        return { root, frame };
+      };
+
+      const show = (url) => {
+        const embed = toEmbedUrl(url);
+        if (!embed) return false;
+        const { root, frame } = getEls();
+        if (!root || !frame) return false;
+        const prev = String(frame.getAttribute("src") || "").trim();
+        if (prev !== embed) frame.setAttribute("src", embed);
+        root.style.display = "";
+        setSpacerVisible(true);
+        updateDockPosition();
+        try { sessionStorage.setItem("ib_spotify_embed_src", embed); } catch (_) {}
+        return true;
+      };
+
+      const restore = () => {
+        try {
+          const embed = String(sessionStorage.getItem("ib_spotify_embed_src") || "").trim();
+          if (!embed) return false;
+          const { root, frame } = getEls();
+          if (!root || !frame) return false;
+          frame.setAttribute("src", embed);
+          root.style.display = "";
+          setSpacerVisible(true);
+          updateDockPosition();
+          return true;
+        } catch (_) {
+          return false;
+        }
+      };
+
+      window.IBSpotifyPlayer = { show, restore };
+
+      const didRestore = restore();
+      if (!didRestore) {
+        // Optional default (e.g. homepage playlist)
+        try {
+          const def = document.querySelector('meta[name="ib-spotify-default"]')?.getAttribute("content")?.trim();
+          if (def) show(def);
+        } catch (_) {}
+      }
+
+      window.addEventListener("resize", () => updateDockPosition());
+      ensureSpotifySpacer();
+    } catch (_) {}
+  }
 
   // Optional: open links in a centered popup window.
   // Usage: <a href="..." data-popup="1240,820">Open</a>

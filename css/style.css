@@ -32,6 +32,13 @@ small{color:var(--text-muted)}
 
 .container{max-width:var(--maxw); margin:0 auto; padding:28px 20px}
 
+/* Keep top navigation visible while scrolling */
+#site-topbar{
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+
 /* Topbar */
 .topbar{
   display:flex;
@@ -161,20 +168,8 @@ small{color:var(--text-muted)}
   gap:10px;
 }
 
-.spotify-top{
-  margin-top: 12px;
-  display:flex;
-  justify-content:center;
-}
-
-.spotify-top .spotify-hero{
-  width: 100%;
-}
-
 @media (min-width: 900px){
   .spotify-hero{ align-items:flex-end; }
-
-  .spotify-top .spotify-hero{ align-items:center; }
 }
 
 .spotify-status{
@@ -193,6 +188,34 @@ small{color:var(--text-muted)}
   border: 0;
   border-radius: var(--radius);
   background: rgba(0,0,0,.18);
+}
+
+/* Persistent Spotify player (stays across internal navigation) */
+.ib-spotify-player{
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  top: var(--ib-spotify-top, 76px);
+  z-index: 70;
+  width: min(520px, calc(100vw - 32px));
+}
+
+/* Spacer (in-flow) so the fixed player doesn't overlap page content */
+#ib-spotify-spacer{height:0}
+
+.ib-spotify-player__inner{
+  border: 1px solid rgba(184,115,51,.22);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(21,21,21,.92), rgba(21,21,21,.78));
+  box-shadow: var(--shadow);
+}
+
+.ib-spotify-player iframe{
+  display: block;
+  width: 100%;
+  height: 152px;
+  border: 0;
 }
 
 button.btn:disabled{
