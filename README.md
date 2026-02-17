@@ -180,8 +180,14 @@ So you generate the list once (as a dev/allowed user), then commit it as static 
 Fastest method:
 
 1. Log in on the homepage as your own Spotify user (dev/allowed).
-2. Open: `/assets/spotify-tracks-builder.html`
-3. Press “Generate JSON” and download/replace `/assets/spotify-tracks.json`.
+2. (Optional, automatic save) Start the local save server from the repo root:
+
+   - `node tools/spotify-tracks-save-server.mjs`
+
+3. Open: `/assets/spotify-tracks-builder.html`
+4. Press “Generate JSON”.
+   - If the save server is running, it will automatically overwrite `/assets/spotify-tracks.json`.
+   - Otherwise, use Download/Copy and replace the file manually.
 
 Alternative (manual console):
 

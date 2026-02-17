@@ -21,6 +21,7 @@
 
       <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button id="generateBtn" class="btn small" type="button">Generate JSON</button>
+        <button id="autoSaveBtn" class="btn small" type="button" style="display:none">Auto-save to /assets/spotify-tracks.json</button>
         <a id="downloadLink" class="btn small" href="#" style="display:none">Download spotify-tracks.json</a>
         <button id="copyBtn" class="btn small" type="button" style="display:none">Copy JSON</button>
       </div>
@@ -47,8 +48,18 @@
     const outEl = document.getElementById('out');
     const playlistInput = document.getElementById('playlistId');
     const generateBtn = document.getElementById('generateBtn');
+    const autoSaveBtn = document.getElementById('autoSaveBtn');
     const downloadLink = document.getElementById('downloadLink');
     const copyBtn = document.getElementById('copyBtn');
+
+    const isLocal =
+      location.hostname === '127.0.0.1' ||
+      location.hostname === 'localhost' ||
+      location.hostname === '::1';
+
+    const SAVE_SERVER = 'http://127.0.0.1:8787/save';
+
+    if (isLocal && autoSaveBtn) autoSaveBtn.style.display = '';
 
     function setStatus(t){ statusEl.textContent = t || ''; }
 
@@ -109,6 +120,22 @@
       downloadLink.style.display = '';
     }
 
+    async function autoSaveToRepo(jsonText){
+      if (!isLocal) return { ok: false, error: 'Not local' };
+      try {
+        const r = await fetch(SAVE_SERVER, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: jsonText
+        });
+        const j = await r.json().catch(() => ({}));
+        if (!r.ok) return { ok: false, error: j?.error || `HTTP ${r.status}` };
+        return { ok: true, result: j };
+      } catch (e) {
+        return { ok: false, error: String(e?.message || e || 'Fetch failed') };
+      }
+    }
+
     generateBtn.addEventListener('click', async () => {
       outEl.textContent = '';
       downloadLink.style.display = 'none';
@@ -129,10 +156,39 @@
         outEl.textContent = jsonText;
         makeDownload(jsonText);
         copyBtn.style.display = '';
-        setStatus(`Done. ${unique.length} unique tracks.`);
+
+        // Auto-save if local (requires the save server running)
+        if (isLocal) {
+          setStatus(`Generated ${unique.length} tracks. Auto-saving…`);
+          const saved = await autoSaveToRepo(jsonText);
+          if (saved.ok) {
+            setStatus(`Done. ${unique.length} unique tracks. Saved to /assets/spotify-tracks.json`);
+          } else {
+            setStatus(`Generated ${unique.length} tracks. Auto-save failed: ${saved.error}. Use Download/Copy instead, or start the save server.`);
+          }
+        } else {
+          setStatus(`Done. ${unique.length} unique tracks.`);
+        }
       } catch (e) {
         console.error(e);
         setStatus(String(e?.message || e || 'Error'));
+      }
+    });
+
+    autoSaveBtn?.addEventListener('click', async () => {
+      try {
+        const txt = outEl.textContent || '';
+        if (!txt) {
+          setStatus('Nothing to save yet. Press Generate JSON first.');
+          return;
+        }
+        setStatus('Auto-saving…');
+        const saved = await autoSaveToRepo(txt);
+        if (saved.ok) setStatus('Saved to /assets/spotify-tracks.json');
+        else setStatus(`Auto-save failed: ${saved.error}`);
+      } catch (e) {
+        console.error(e);
+        setStatus('Auto-save failed (see console).');
       }
     });
 
