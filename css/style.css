@@ -185,16 +185,12 @@ small{color:var(--text-muted)}
 
 /* Persistent Spotify player (stays across internal navigation) */
 .ib-spotify-player{
-  position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  top: var(--ib-spotify-top, 76px);
+  position: sticky;
+  top: calc(var(--ib-topbar-h, 0px) + 8px);
   z-index: 70;
   width: min(420px, calc(100vw - 32px));
+  margin: 0 auto 0 auto;
 }
-
-/* Spacer (in-flow) so the fixed player doesn't overlap page content */
-#ib-spotify-spacer{height:0}
 
 .ib-spotify-player__inner{
   border: 1px solid rgba(184,115,51,.22);

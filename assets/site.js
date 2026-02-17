@@ -157,47 +157,67 @@
     updatePlayerControlsLabel();
   };
 
-  const ensureSpotifySpacer = () => {
+  const ensureMainRegion = () => {
     try {
       const container = document.querySelector(".container");
+      if (!container) return null;
       const topbarMount = document.getElementById("site-topbar");
-      if (!container || !topbarMount) return null;
+      if (!topbarMount) return null;
 
-      let spacer = document.getElementById("ib-spotify-spacer");
-      if (!spacer) {
-        spacer = document.createElement("div");
-        spacer.id = "ib-spotify-spacer";
-        spacer.setAttribute("aria-hidden", "true");
-      }
+      let main = document.getElementById("ib-main");
+      if (!main) {
+        main = document.createElement("div");
+        main.id = "ib-main";
 
-      // Keep it directly under the topbar mount.
-      const desiredParent = container;
-      if (spacer.parentNode !== desiredParent) desiredParent.appendChild(spacer);
-      if (topbarMount.nextSibling !== spacer) {
-        desiredParent.insertBefore(spacer, topbarMount.nextSibling);
-      }
-
-      // If the fixed Spotify player is currently visible, keep the spacer height in sync
-      // so page content never slides under the player after PJAX swaps.
-      try {
-        const root = document.getElementById("ib-spotify-player");
-        const isVisible = root && root.style.display !== "none";
-        if (isVisible) {
-          const rect = root.getBoundingClientRect();
-          const h = Math.max(0, Math.ceil(rect.height || 0));
-          const gap = 12;
-          spacer.style.height = `${h + gap}px`;
-        } else {
-          spacer.style.height = "0px";
+        // Move all existing container children except the topbar mount into #ib-main.
+        // This keeps the header/player persistent while PJAX swaps only the page content.
+        const nodes = Array.from(container.childNodes);
+        for (const n of nodes) {
+          if (n === topbarMount) continue;
+          main.appendChild(n);
         }
-      } catch (_) {}
-      return spacer;
+        container.appendChild(main);
+      }
+
+      // Ensure ordering: topbar -> player (if any) -> main
+      if (container.firstChild !== topbarMount) {
+        container.insertBefore(topbarMount, container.firstChild);
+      }
+      if (topbarMount.nextSibling !== main) {
+        container.insertBefore(main, topbarMount.nextSibling);
+      }
+
+      return { container, topbarMount, main };
     } catch (_) {
       return null;
     }
   };
 
+  const placeSpotifyPlayerUnderTopbar = () => {
+    try {
+      const root = document.getElementById("ib-spotify-player");
+      if (!root) return;
+      const shell = ensureMainRegion();
+      if (!shell) return;
+
+      const { container, topbarMount, main } = shell;
+      if (root.parentNode !== container) container.insertBefore(root, main);
+      if (topbarMount.nextSibling !== root) container.insertBefore(root, topbarMount.nextSibling);
+    } catch (_) {}
+  };
+
+  const updateTopbarHeightVar = () => {
+    try {
+      const topbar = document.querySelector("#site-topbar .topbar") || document.getElementById("site-topbar");
+      if (!topbar) return;
+      const h = Math.max(0, Math.ceil(topbar.getBoundingClientRect().height || topbar.offsetHeight || 0));
+      document.documentElement.style.setProperty("--ib-topbar-h", `${h}px`);
+    } catch (_) {}
+  };
+
   refreshTopbar();
+  ensureMainRegion();
+  updateTopbarHeightVar();
 
   // Persistent Spotify embed player (survives PJAX navigation)
   if (!shouldNoopApp()) {
@@ -229,24 +249,9 @@
         document.body.appendChild(wrap);
       }
 
-      const updateDockPosition = () => {
-        try {
-          const root = document.getElementById("ib-spotify-player");
-          if (!root || root.style.display === "none") return;
-
-          const topbar = document.querySelector("#site-topbar .topbar") || document.getElementById("site-topbar");
-          if (!topbar) return;
-          const rect = topbar.getBoundingClientRect();
-          const top = Math.max(8, Math.round(rect.bottom + 8));
-          document.documentElement.style.setProperty("--ib-spotify-top", `${top}px`);
-        } catch (_) {}
-      };
-
-      const setSpacerVisible = (visible) => {
-        const spacer = ensureSpotifySpacer();
-        if (!spacer) return;
-        spacer.style.height = visible ? `${PLAYER_HEIGHT_PX + PLAYER_GAP_PX}px` : "0px";
-      };
+      // Place the player in-flow right under the topbar so content never goes behind it.
+      placeSpotifyPlayerUnderTopbar();
+      updateTopbarHeightVar();
 
       const toEmbedUrl = (url) => {
         const s = String(url || "").trim();
@@ -361,8 +366,8 @@
           embedHost.dataset.src = embed;
         }
         root.style.display = "";
-        setSpacerVisible(true);
-        updateDockPosition();
+        placeSpotifyPlayerUnderTopbar();
+        updateTopbarHeightVar();
         try { sessionStorage.setItem("ib_spotify_embed_src", embed); } catch (_) {}
         return true;
       };
@@ -473,8 +478,8 @@
             try { embedController.play(); } catch (_) {}
             const { root } = getEls();
             if (root) root.style.display = "";
-            setSpacerVisible(true);
-            updateDockPosition();
+            placeSpotifyPlayerUnderTopbar();
+            updateTopbarHeightVar();
             return true;
           } catch (_) {}
         }
@@ -494,8 +499,8 @@
           const { root } = getEls();
           if (!root) return false;
           root.style.display = "";
-          setSpacerVisible(true);
-          updateDockPosition();
+          placeSpotifyPlayerUnderTopbar();
+          updateTopbarHeightVar();
 
           // Try controller restore first; fall back to iframe restore.
           (async () => {
@@ -576,19 +581,9 @@
         } catch (_) {}
       })();
 
-      window.addEventListener("resize", () => updateDockPosition());
-      window.addEventListener("scroll", (() => {
-        let raf = 0;
-        return () => {
-          if (raf) return;
-          raf = requestAnimationFrame(() => {
-            raf = 0;
-            updateDockPosition();
-          });
-        };
-      })(), { passive: true });
-
-      ensureSpotifySpacer();
+      window.addEventListener("resize", () => {
+        updateTopbarHeightVar();
+      });
     } catch (_) {}
   }
 
@@ -720,11 +715,19 @@
       const curContainer = document.querySelector(".container");
       if (!newContainer || !curContainer) throw new Error("Missing .container");
 
-      curContainer.innerHTML = newContainer.innerHTML;
+      // Only swap the main content region so the topbar + Spotify player remain persistent.
+      const curMain = document.getElementById("ib-main");
+      if (curMain) {
+        curMain.innerHTML = newContainer.innerHTML;
+      } else {
+        curContainer.innerHTML = newContainer.innerHTML;
+      }
       document.title = doc.title || document.title;
 
       refreshTopbar();
-      ensureSpotifySpacer();
+      ensureMainRegion();
+      placeSpotifyPlayerUnderTopbar();
+      updateTopbarHeightVar();
       refreshYear();
       try { window.SiteDeepLinks?.refresh?.(); } catch (_) {}
     };
