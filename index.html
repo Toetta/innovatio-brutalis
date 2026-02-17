@@ -224,10 +224,14 @@
       const SPOTIFY_CLIENT_ID = "FYLL_I_DIN_CLIENT_ID";
 
       // Viktigt: måste matcha exakt en Redirect URI du lagt in i Spotify dashboard
-      const REDIRECT_URI =
-        (location.hostname.startsWith("www."))
-          ? "https://www.innovatio-brutalis.se/callback.html"
-          : "https://innovatio-brutalis.se/callback.html";
+      const isLocal =
+        location.hostname === "127.0.0.1" ||
+        location.hostname === "localhost" ||   // ok att det finns här som detection
+        location.hostname === "::1";
+
+      const REDIRECT_URI = isLocal
+        ? "http://127.0.0.1:8000/callback.html"
+        : "https://www.innovatio-brutalis.se/callback.html";
 
       const statusEl = document.getElementById("spotifyStatus");
       const loginBtn = document.getElementById("spotifyLoginBtn");
