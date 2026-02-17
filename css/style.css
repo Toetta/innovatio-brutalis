@@ -103,7 +103,7 @@ small{color:var(--text-muted)}
   background: linear-gradient(180deg, rgba(21,21,21,.92), rgba(21,21,21,.78));
   border: 1px solid rgba(184,115,51,.22);
   border-radius: var(--radius);
-  padding: 34px;
+  padding: 28px;
   box-shadow: var(--shadow);
   text-align:center;
   overflow:hidden;
@@ -120,9 +120,9 @@ small{color:var(--text-muted)}
 .brand-hero picture{display:block}
 
 .brand-hero img{
-  height: clamp(132px, 18vw, 168px);
+  height: clamp(180px, 34vw, 300px);
   width: auto;
-  max-width: min(480px, 92%);
+  max-width: min(560px, 92%);
   display:block;
   margin: 0 auto;
   object-fit: contain;
@@ -131,9 +131,9 @@ small{color:var(--text-muted)}
 /* Hero: logo to the side on larger screens */
 @media (min-width: 900px){
   .hero{
-    grid-template-columns: minmax(0, 390px) minmax(0, 1fr) minmax(0, 360px);
-    column-gap: 26px;
-    row-gap: 10px;
+    grid-template-columns: minmax(0, 520px) minmax(0, 1fr);
+    column-gap: 34px;
+    row-gap: 12px;
     text-align:left;
   }
   .brand-hero{
@@ -142,22 +142,15 @@ small{color:var(--text-muted)}
     grid-row: 1 / span 4;
   }
   .brand-hero img{
-    height: 168px;
+    height: clamp(260px, 22vw, 380px);
     width: auto;
-    max-width: 360px;
+    max-width: 520px;
     margin: 0;
   }
   .hero h1,
   .hero .tagline,
   .hero .cta-row{
     grid-column: 2;
-  }
-
-  .hero .spotify-hero{
-    grid-column: 3;
-    grid-row: 1 / span 3;
-    justify-self:end;
-    align-self:center;
   }
 }
 
