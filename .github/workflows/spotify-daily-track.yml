@@ -27,10 +27,12 @@ jobs:
 
       - name: Update allowed playlist
         env:
-          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          # Prefer repo Variables for non-sensitive values.
+          # Keep refresh token in Secrets.
+          SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID || secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
-          SPOTIFY_LIBRARY_PLAYLIST_ID: ${{ secrets.SPOTIFY_LIBRARY_PLAYLIST_ID }}
-          SPOTIFY_ALLOWED_PLAYLIST_ID: ${{ secrets.SPOTIFY_ALLOWED_PLAYLIST_ID }}
+          SPOTIFY_LIBRARY_PLAYLIST_ID: ${{ vars.SPOTIFY_LIBRARY_PLAYLIST_ID || secrets.SPOTIFY_LIBRARY_PLAYLIST_ID }}
+          SPOTIFY_ALLOWED_PLAYLIST_ID: ${{ vars.SPOTIFY_ALLOWED_PLAYLIST_ID || secrets.SPOTIFY_ALLOWED_PLAYLIST_ID }}
           # Optional:
           # SPOTIFY_MARKET: SE
         run: node tools/spotify-daily-playlist.mjs

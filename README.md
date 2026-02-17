@@ -179,10 +179,17 @@ Concept:
    - Open the printed URL, approve, and copy the printed refresh token.
 
 3. Add GitHub repo secrets (Settings → Secrets and variables → Actions):
-   - `SPOTIFY_CLIENT_ID`
    - `SPOTIFY_REFRESH_TOKEN`
-   - `SPOTIFY_LIBRARY_PLAYLIST_ID`
-   - `SPOTIFY_ALLOWED_PLAYLIST_ID`
+
+    Recommended split:
+    - Secrets (sensitive):
+       - `SPOTIFY_REFRESH_TOKEN`
+    - Variables (non-sensitive):
+       - `SPOTIFY_CLIENT_ID`
+       - `SPOTIFY_LIBRARY_PLAYLIST_ID`
+       - `SPOTIFY_ALLOWED_PLAYLIST_ID`
+
+    (It also works if you keep everything in Secrets, but Variables are simpler for the non-secret values.)
 
 4. Run once manually:
    - Actions → “Spotify daily track” → Run workflow
