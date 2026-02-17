@@ -61,6 +61,7 @@
     <!-- GLOBAL NAVIGATION -->
     <div id="site-topbar"></div>
     <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
 
     <section class="hero">
       <div class="brand-hero">
@@ -74,7 +75,7 @@
       <p class="tagline">Engineering grade-material, fiberförstärkta polymerer och PVC/Vinyl — från prototyp till småserie.</p>
     </section>
 
-    <section class="card" id="utrustning" style="margin-top:28px;">
+    <section class="card" id="utrustning" data-card-id="equipment" style="margin-top:28px;">
       <h2>Produktionsutrustning: snabb, pålitlig 3D-print</h2>
       <img
         src="/assets/3d-print-farm.jpeg"
@@ -105,7 +106,7 @@
     </section>
 
     <section class="grid">
-      <article class="card">
+      <article class="card" data-card-id="print-details">
         <h2>Bambu Lab X1C — printerfarm</h2>
         <p>
           Snabb iteration med fokus på funktion, passform och materialval. Lämpligt för prototyper, fixturer, kapslingar och lågvolymproduktion.
@@ -134,7 +135,7 @@
         </ul>
       </article>
 
-      <aside class="card">
+      <aside class="card" data-card-id="print-sidebar">
         <h2>Video</h2>
         <p>Exempel på 3D-print.</p>
 
@@ -153,10 +154,10 @@
       </aside>
     </section>
 
-    <section class="card" id="projekt" style="margin-top:28px;">
+    <section class="card" id="projekt" data-card-id="projects" style="margin-top:28px;">
       <h2>Projekt</h2>
       <div class="project-grid">
-        <article class="project-card">
+        <article class="project-card" data-card-id="project-quattrini-inlet">
           <div class="project-thumb">
             <img src="/assets/inlet1.jpg" alt="Lambretta Quattrini M210 inlet reed manifold — 3D print" loading="lazy" decoding="async">
             <span class="project-tag">PAHT-CF</span>
@@ -220,7 +221,7 @@
       </div>
     </section>
 
-    <section class="card" id="kontakt" style="margin-top:28px;">
+    <section class="card" id="kontakt" data-card-id="contact" style="margin-top:28px;">
       <h2>Kontakt</h2>
       <p>För förfrågningar, samarbeten eller offertunderlag:</p>
       <div class="kv" role="list">

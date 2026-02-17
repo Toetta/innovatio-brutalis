@@ -51,6 +51,7 @@
     <!-- GLOBAL NAVIGATION (injectas av site.js) -->
     <div id="site-topbar"></div>
     <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
 
     <section class="hero">
       <div class="brand-hero"><picture>
@@ -63,7 +64,7 @@
 
     
 <section class="grid">
-  <article class="card">
+  <article class="card" data-card-id="home-overview">
     <h2>Development pipeline</h2>
     <p>Innovatio Brutalis works early in the development chain — from needs analysis and problem framing to concept development, CAD design, prototyping and low-volume manufacturing.</p>
     <ul>
@@ -86,7 +87,7 @@
       
     </ul>
   </article>
-  <aside class="card">
+  <aside class="card" data-card-id="home-side">
     <h2>Press</h2>
     <a class="press-thumb"
       href="https://www.sydsvenskan.se/malmo/han-gor-okrossbara-glasogonbagar-till-sonen-i-en-3d-skrivare/"
@@ -117,7 +118,7 @@
 </section>
 
 
-    <section class="card" id="contact" style="margin-top:28px;">
+    <section class="card" id="contact" data-card-id="contact" style="margin-top:28px;">
       <h2>Contact</h2>
       <p>Inquiries, collaborations, or RFQs:</p>
       <div class="kv" role="list">

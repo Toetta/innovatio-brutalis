@@ -109,6 +109,7 @@
     <!-- GLOBAL NAVIGATION (injectas av site.js) -->
     <div id="site-topbar"></div>
     <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
 
     <section class="hero">
       <div class="brand-hero">
@@ -129,7 +130,7 @@
     </section>
 
     <section class="grid">
-      <article class="card">
+      <article class="card" data-card-id="home-overview">
         <h2>Utvecklingskedja</h2>
         <p>
           Från behovsanalys och kravbild till verifierad komponent i metall eller avancerade polymerer.
@@ -154,7 +155,7 @@
         </ul>
       </article>
 
-      <aside class="card">
+      <aside class="card" data-card-id="home-press">
         <h2>Press</h2>
         <a class="press-thumb"
           href="https://www.sydsvenskan.se/malmo/han-gor-okrossbara-glasogonbagar-till-sonen-i-en-3d-skrivare/"
@@ -184,7 +185,7 @@
       </aside>
     </section>
 
-    <section class="card" id="kontakt" style="margin-top:28px;">
+    <section class="card" id="kontakt" data-card-id="contact" style="margin-top:28px;">
       <h2>Kontakt</h2>
       <p>För förfrågningar eller offertunderlag:</p>
 

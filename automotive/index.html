@@ -47,6 +47,7 @@
     <!-- GLOBAL NAVIGATION (injected by /assets/site.js) -->
     <div id="site-topbar"></div>
     <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
 
     <section class="hero" style="text-align:left;">
       <div class="brand-hero">
@@ -67,7 +68,7 @@
     </section>
 
     <section class="grid">
-      <article class="card" style="grid-column: 1 / -1;">
+      <article class="card" data-card-id="automotive-main" style="grid-column: 1 / -1;">
         <h2>Från idé till körklar lösning</h2>
         <ul>
           <li>Strukturella komponenter, fästen och integration</li>
@@ -89,7 +90,7 @@
         <div class="project-grid" style="margin-top:18px;">
 
           <!-- PROJECT 1: INNOCENTI MINI -->
-          <article class="project-card">
+          <article class="project-card" data-card-id="project-innocenti-mini">
             <div class="project-thumb">
               <img src="/assets/engine-mini.jpeg" alt="Innocenti Mini — kompressormatad gatbil" loading="lazy" decoding="async">
               <span class="project-tag hobby">Prestandabygge</span>
@@ -212,7 +213,7 @@
           </article>
 
           <!-- PROJECT 3 -->
-          <article class="project-card">
+          <article class="project-card" data-card-id="project-haparanda">
             <div class="project-thumb">
               <a href="/assets/haparanda-small.pdf" target="_blank" rel="noopener">
                 <img src="/assets/haparanda-thumbnail.jpg" alt="Lambretta Cometa 75 — Haparanda - Malmö">

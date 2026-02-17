@@ -38,6 +38,7 @@
 
   <div id="site-topbar"></div>
   <script defer src="/assets/site.js"></script>
+  <script defer src="/assets/site-deeplinks.js"></script>
 
   <section class="hero">
     <div class="brand-hero">
@@ -47,7 +48,7 @@
     <p class="tagline">Engineering polymers and fiber-reinforced materials — functional, structural, and production-ready.</p>
   </section>
 
-  <section class="card" id="equipment" style="margin-top:28px;">
+  <section class="card" id="equipment" data-card-id="equipment" style="margin-top:28px;">
     <h2>Production Equipment: High-Speed, High-Reliability 3D Printing</h2>
     <img
       src="/assets/3d-print-farm.jpeg"
@@ -78,7 +79,7 @@
   </section>
 
   <section class="grid">
-    <article class="card">
+    <article class="card" data-card-id="print-details">
       <h2>Materials</h2>
       <ul>
         <li><strong>PPA-CF / Fiber reinforced polymers</strong></li>
@@ -90,7 +91,7 @@
       </ul>
     </article>
 
-    <aside class="card">
+    <aside class="card" data-card-id="print-sidebar">
       <h2>Video</h2>
       <p>Example of 3D printing.</p>
 
@@ -110,10 +111,10 @@
     </aside>
   </section>
 
-  <section class="card" id="projects" style="margin-top:28px;">
+  <section class="card" id="projects" data-card-id="projects" style="margin-top:28px;">
     <h2>Projects</h2>
     <div class="project-grid">
-      <article class="project-card">
+      <article class="project-card" data-card-id="project-quattrini-inlet">
         <div class="project-thumb">
           <img src="/assets/inlet1.jpg" alt="Lambretta Quattrini M210 inlet reed manifold — 3D print" loading="lazy" decoding="async">
           <span class="project-tag">PAHT-CF</span>

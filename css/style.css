@@ -199,6 +199,47 @@ h1{
   text-align:left;
 }
 
+/* Deep links: temporary highlight (added/removed by assets/site-deeplinks.js) */
+.deep-link-highlight{
+  outline: 2px solid rgba(214,164,106,.85);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(184,115,51,.18), var(--shadow);
+}
+
+/* Deep links: discreet permalink (injected by assets/site-deeplinks.js) */
+[data-card-id]{
+  position: relative;
+}
+
+.deep-link-anchor{
+  position:absolute;
+  top: 12px;
+  right: 12px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid rgba(184,115,51,.28);
+  background: rgba(21,21,21,.20);
+  color: var(--text-main);
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  font-size:11px;
+  opacity: 0;
+  pointer-events:none;
+  transition: opacity .15s ease, background .15s ease, border-color .15s ease;
+}
+
+[data-card-id]:hover > .deep-link-anchor,
+[data-card-id]:focus-within > .deep-link-anchor{
+  opacity: 1;
+  pointer-events:auto;
+}
+
+.deep-link-anchor:hover{
+  background: rgba(184,115,51,.18);
+  text-decoration:none;
+}
+
 .card h2{
   margin:0 0 8px 0;
   font-family: "DejaVu Serif", Georgia, "Times New Roman", serif;

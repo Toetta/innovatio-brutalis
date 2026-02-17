@@ -61,6 +61,7 @@
     <!-- GLOBAL NAVIGATION (injectas av site.js) -->
     <div id="site-topbar"></div>
     <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
 
     <section class="hero">
       <div class="brand-hero">
@@ -75,7 +76,7 @@
     </section>
 
     <section class="grid">
-      <article class="card">
+      <article class="card" data-card-id="cnc-details">
         <h2>Nestworks C500 — CNC</h2>
         <p>
           4-axlig bearbetning med probing för prototyper och lågvolymproduktion.
@@ -105,7 +106,7 @@
         </ul>
       </article>
 
-      <aside class="card">
+      <aside class="card" data-card-id="cnc-sidebar">
         <h2>Typiska uppdrag</h2>
         <ul>
           <li>Prototypdetaljer och fixturer</li>
@@ -140,7 +141,7 @@
       </aside>
     </section>
 
-    <section class="card" id="kontakt" style="margin-top:28px;">
+    <section class="card" id="kontakt" data-card-id="contact" style="margin-top:28px;">
       <h2>Kontakt</h2>
       <p>För förfrågningar, samarbeten eller offertunderlag:</p>
       <div class="kv" role="list">

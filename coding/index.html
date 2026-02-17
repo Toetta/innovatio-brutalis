@@ -48,6 +48,7 @@
     <!-- GLOBAL NAVIGATION (injectas av site.js) -->
     <div id="site-topbar"></div>
     <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
 
     <section class="hero" style="text-align:left;">
       <div class="brand-hero">
@@ -66,7 +67,7 @@
     </section>
 
     <section class="grid">
-      <article class="card">
+      <article class="card" data-card-id="coding-deliverables">
         <h2>Vad som levereras</h2>
         <ul>
           <li>Prototyp- och testverktyg (desktop/webb)</li>
@@ -86,7 +87,7 @@
         </ul>
       </article>
 
-      <aside class="card">
+      <aside class="card" data-card-id="coding-sidebar">
         <h2>Typiska uppdrag</h2>
         <ul>
           <li>Konfiguratorer och interna verktyg</li>
@@ -105,12 +106,12 @@
       </aside>
     </section>
 
-    <section class="card" style="margin-top:28px;">
+    <section class="card" data-card-id="coding-projects" style="margin-top:28px;">
       <h2>Referensprojekt</h2>
       <p style="margin-top:0; color: var(--text-muted);">Platshållare — case och referenser är på väg in.</p>
 
       <div class="project-grid" style="margin-top:18px;">
-        <article class="project-card">
+        <article class="project-card" data-card-id="project-fu-bookkeeping">
           <div class="project-thumb">
             <img src="/assets/faktura.jpg" alt="FU-Bookkeeping — faktura" loading="lazy" decoding="async">
             <span class="project-tag hobby">Offline-first</span>
@@ -164,7 +165,7 @@
           </div>
         </article>
 
-        <article class="project-card">
+        <article class="project-card" data-card-id="project-innovatio-site">
           <div class="project-thumb">
             <a href="/" aria-label="Öppna innovatio-brutalis.se">
               <img src="/assets/og-image.jpg" alt="Innovatio Brutalis — statisk, handkodad webbplats" loading="lazy" decoding="async">
@@ -185,7 +186,7 @@
           </div>
         </article>
 
-        <article class="project-card">
+        <article class="project-card" data-card-id="project-gearbox-visualiser">
           <div class="project-thumb">
             <a href="/assets/gearbox_visualiser.html" data-popup="1240,820" aria-label="Öppna Classic Mini Gearbox Visualiser">
               <img src="/assets/visualizer_thumbnail.jpg" alt="Classic Mini Gearbox Visualiser" loading="lazy" decoding="async">
@@ -202,7 +203,7 @@
           </div>
         </article>
 
-        <article class="project-card">
+        <article class="project-card" data-card-id="project-lambretta-visualiser">
           <div class="project-thumb">
             <a href="/assets/lambretta_large_frame_visualiser.html" data-popup="1240,820" aria-label="Öppna Lambretta visualiserare (Large frame)">
               <img src="/assets/lambretta-visualizer.jpg" alt="Lambretta Gearbox Visualiser" loading="lazy" decoding="async">
