@@ -1,0 +1,8 @@
+.local/
+# Local secrets / scratch files
+*.env
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

@@ -39,9 +39,42 @@ async function fetchJson(url, token) {
   });
   if (!r.ok) {
     const t = await r.text();
-    throw new Error(`Spotify API ${r.status} ${r.statusText}: ${t}`);
+    throw new Error(`Spotify API ${r.status} ${r.statusText} for ${url}: ${t}`);
   }
   return r.json();
+}
+
+async function safeGetMe(token) {
+  try {
+    const me = await fetchJson("https://api.spotify.com/v1/me", token);
+    return {
+      id: me?.id || null,
+      display_name: me?.display_name || null,
+      product: me?.product || null,
+    };
+  } catch (_) {
+    return null;
+  }
+}
+
+async function safeGetPlaylistMeta({ playlistId, token }) {
+  try {
+    const url = new URL(`https://api.spotify.com/v1/playlists/${playlistId}`);
+    url.searchParams.set("fields", "id,name,public,collaborative,owner(id,display_name)");
+    const p = await fetchJson(url.toString(), token);
+    return {
+      id: p?.id || playlistId,
+      name: p?.name || null,
+      public: typeof p?.public === "boolean" ? p.public : null,
+      collaborative: typeof p?.collaborative === "boolean" ? p.collaborative : null,
+      owner: {
+        id: p?.owner?.id || null,
+        display_name: p?.owner?.display_name || null,
+      },
+    };
+  } catch (e) {
+    return { id: playlistId, error: String(e?.message || e) };
+  }
 }
 
 async function getAccessToken({ clientId, refreshToken }) {
@@ -114,6 +147,18 @@ async function main() {
   const market = (process.env.SPOTIFY_MARKET || "").trim() || undefined;
 
   const token = await getAccessToken({ clientId, refreshToken });
+
+  // Helpful, non-sensitive diagnostics for Actions logs.
+  const me = await safeGetMe(token);
+  if (me?.id) {
+    console.log(`Authorized Spotify user: ${me.id}${me.display_name ? ` (${me.display_name})` : ""}`);
+  } else {
+    console.log("Authorized Spotify user: (could not fetch /me)");
+  }
+  const libMeta = await safeGetPlaylistMeta({ playlistId: libraryPlaylistId, token });
+  const allowedMeta = await safeGetPlaylistMeta({ playlistId: allowedPlaylistId, token });
+  console.log("Library playlist meta:", JSON.stringify(libMeta));
+  console.log("Allowed playlist meta:", JSON.stringify(allowedMeta));
 
   const libraryTracks = await getPlaylistTracks({ playlistId: libraryPlaylistId, token, market });
   if (libraryTracks.length === 0) throw new Error("Library playlist returned 0 tracks");

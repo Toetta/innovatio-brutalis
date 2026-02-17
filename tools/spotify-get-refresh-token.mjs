@@ -1,6 +1,8 @@
 import http from "node:http";
 import crypto from "node:crypto";
 import { URL } from "node:url";
+import { writeFile, mkdir } from "node:fs/promises";
+import path from "node:path";
 
 function base64url(buf) {
   return Buffer.from(buf)
@@ -38,6 +40,9 @@ function requireEnv(name) {
 
 const clientId = requireEnv("SPOTIFY_CLIENT_ID");
 
+const outFile = (process.env.SPOTIFY_REFRESH_TOKEN_OUT || ".local/spotify-refresh-token.txt").trim();
+const authOutFile = (process.env.SPOTIFY_AUTH_OUT || ".local/spotify-auth.txt").trim();
+
 const port = Number(process.env.SPOTIFY_AUTH_PORT || 8888);
 const redirectUri = `http://127.0.0.1:${port}/callback`;
 
@@ -68,6 +73,32 @@ console.log("\n1) Add this Redirect URI in Spotify Dashboard > App settings:");
 console.log(`   ${redirectUri}`);
 console.log("\n2) Open this URL in your browser:");
 console.log(`   ${authorizeUrl.toString()}\n`);
+console.log("3) After approval, the refresh token will be printed AND saved locally to:");
+console.log(`   ${outFile}\n`);
+
+// Also write the full URL(s) to a file to avoid terminal line-wrapping/truncation.
+try {
+  const dir = path.dirname(authOutFile);
+  if (dir && dir !== "." && dir !== "..") {
+    await mkdir(dir, { recursive: true });
+  }
+  const authText = [
+    "Add this Redirect URI in Spotify Dashboard:",
+    redirectUri,
+    "",
+    "Open this URL in your browser:",
+    authorizeUrl.toString(),
+    "",
+    "After approval, refresh token will be saved to:",
+    outFile,
+    "",
+  ].join("\n");
+  await writeFile(authOutFile, authText, { encoding: "utf8" });
+  console.log("Also wrote the full URLs to:");
+  console.log(`   ${authOutFile}\n`);
+} catch (e) {
+  console.log(`Warning: could not write ${authOutFile}: ${String(e?.message || e)}`);
+}
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -133,6 +164,17 @@ const server = http.createServer(async (req, res) => {
       <h1>OK</h1>
       <p>Refresh token printed in terminal. You can close this tab.</p>`
     );
+
+    try {
+      const dir = path.dirname(outFile);
+      if (dir && dir !== "." && dir !== "..") {
+        await mkdir(dir, { recursive: true });
+      }
+      await writeFile(outFile, refreshToken + "\n", { encoding: "utf8" });
+      console.log(`\nSaved refresh token to: ${outFile}`);
+    } catch (e) {
+      console.log(`\nWarning: could not write ${outFile}: ${String(e?.message || e)}`);
+    }
 
     console.log("\nRefresh token (store as GitHub secret SPOTIFY_REFRESH_TOKEN):\n");
     console.log(refreshToken);
