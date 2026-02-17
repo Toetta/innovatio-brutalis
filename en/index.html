@@ -276,7 +276,12 @@
             }
           } catch (e) {
             console.error(e);
-            setStatus("Could not play right now.");
+            const msg = String(e?.message || e || "");
+            if (msg.includes("Spotify API 403")) {
+              setStatus("Spotify: 403 Forbidden. Re-login (new scopes) and make sure PLAYLIST_ID is a playlist you can access (public/owned/collab). ");
+            } else {
+              setStatus(msg ? ("Error: " + msg) : "Could not play right now.");
+            }
           }
         });
       }

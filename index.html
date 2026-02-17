@@ -351,7 +351,12 @@
             }
           } catch (e) {
             console.error(e);
-            setStatus("Kunde inte spela just nu.");
+            const msg = String(e?.message || e || "");
+            if (msg.includes("Spotify API 403")) {
+              setStatus("Spotify: 403 Forbidden. Logga in igen (nya scopes) och kontrollera att PLAYLIST_ID är en playlist du har access till (public/egen/colab). ");
+            } else {
+              setStatus(msg ? ("Fel: " + msg) : "Kunde inte spela just nu.");
+            }
           }
         });
       }
