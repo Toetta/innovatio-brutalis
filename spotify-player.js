@@ -86,7 +86,7 @@ window.SpotifySite = (() => {
     return (window.__SPOTIFY_REDIRECT_URI || localStorage.getItem(LS_REDIRECT_URI) || "").trim();
   }
 
-  async function login({ clientId, redirectUri }) {
+  async function login({ clientId, redirectUri, showDialog = false }) {
     const verifier = randomString(64);
     localStorage.setItem(LS_VERIF, verifier);
     localStorage.setItem(LS_CLIENT_ID, clientId);
@@ -105,6 +105,8 @@ window.SpotifySite = (() => {
       code_challenge_method: "S256",
       code_challenge: challenge,
     });
+
+    if (showDialog) params.set("show_dialog", "true");
 
     location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;
   }
