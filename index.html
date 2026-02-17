@@ -214,10 +214,14 @@
 
     <script src="/spotify-player.js"></script>
     <script>
-      // Din playlist som “pool” om ingen veckans låt är satt:
-      const PLAYLIST_ID = "7h1c4DGKumkFVXH2N8eMFu";
+      // Two-playlist setup:
+      // - LIBRARY_PLAYLIST_ID: your full library
+      // - ALLOWED_PLAYLIST_ID: public playlist that always contains exactly ONE track
+      //   (kept in sync daily by GitHub Actions)
+      const LIBRARY_PLAYLIST_ID = "7h1c4DGKumkFVXH2N8eMFu";
+      const ALLOWED_PLAYLIST_ID = "3Dac1bMSBOomF8yAJ9wj43";
 
-      // (Valfritt) Veckans låt – sätt till en track-URL eller spotify:track:... annars null
+      // (Optional) Force a specific track (overrides allowed playlist)
       const WEEKLY_TRACK = null;
 
       // Din Spotify Client ID från dashboard
@@ -253,6 +257,8 @@
         const s = String(url || "").trim();
         let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
         if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
+        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
         return null;
       }
 
@@ -353,14 +359,8 @@
           return showEmbed(lockedTrackUrl);
         }
 
-        // Default: first track in the static list (same for everyone).
-        const first = normalizeTrackUrlOrUri(PUBLIC_TRACK_URLS?.[0]);
-        if (first) {
-          lockedTrackUrl = first;
-          return showEmbed(lockedTrackUrl);
-        }
-
-        return openPlaylistInSpotify();
+        lockedTrackUrl = `https://open.spotify.com/playlist/${ALLOWED_PLAYLIST_ID}`;
+        return showEmbed(lockedTrackUrl);
       }
 
       async function loadPublicTracks(){
@@ -379,22 +379,7 @@
       // Init: läs token om den redan finns i localStorage
       (async () => {
         try {
-          await loadPublicTracks();
-          // For public visitors: no login required; Play will open Spotify.
-          // If the user already has a token, we can attempt in-browser playback.
-          if (!hasValidToken()) {
-            setStatus("Spotify: klicka Spela (spelar en låt). ");
-            return;
-          }
-
-          const s = getSpotifySite();
-          if (!s || !hasClientId()) {
-            setStatus("Spotify: inloggad (token finns) men saknar konfig för web-uppspelning.");
-            return;
-          }
-
-          const ok = await s.init({ clientId: SPOTIFY_CLIENT_ID, redirectUri: REDIRECT_URI });
-          setStatus(ok ? "Spotify: inloggad." : "Spotify: klicka Spela.");
+          setStatus("Spotify: klicka Spela.");
         } catch (e) {
           console.error(e);
           setStatus("Spotify: init-fel (se console).");
@@ -409,67 +394,8 @@
           }
 
           setStatus("Spotify: klick…");
-          const s = getSpotifySite();
-          // Public mode: if no valid token, just open Spotify (works for everyone)
-          if (!hasValidToken() || !s || !hasClientId()) {
-            setStatus("Spotify: spelar en låt…");
-            openDailyPublicTrackInSpotify();
-            return;
-          }
-
-          // Säkerställ att SpotifySite har konfig (token finns redan)
-          try {
-            await s.init({
-              clientId: SPOTIFY_CLIENT_ID,
-              redirectUri: REDIRECT_URI,
-            });
-          } catch (e) {
-            console.error(e);
-            setStatus("Spotify: init-fel — öppnar i Spotify.");
-            openDailyPublicTrackInSpotify();
-            return;
-          }
-
-          setStatus("Startar…");
-
-          try {
-            if (!lockedTrackUrl) {
-              const track = await s.chooseOneTrack({ weeklyTrack: WEEKLY_TRACK, playlistId: PLAYLIST_ID });
-              if (track?.url) lockedTrackUrl = track.url;
-            }
-
-            if (lockedTrackUrl) {
-              showEmbed(lockedTrackUrl);
-              setStatus("Spelar en låt.");
-            } else {
-              setStatus("Ingen låt hittades.");
-            }
-          } catch (e) {
-            console.error(e);
-            const msg = String(e?.message || e || "");
-            if (msg.includes("Spotify API 403")) {
-              const now = Date.now();
-              let last = 0;
-              try { last = Number(sessionStorage.getItem("spotify_403_relogin_at") || 0); } catch (_) {}
-
-              // Avoid endless consent loops if 403 is persistent (playlist truly inaccessible)
-              if (last && (now - last) < 60_000) {
-                setStatus("Spotify: 403 Forbidden. Detta verkar inte vara scope-issue längre. Kontrollera att PLAYLIST_ID är en playlist du har access till (public/egen/colab) och att appen tillåter ditt konto i Spotify Dashboard (Users & Access).");
-                return;
-              }
-
-              try { sessionStorage.setItem("spotify_403_relogin_at", String(now)); } catch (_) {}
-
-              // In practice, 403 is often playlist access. Avoid looping; open Spotify instead.
-              setStatus("Spotify: 403 Forbidden — spelar en låt offentligt.");
-              try {
-                // keep tokens as-is; user might still be able to play via app
-              } catch (_) {}
-              openDailyPublicTrackInSpotify();
-            } else {
-              setStatus(msg ? ("Fel: " + msg) : "Kunde inte spela just nu.");
-            }
-          }
+          setStatus("Spotify: spelar en låt…");
+          openDailyPublicTrackInSpotify();
         });
       }
     </script>

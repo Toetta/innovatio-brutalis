@@ -151,7 +151,48 @@ Deep links target elements by `data-card-id` (or `id=`). That means:
 
 The homepage “Play” button supports a public mode so **any visitor** can play without OAuth.
 
+## Recommended: Two playlists + GitHub Actions (daily single-track playlist)
+
+This is the most robust approach for:
+
+- **Everyone can play** (no OAuth on the site)
+- **Exactly one track is allowed** at any time
+- The track **changes automatically once per day**
+
+Concept:
+
+- **Library playlist**: contains all tracks (your full pool)
+- **Allowed playlist**: a public playlist that always contains **exactly 1 track**
+- A GitHub Action runs daily and replaces the allowed playlist with a deterministic pick from the library.
+
+### Setup
+
+1. Create two Spotify playlists and note their IDs (from the URL):
+   - Library: `https://open.spotify.com/playlist/<LIBRARY_ID>`
+   - Allowed: `https://open.spotify.com/playlist/<ALLOWED_ID>`
+
+2. Create a refresh token (one-time, locally):
+   - Add Redirect URI in Spotify Dashboard:
+     - `http://127.0.0.1:8888/callback`
+   - Run:
+     - `SPOTIFY_CLIENT_ID=... node tools/spotify-get-refresh-token.mjs`
+   - Open the printed URL, approve, and copy the printed refresh token.
+
+3. Add GitHub repo secrets (Settings → Secrets and variables → Actions):
+   - `SPOTIFY_CLIENT_ID`
+   - `SPOTIFY_REFRESH_TOKEN`
+   - `SPOTIFY_LIBRARY_PLAYLIST_ID`
+   - `SPOTIFY_ALLOWED_PLAYLIST_ID`
+
+4. Run once manually:
+   - Actions → “Spotify daily track” → Run workflow
+
+The workflow file is: `.github/workflows/spotify-daily-track.yml`
+The updater script is: `tools/spotify-daily-playlist.mjs`
+
 ## Public “today’s track” (no OAuth)
+
+Legacy option (static JSON) — keep using this if you don’t want any automation.
 
 - File: `/assets/spotify-tracks.json`
 - The homepage loads this file and picks a deterministic “today” entry.

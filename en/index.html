@@ -142,10 +142,14 @@
 
     <script src="/spotify-player.js"></script>
     <script>
-      // Playlist used as a “pool” if no weekly track is set:
-      const PLAYLIST_ID = "7h1c4DGKumkFVXH2N8eMFu";
+      // Two-playlist setup:
+      // - LIBRARY_PLAYLIST_ID: your full library
+      // - ALLOWED_PLAYLIST_ID: public playlist that always contains exactly ONE track
+      //   (kept in sync daily by GitHub Actions)
+      const LIBRARY_PLAYLIST_ID = "7h1c4DGKumkFVXH2N8eMFu";
+      const ALLOWED_PLAYLIST_ID = "3Dac1bMSBOomF8yAJ9wj43";
 
-      // (Optional) Weekly track — set to a track URL or spotify:track:... otherwise null
+      // (Optional) Force a specific track (overrides allowed playlist)
       const WEEKLY_TRACK = null;
 
       // Your Spotify Client ID from the dashboard
@@ -181,6 +185,8 @@
         const s = String(url || "").trim();
         let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
         if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
+        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
         return null;
       }
 
@@ -276,13 +282,8 @@
           return showEmbed(lockedTrackUrl);
         }
 
-        const first = normalizeTrackUrlOrUri(PUBLIC_TRACK_URLS?.[0]);
-        if (first) {
-          lockedTrackUrl = first;
-          return showEmbed(lockedTrackUrl);
-        }
-
-        return openPlaylistInSpotify();
+        lockedTrackUrl = `https://open.spotify.com/playlist/${ALLOWED_PLAYLIST_ID}`;
+        return showEmbed(lockedTrackUrl);
       }
 
       async function loadPublicTracks(){
@@ -300,22 +301,7 @@
 
       (async () => {
         try {
-          await loadPublicTracks();
-          // For public visitors: no login required; Play will open Spotify.
-          // If the user already has a token, we can attempt in-browser playback.
-          if (!hasValidToken()) {
-            setStatus("Spotify: press Play (plays one track)." );
-            return;
-          }
-
-          const s = getSpotifySite();
-          if (!s || !hasClientId()) {
-            setStatus("Spotify: token present but web playback not configured.");
-            return;
-          }
-
-          const ok = await s.init({ clientId: SPOTIFY_CLIENT_ID, redirectUri: REDIRECT_URI });
-          setStatus(ok ? "Spotify: logged in." : "Spotify: press Play.");
+          setStatus("Spotify: press Play.");
         } catch (e) {
           console.error(e);
           setStatus("Spotify: init error (see console).");
@@ -330,78 +316,8 @@
           }
 
           setStatus("Spotify: click…");
-          const s = getSpotifySite();
-          // Public mode: no token needed; just open a random track in Spotify.
-          if (!hasValidToken() || !s || !hasClientId()) {
-            setStatus("Spotify: playing one track…");
-            openDailyPublicTrackInSpotify();
-            return;
-          }
-
-          // If not logged in: trigger login right away (sync navigation)
-          if (!hasValidToken()) {
-            setStatus("Spotify: logging in…");
-            try {
-              s.login({
-                clientId: SPOTIFY_CLIENT_ID,
-                redirectUri: REDIRECT_URI,
-              });
-            } catch (e) {
-              console.error(e);
-              setStatus("Spotify: login error (see console).");
-            }
-            return;
-          }
-
-          // Ensure config is set (token already present)
-          try {
-            await s.init({
-              clientId: SPOTIFY_CLIENT_ID,
-              redirectUri: REDIRECT_URI,
-            });
-          } catch (e) {
-            console.error(e);
-            setStatus("Spotify: init error — opening in Spotify.");
-            openDailyPublicTrackInSpotify();
-            return;
-          }
-
-          setStatus("Starting…");
-
-          try {
-            if (!lockedTrackUrl) {
-              const track = await s.chooseOneTrack({ weeklyTrack: WEEKLY_TRACK, playlistId: PLAYLIST_ID });
-              if (track?.url) lockedTrackUrl = track.url;
-            }
-
-            if (lockedTrackUrl) {
-              showEmbed(lockedTrackUrl);
-              setStatus("Playing one track.");
-            } else {
-              setStatus("No track found.");
-            }
-          } catch (e) {
-            console.error(e);
-            const msg = String(e?.message || e || "");
-            if (msg.includes("Spotify API 403")) {
-              const now = Date.now();
-              let last = 0;
-              try { last = Number(sessionStorage.getItem("spotify_403_relogin_at") || 0); } catch (_) {}
-
-              // Avoid endless consent loops if 403 is persistent (playlist truly inaccessible)
-              if (last && (now - last) < 60_000) {
-                setStatus("Spotify: 403 Forbidden. This looks persistent. Check PLAYLIST_ID access (public/owned/collab) and that your Spotify app allows this account in the dashboard (Users & Access). ");
-                return;
-              }
-
-              try { sessionStorage.setItem("spotify_403_relogin_at", String(now)); } catch (_) {}
-
-              setStatus("Spotify: 403 Forbidden — playing public track.");
-              openDailyPublicTrackInSpotify();
-            } else {
-              setStatus(msg ? ("Error: " + msg) : "Could not play right now.");
-            }
-          }
+          setStatus("Spotify: playing one track…");
+          openDailyPublicTrackInSpotify();
         });
       }
     </script>
