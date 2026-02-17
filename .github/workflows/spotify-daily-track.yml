@@ -25,6 +25,27 @@ jobs:
         with:
           node-version: 20
 
+      - name: Check Spotify config (no secrets printed)
+        env:
+          SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID || secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          SPOTIFY_LIBRARY_PLAYLIST_ID: ${{ vars.SPOTIFY_LIBRARY_PLAYLIST_ID || secrets.SPOTIFY_LIBRARY_PLAYLIST_ID }}
+          SPOTIFY_ALLOWED_PLAYLIST_ID: ${{ vars.SPOTIFY_ALLOWED_PLAYLIST_ID || secrets.SPOTIFY_ALLOWED_PLAYLIST_ID }}
+        run: |
+          missing=0
+          for k in SPOTIFY_CLIENT_ID SPOTIFY_REFRESH_TOKEN SPOTIFY_LIBRARY_PLAYLIST_ID SPOTIFY_ALLOWED_PLAYLIST_ID; do
+            if [ -n "${!k}" ]; then
+              echo "$k: OK"
+            else
+              echo "$k: MISSING"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "One or more required values are missing. Add them under: Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
       - name: Update allowed playlist
         env:
           # Prefer repo Variables for non-sensitive values.
