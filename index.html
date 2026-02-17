@@ -302,10 +302,19 @@
         return null;
       }
 
+      function toEmbedUrlIfTrack(url){
+        const s = String(url || "").trim();
+        const m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        if (!m?.[1]) return null;
+        // Embed view is a single-track context and is less likely to continue playback.
+        return `https://open.spotify.com/embed/track/${m[1]}`;
+      }
+
       function openUrlInSpotify(url){
         try {
           if (!url) return false;
-          window.open(url, "_blank", "noopener,noreferrer");
+          const embed = toEmbedUrlIfTrack(url);
+          window.open(embed || url, "_blank", "noopener,noreferrer");
           return true;
         } catch (_) {
           return false;
