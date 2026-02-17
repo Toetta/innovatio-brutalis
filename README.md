@@ -174,7 +174,16 @@ The homepage “Play” button supports a public mode so **any visitor** can pla
 ### How to generate the track list
 
 Because this site is static, the browser can’t fetch playlist contents from Spotify **without an access token**.
+Also, scraping the public `open.spotify.com/playlist/...` HTML usually only includes a small subset of tracks (lazy loaded).
 So you generate the list once (as a dev/allowed user), then commit it as static JSON.
+
+Fastest method:
+
+1. Log in on the homepage as your own Spotify user (dev/allowed).
+2. Open: `/assets/spotify-tracks-builder.html`
+3. Press “Generate JSON” and download/replace `/assets/spotify-tracks.json`.
+
+Alternative (manual console):
 
 1. Log in on the homepage as your own Spotify user (dev/allowed).
 2. Open DevTools Console.

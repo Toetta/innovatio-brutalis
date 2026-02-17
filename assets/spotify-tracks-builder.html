@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Spotify tracks builder</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="container" style="max-width: 860px;">
+    <h1>Spotify tracks builder</h1>
+    <p style="opacity:.85;max-width:70ch">
+      Den här sidan används för att generera <code>/assets/spotify-tracks.json</code> (alla låtar i en playlist)
+      så att startsidan kan spela <em>dagens låt</em> för alla utan OAuth.
+    </p>
+
+    <section class="card" style="margin-top:18px;">
+      <h2>1) Playlist</h2>
+      <label for="playlistId" style="display:block;margin:8px 0 6px;opacity:.85">Playlist ID</label>
+      <input id="playlistId" type="text" value="7h1c4DGKumkFVXH2N8eMFu" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit" />
+
+      <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button id="generateBtn" class="btn small" type="button">Generate JSON</button>
+        <a id="downloadLink" class="btn small" href="#" style="display:none">Download spotify-tracks.json</a>
+        <button id="copyBtn" class="btn small" type="button" style="display:none">Copy JSON</button>
+      </div>
+
+      <div id="status" style="margin-top:10px;opacity:.85"></div>
+      <pre id="out" style="margin-top:12px;max-height:420px;overflow:auto;background:rgba(0,0,0,.22);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.08)"></pre>
+
+      <hr class="sep" />
+      <h2>2) Krav</h2>
+      <ul>
+        <li>Du måste vara inloggad så att <code>spotify_access_token</code> finns i <code>localStorage</code>.</li>
+        <li>Det räcker att logga in på startsidan som din whitelisted user i Spotify Dashboard (development mode).</li>
+        <li>Den här sidan ändrar inget i din Spotify-app; den bara läser playlisten via Web API.</li>
+      </ul>
+    </section>
+
+    <footer style="margin:18px 0 40px;opacity:.75">
+      <div>Tips: öppna sidan på <code>/assets/spotify-tracks-builder.html</code></div>
+    </footer>
+  </div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+    const outEl = document.getElementById('out');
+    const playlistInput = document.getElementById('playlistId');
+    const generateBtn = document.getElementById('generateBtn');
+    const downloadLink = document.getElementById('downloadLink');
+    const copyBtn = document.getElementById('copyBtn');
+
+    function setStatus(t){ statusEl.textContent = t || ''; }
+
+    function getToken(){
+      try {
+        const t = localStorage.getItem('spotify_access_token');
+        const exp = Number(localStorage.getItem('spotify_token_expires_at') || 0);
+        if (!t || !exp) return null;
+        if (Date.now() > exp) return null;
+        return t;
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function fetchAllTracks({ playlistId, market='SE' }){
+      const token = getToken();
+      if (!token) throw new Error('Missing/expired token. Log in on the homepage first.');
+
+      let url = `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/tracks?limit=100&offset=0&market=${encodeURIComponent(market)}`;
+      const tracks = [];
+
+      while (url) {
+        const r = await fetch(url, {
+          method: 'GET',
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (!r.ok) {
+          const txt = await r.text().catch(()=> '');
+          throw new Error(`Spotify API ${r.status}: ${txt}`);
+        }
+        const j = await r.json();
+        for (const it of (j.items || [])) {
+          const id = it?.track?.id;
+          if (id) tracks.push(`https://open.spotify.com/track/${id}`);
+        }
+        url = j.next;
+        setStatus(`Fetching… ${tracks.length} tracks…`);
+      }
+
+      return tracks;
+    }
+
+    function buildJson({ playlistId, tracks }){
+      const obj = {
+        updated: new Date().toISOString().slice(0,10),
+        source: `https://open.spotify.com/playlist/${playlistId}`,
+        tracks
+      };
+      return JSON.stringify(obj, null, 2);
+    }
+
+    function makeDownload(jsonText){
+      const blob = new Blob([jsonText], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      downloadLink.href = url;
+      downloadLink.download = 'spotify-tracks.json';
+      downloadLink.style.display = '';
+    }
+
+    generateBtn.addEventListener('click', async () => {
+      outEl.textContent = '';
+      downloadLink.style.display = 'none';
+      copyBtn.style.display = 'none';
+
+      const playlistId = String(playlistInput.value || '').trim();
+      if (!playlistId) {
+        setStatus('Enter a playlist id');
+        return;
+      }
+
+      setStatus('Starting…');
+      try {
+        const tracks = await fetchAllTracks({ playlistId });
+        const unique = Array.from(new Set(tracks));
+        const jsonText = buildJson({ playlistId, tracks: unique });
+
+        outEl.textContent = jsonText;
+        makeDownload(jsonText);
+        copyBtn.style.display = '';
+        setStatus(`Done. ${unique.length} unique tracks.`);
+      } catch (e) {
+        console.error(e);
+        setStatus(String(e?.message || e || 'Error'));
+      }
+    });
+
+    copyBtn.addEventListener('click', async () => {
+      try {
+        const txt = outEl.textContent || '';
+        if (!txt) return;
+        await navigator.clipboard.writeText(txt);
+        setStatus('Copied JSON to clipboard.');
+      } catch (e) {
+        console.error(e);
+        setStatus('Copy failed (check browser permissions).');
+      }
+    });
+  </script>
+</body>
+</html>
