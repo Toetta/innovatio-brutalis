@@ -53,6 +53,14 @@
     <script defer src="/assets/site.js"></script>
     <script defer src="/assets/site-deeplinks.js"></script>
 
+    <div class="spotify-top" aria-label="Spotify">
+      <div class="spotify-hero">
+        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Play track</button>
+        <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
+        <div id="spotifyEmbed" class="spotify-embed" style="display:none"></div>
+      </div>
+    </div>
+
     <section class="hero">
       <div class="brand-hero"><picture>
           <source srcset="../assets/logo.webp" type="image/webp">
@@ -60,12 +68,6 @@
         </picture></div>
       <h1>Industrial design & product development</h1>
       <p class="tagline">Innovatio Brutalis works early in the development chain — from needs analysis and problem framing to concept development, CAD design, prototyping and low-volume manufacturing.</p>
-
-      <div class="spotify-hero" aria-label="Spotify">
-        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Play track</button>
-        <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
-        <div id="spotifyEmbed" class="spotify-embed" style="display:none"></div>
-      </div>
     </section>
 
     
@@ -176,13 +178,29 @@
 
       const statusEl = document.getElementById("spotifyStatus");
       const playBtn  = document.getElementById("spotifyPlayBtn");
+      const embedHost = document.getElementById("spotifyEmbed");
       let lockedTrackUrl = null;
 
       function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
 
+      function toEmbedUrl(url){
+        const s = String(url || "").trim();
+        let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
+        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
+        m = s.match(/open\.spotify\.com\/embed\/(track|playlist)\/([A-Za-z0-9]+)/);
+        if (m?.[1] && m?.[2]) return `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
+        return null;
+      }
+
       function showEmbed(url){
         try {
-          return Boolean(window.IBSpotifyPlayer?.show?.(url));
+          const embedUrl = toEmbedUrl(url);
+          if (!embedUrl || !embedHost) return false;
+          embedHost.style.display = "";
+          embedHost.innerHTML = `<iframe title="Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${embedUrl}"></iframe>`;
+          return true;
         } catch (_) {
           return false;
         }
