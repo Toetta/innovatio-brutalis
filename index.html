@@ -126,6 +126,12 @@
         konstruktion (CAD), prototypframtagning och lågvolymproduktion.
       </p>
 
+      <div class="spotify-hero" aria-label="Spotify">
+        <button id="spotifyLoginBtn" class="btn small secondary" type="button">Logga in med Spotify</button>
+        <button id="spotifyPlayBtn" class="btn small" type="button" disabled>▶ Spela veckans låt</button>
+        <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
+      </div>
+
       
     </section>
 
@@ -205,6 +211,76 @@
       <div>Innovatio Brutalis™ — Varumärket är föremål för registrering hos PRV (Sverige).</div>
       <div style="margin-top:6px">© <span id="y"></span> Innovatio Brutalis</div>
     </footer>
+
+    <script src="/spotify-player.js"></script>
+    <script>
+      // Din playlist som “pool” om ingen veckans låt är satt:
+      const PLAYLIST_ID = "7h1c4DGKumkFVXH2N8eMFu";
+
+      // (Valfritt) Veckans låt – sätt till en track-URL eller spotify:track:... annars null
+      const WEEKLY_TRACK = null;
+
+      // Din Spotify Client ID från dashboard
+      const SPOTIFY_CLIENT_ID = "FYLL_I_DIN_CLIENT_ID";
+
+      // Viktigt: måste matcha exakt en Redirect URI du lagt in i Spotify dashboard
+      const REDIRECT_URI =
+        (location.hostname.startsWith("www."))
+          ? "https://www.innovatio-brutalis.se/callback.html"
+          : "https://innovatio-brutalis.se/callback.html";
+
+      const statusEl = document.getElementById("spotifyStatus");
+      const loginBtn = document.getElementById("spotifyLoginBtn");
+      const playBtn  = document.getElementById("spotifyPlayBtn");
+
+      function setStatus(t){ statusEl.textContent = t || ""; }
+
+      // Init: läs token om den redan finns i localStorage
+      (async () => {
+        const ok = await SpotifySite.init({
+          clientId: SPOTIFY_CLIENT_ID,
+          redirectUri: REDIRECT_URI,
+        });
+
+        if (ok) {
+          setStatus("Spotify: inloggad.");
+          playBtn.disabled = false;
+        } else {
+          setStatus("Spotify: ej inloggad.");
+        }
+      })();
+
+      loginBtn.addEventListener("click", () => {
+        SpotifySite.login({
+          clientId: SPOTIFY_CLIENT_ID,
+          redirectUri: REDIRECT_URI,
+        });
+      });
+
+      playBtn.addEventListener("click", async () => {
+        setStatus("Startar… (kräver Premium för web-uppspelning)");
+        try {
+          const track = await SpotifySite.chooseOneTrack({
+            weeklyTrack: WEEKLY_TRACK,
+            playlistId: PLAYLIST_ID,
+          });
+
+          // Försök spela i webbläsaren via Web Playback SDK
+          const playedInWeb = await SpotifySite.playInBrowser(track.uri);
+
+          if (playedInWeb) {
+            setStatus(`Spelar i webben: ${track.name || "låt"}`);
+          } else {
+            // Fallback: öppna i Spotify
+            SpotifySite.openInSpotify(track);
+            setStatus("Öppnade i Spotify (fallback).");
+          }
+        } catch (e) {
+          console.error(e);
+          setStatus("Kunde inte spela just nu.");
+        }
+      });
+    </script>
 
   </div>
 </body>

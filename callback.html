@@ -1,0 +1,18 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Spotify Callback</title>
+<p>Loggar in…</p>
+<script src="./spotify-player.js"></script>
+<script>
+  // Den här sidan byter “code” → access token och skickar tillbaka till startsidan
+  (async () => {
+    try {
+      await SpotifySite.handleCallback();
+      // tillbaka till startsidan
+      location.href = "/";
+    } catch (e) {
+      console.error(e);
+      document.body.innerHTML = "<p>Login misslyckades. Kolla Console.</p>";
+    }
+  })();
+</script>

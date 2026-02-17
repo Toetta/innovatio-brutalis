@@ -60,6 +60,12 @@
         </picture></div>
       <h1>Industrial design & product development</h1>
       <p class="tagline">Innovatio Brutalis works early in the development chain — from needs analysis and problem framing to concept development, CAD design, prototyping and low-volume manufacturing.</p>
+
+      <div class="spotify-hero" aria-label="Spotify">
+        <button id="spotifyLoginBtn" class="btn small secondary" type="button">Log in with Spotify</button>
+        <button id="spotifyPlayBtn" class="btn small" type="button" disabled>▶ Play this week’s track</button>
+        <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
+      </div>
     </section>
 
     
@@ -133,6 +139,73 @@
       <div>Innovatio Brutalis™ — Trademark pending registration with PRV (Sweden).</div>
       <div style="margin-top:6px">© <span id="y"></span> Innovatio Brutalis</div>
     </footer>
+
+    <script src="/spotify-player.js"></script>
+    <script>
+      // Playlist used as a “pool” if no weekly track is set:
+      const PLAYLIST_ID = "7h1c4DGKumkFVXH2N8eMFu";
+
+      // (Optional) Weekly track — set to a track URL or spotify:track:... otherwise null
+      const WEEKLY_TRACK = null;
+
+      // Your Spotify Client ID from the dashboard
+      const SPOTIFY_CLIENT_ID = "FYLL_I_DIN_CLIENT_ID";
+
+      // Must match exactly a Redirect URI you have added in the Spotify dashboard
+      const REDIRECT_URI =
+        (location.hostname.startsWith("www."))
+          ? "https://www.innovatio-brutalis.se/callback.html"
+          : "https://innovatio-brutalis.se/callback.html";
+
+      const statusEl = document.getElementById("spotifyStatus");
+      const loginBtn = document.getElementById("spotifyLoginBtn");
+      const playBtn  = document.getElementById("spotifyPlayBtn");
+
+      function setStatus(t){ statusEl.textContent = t || ""; }
+
+      (async () => {
+        const ok = await SpotifySite.init({
+          clientId: SPOTIFY_CLIENT_ID,
+          redirectUri: REDIRECT_URI,
+        });
+
+        if (ok) {
+          setStatus("Spotify: logged in.");
+          playBtn.disabled = false;
+        } else {
+          setStatus("Spotify: not logged in.");
+        }
+      })();
+
+      loginBtn.addEventListener("click", () => {
+        SpotifySite.login({
+          clientId: SPOTIFY_CLIENT_ID,
+          redirectUri: REDIRECT_URI,
+        });
+      });
+
+      playBtn.addEventListener("click", async () => {
+        setStatus("Starting… (Premium required for in-browser playback)");
+        try {
+          const track = await SpotifySite.chooseOneTrack({
+            weeklyTrack: WEEKLY_TRACK,
+            playlistId: PLAYLIST_ID,
+          });
+
+          const playedInWeb = await SpotifySite.playInBrowser(track.uri);
+
+          if (playedInWeb) {
+            setStatus(`Playing in browser: ${track.name || "track"}`);
+          } else {
+            SpotifySite.openInSpotify(track);
+            setStatus("Opened in Spotify (fallback)." );
+          }
+        } catch (e) {
+          console.error(e);
+          setStatus("Could not play right now.");
+        }
+      });
+    </script>
   </div>
 </body>
 </html>
