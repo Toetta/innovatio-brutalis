@@ -28,6 +28,7 @@ jobs:
       - name: Check Spotify config (no secrets printed)
         env:
           SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID || secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
           SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
           SPOTIFY_LIBRARY_PLAYLIST_ID: ${{ vars.SPOTIFY_LIBRARY_PLAYLIST_ID || secrets.SPOTIFY_LIBRARY_PLAYLIST_ID }}
           SPOTIFY_ALLOWED_PLAYLIST_ID: ${{ vars.SPOTIFY_ALLOWED_PLAYLIST_ID || secrets.SPOTIFY_ALLOWED_PLAYLIST_ID }}
@@ -41,6 +42,8 @@ jobs:
               missing=1
             fi
           done
+          # SPOTIFY_CLIENT_SECRET is optional (depends on Spotify app type)
+          if [ -n "${SPOTIFY_CLIENT_SECRET}" ]; then echo "SPOTIFY_CLIENT_SECRET: OK (optional)"; else echo "SPOTIFY_CLIENT_SECRET: (not set, optional)"; fi
           if [ "$missing" -ne 0 ]; then
             echo "One or more required values are missing. Add them under: Settings → Secrets and variables → Actions."
             exit 1
@@ -51,6 +54,7 @@ jobs:
           # Prefer repo Variables for non-sensitive values.
           # Keep refresh token in Secrets.
           SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID || secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
           SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
           SPOTIFY_LIBRARY_PLAYLIST_ID: ${{ vars.SPOTIFY_LIBRARY_PLAYLIST_ID || secrets.SPOTIFY_LIBRARY_PLAYLIST_ID }}
           SPOTIFY_ALLOWED_PLAYLIST_ID: ${{ vars.SPOTIFY_ALLOWED_PLAYLIST_ID || secrets.SPOTIFY_ALLOWED_PLAYLIST_ID }}

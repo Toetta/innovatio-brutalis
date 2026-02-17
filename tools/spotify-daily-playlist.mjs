@@ -4,6 +4,12 @@ function requireEnv(name) {
   return String(v).trim();
 }
 
+function optionalEnv(name) {
+  const v = process.env[name];
+  const s = (v == null) ? "" : String(v).trim();
+  return s || null;
+}
+
 function utcDayKey() {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 }
@@ -42,11 +48,20 @@ async function getAccessToken({ clientId, refreshToken }) {
   const body = new URLSearchParams();
   body.set("grant_type", "refresh_token");
   body.set("refresh_token", refreshToken);
-  body.set("client_id", clientId);
+  // For PKCE / public clients, client_id in body is sufficient.
+  // For confidential clients, Spotify may require Basic auth with client_secret.
+  const clientSecret = optionalEnv("SPOTIFY_CLIENT_SECRET");
+  if (!clientSecret) body.set("client_id", clientId);
+
+  const headers = { "content-type": "application/x-www-form-urlencoded" };
+  if (clientSecret) {
+    const basic = Buffer.from(`${clientId}:${clientSecret}`, "utf8").toString("base64");
+    headers.Authorization = `Basic ${basic}`;
+  }
 
   const r = await fetch("https://accounts.spotify.com/api/token", {
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
+    headers,
     body,
   });
   const t = await r.text();

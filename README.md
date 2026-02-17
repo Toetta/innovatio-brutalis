@@ -184,6 +184,7 @@ Concept:
     Recommended split:
     - Secrets (sensitive):
        - `SPOTIFY_REFRESH_TOKEN`
+       - (Optional) `SPOTIFY_CLIENT_SECRET` (only if Spotify requires it for refresh)
     - Variables (non-sensitive):
        - `SPOTIFY_CLIENT_ID`
        - `SPOTIFY_LIBRARY_PLAYLIST_ID`
