@@ -157,7 +157,7 @@
   // Persistent Spotify embed player (survives PJAX navigation)
   if (!shouldNoopApp()) {
     try {
-      const PLAYER_HEIGHT_PX = 152;
+      const PLAYER_HEIGHT_PX = 80;
       const PLAYER_GAP_PX = 12;
 
       if (!document.getElementById("ib-spotify-player")) {
@@ -203,6 +203,34 @@
         return null;
       };
 
+      const normalizeTrackUrlOrUri = (v) => {
+        if (!v) return null;
+        const s = String(v).trim();
+        if (!s) return null;
+        if (s.startsWith("spotify:track:")) {
+          const id = s.split(":")[2];
+          return id ? `https://open.spotify.com/track/${id}` : null;
+        }
+        const m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/track/${m[1]}`;
+        return null;
+      };
+
+      const pickRandom = (arr) => {
+        if (!Array.isArray(arr) || arr.length === 0) return null;
+        const idx = Math.floor(Math.random() * arr.length);
+        return arr[idx];
+      };
+
+      const loadTrackUrls = async () => {
+        const r = await fetch(`/assets/spotify-tracks.json?ts=${Date.now()}`, { cache: "no-store" });
+        if (!r.ok) return [];
+        const j = await r.json();
+        const tracks = Array.isArray(j) ? j : j?.tracks;
+        if (!Array.isArray(tracks)) return [];
+        return tracks.map(normalizeTrackUrlOrUri).filter(Boolean);
+      };
+
       const getEls = () => {
         const root = document.getElementById("ib-spotify-player");
         const frame = document.getElementById("ib-spotify-frame");
@@ -243,11 +271,28 @@
 
       const didRestore = restore();
       if (!didRestore) {
-        // Optional default (e.g. homepage playlist)
-        try {
-          const def = document.querySelector('meta[name="ib-spotify-default"]')?.getAttribute("content")?.trim();
-          if (def) show(def);
-        } catch (_) {}
+        // Optional default
+        (async () => {
+          try {
+            const def = document.querySelector('meta[name="ib-spotify-default"]')?.getAttribute("content")?.trim();
+            if (!def) return;
+
+            // Prefer a random track from the playlist (minimal player), fallback to the playlist embed.
+            const isPlaylist = /open\.spotify\.com\/playlist\/[A-Za-z0-9]+/.test(def);
+            if (isPlaylist) {
+              const urls = await loadTrackUrls();
+              const picked = pickRandom(urls);
+              if (picked && show(picked)) return;
+            }
+
+            show(def);
+          } catch (_) {
+            try {
+              const def = document.querySelector('meta[name="ib-spotify-default"]')?.getAttribute("content")?.trim();
+              if (def) show(def);
+            } catch (_) {}
+          }
+        })();
       }
 
       window.addEventListener("resize", () => updateDockPosition());
