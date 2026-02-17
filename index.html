@@ -225,7 +225,12 @@
       let SPOTIFY_CLIENT_ID = "c8efeac0956c4a9f831bb9238e23f5c3";
       try {
         const savedClientId = localStorage.getItem("spotify_client_id");
-        if (savedClientId) SPOTIFY_CLIENT_ID = String(savedClientId).trim();
+        if (savedClientId) {
+          const candidate = String(savedClientId).trim();
+          if (candidate && candidate !== "FYLL_I_DIN_CLIENT_ID") {
+            SPOTIFY_CLIENT_ID = candidate;
+          }
+        }
       } catch (_) {}
 
       // Viktigt: måste matcha exakt en Redirect URI du lagt in i Spotify dashboard
@@ -244,7 +249,18 @@
       function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
 
       function hasClientId(){
-        return SPOTIFY_CLIENT_ID && SPOTIFY_CLIENT_ID !== "FYLL_I_DIN_CLIENT_ID";
+        return Boolean(SPOTIFY_CLIENT_ID) && SPOTIFY_CLIENT_ID !== "FYLL_I_DIN_CLIENT_ID";
+      }
+
+      function hasValidToken(){
+        try {
+          const t = localStorage.getItem("spotify_access_token");
+          const exp = Number(localStorage.getItem("spotify_token_expires_at") || 0);
+          if (!t || !exp) return false;
+          return Date.now() <= exp;
+        } catch (_) {
+          return false;
+        }
       }
 
       function getSpotifySite(){
@@ -283,27 +299,35 @@
 
       if (playBtn) {
         playBtn.addEventListener("click", async () => {
+          setStatus("Spotify: klick…");
           const s = getSpotifySite();
           if (!s) return setStatus("Spotify: script saknas (spotify-player.js laddades inte). ");
           if (!hasClientId()) return setStatus("Spotify: fyll i SPOTIFY_CLIENT_ID.");
 
-          // Om ej inloggad: trigga login direkt
-          try {
-            const ok = await s.init({
-              clientId: SPOTIFY_CLIENT_ID,
-              redirectUri: REDIRECT_URI,
-            });
-            if (!ok) {
-              setStatus("Spotify: loggar in…");
+          // Om ej inloggad: trigga login direkt (synkront, så redirect inte blockas)
+          if (!hasValidToken()) {
+            setStatus("Spotify: loggar in…");
+            try {
               s.login({
                 clientId: SPOTIFY_CLIENT_ID,
                 redirectUri: REDIRECT_URI,
               });
-              return;
+            } catch (e) {
+              console.error(e);
+              setStatus("Spotify: login-fel (se console).");
             }
+            return;
+          }
+
+          // Säkerställ att SpotifySite har konfig (token finns redan)
+          try {
+            await s.init({
+              clientId: SPOTIFY_CLIENT_ID,
+              redirectUri: REDIRECT_URI,
+            });
           } catch (e) {
             console.error(e);
-            setStatus("Spotify: init/login-fel (se console).");
+            setStatus("Spotify: init-fel (se console).");
             return;
           }
 
