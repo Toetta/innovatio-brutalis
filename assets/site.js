@@ -102,6 +102,10 @@
       <a ${isEN ? 'class="active"' : ""} href="${enUrl}">EN</a>
     `;
 
+    const nextLabel = isEN ? "Next" : "Nästa";
+    const nextTitle = isEN ? "Play a new random track" : "Spela en ny slumpad låt";
+    const nextBtn = `<button id="ib-spotify-next" class="btn small secondary" type="button" title="${nextTitle}">${nextLabel}</button>`;
+
     return `
       <div class="topbar">
         <nav class="site-nav" aria-label="Site">
@@ -109,9 +113,27 @@
         </nav>
         <nav class="lang" aria-label="Language">
           ${langLinks}
+          ${nextBtn}
         </nav>
       </div>
     `;
+  };
+
+  const wireSpotifyNextButton = () => {
+    try {
+      const btn = document.getElementById("ib-spotify-next");
+      if (!btn) return;
+      if (btn.dataset.wired === "1") return;
+      btn.dataset.wired = "1";
+      btn.addEventListener("click", async () => {
+        try {
+          const ok = await window.IBSpotifyPlayer?.nextRandom?.();
+          if (!ok) {
+            // no-op: missing track list or player not ready
+          }
+        } catch (_) {}
+      });
+    } catch (_) {}
   };
 
   const refreshTopbar = () => {
@@ -125,6 +147,7 @@
       container.insertBefore(mount, container.firstChild);
     }
     mount.innerHTML = buildTopbarHTML();
+    wireSpotifyNextButton();
   };
 
   const ensureSpotifySpacer = () => {
@@ -146,6 +169,21 @@
       if (topbarMount.nextSibling !== spacer) {
         desiredParent.insertBefore(spacer, topbarMount.nextSibling);
       }
+
+      // If the fixed Spotify player is currently visible, keep the spacer height in sync
+      // so page content never slides under the player after PJAX swaps.
+      try {
+        const root = document.getElementById("ib-spotify-player");
+        const isVisible = root && root.style.display !== "none";
+        if (isVisible) {
+          const rect = root.getBoundingClientRect();
+          const h = Math.max(0, Math.ceil(rect.height || 0));
+          const gap = 12;
+          spacer.style.height = `${h + gap}px`;
+        } else {
+          spacer.style.height = "0px";
+        }
+      } catch (_) {}
       return spacer;
     } catch (_) {
       return null;
@@ -159,6 +197,9 @@
     try {
       const PLAYER_HEIGHT_PX = 80;
       const PLAYER_GAP_PX = 12;
+
+      let cachedTrackUrls = null;
+      let cachedTrackUrlsPromise = null;
 
       if (!document.getElementById("ib-spotify-player")) {
         const wrap = document.createElement("div");
@@ -222,6 +263,31 @@
         return arr[idx];
       };
 
+      const getCurrentTrackId = () => {
+        try {
+          const embed = String(sessionStorage.getItem("ib_spotify_embed_src") || "").trim();
+          let m = embed.match(/open\.spotify\.com\/embed\/track\/([A-Za-z0-9]+)/);
+          if (m?.[1]) return m[1];
+          m = embed.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+          if (m?.[1]) return m[1];
+          return null;
+        } catch (_) {
+          return null;
+        }
+      };
+
+      const pickDifferentRandom = (arr, avoidTrackId) => {
+        if (!Array.isArray(arr) || arr.length === 0) return null;
+        if (!avoidTrackId) return pickRandom(arr);
+        for (let i = 0; i < 8; i++) {
+          const candidate = pickRandom(arr);
+          const m = String(candidate || "").match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+          const id = m?.[1] || null;
+          if (!id || id !== avoidTrackId) return candidate;
+        }
+        return pickRandom(arr);
+      };
+
       const loadTrackUrls = async () => {
         const r = await fetch(`/assets/spotify-tracks.json?ts=${Date.now()}`, { cache: "no-store" });
         if (!r.ok) return [];
@@ -229,6 +295,25 @@
         const tracks = Array.isArray(j) ? j : j?.tracks;
         if (!Array.isArray(tracks)) return [];
         return tracks.map(normalizeTrackUrlOrUri).filter(Boolean);
+      };
+
+      const ensureTrackUrls = async () => {
+        if (Array.isArray(cachedTrackUrls) && cachedTrackUrls.length) return cachedTrackUrls;
+        if (!cachedTrackUrlsPromise) {
+          cachedTrackUrlsPromise = (async () => {
+            try {
+              const urls = await loadTrackUrls();
+              cachedTrackUrls = Array.isArray(urls) ? urls : [];
+              return cachedTrackUrls;
+            } catch (_) {
+              cachedTrackUrls = [];
+              return cachedTrackUrls;
+            } finally {
+              cachedTrackUrlsPromise = null;
+            }
+          })();
+        }
+        return cachedTrackUrlsPromise;
       };
 
       const getEls = () => {
@@ -267,7 +352,19 @@
         }
       };
 
-      window.IBSpotifyPlayer = { show, restore };
+      const nextRandom = async () => {
+        try {
+          const urls = await ensureTrackUrls();
+          const avoidId = getCurrentTrackId();
+          const picked = pickDifferentRandom(urls, avoidId);
+          if (!picked) return false;
+          return show(picked);
+        } catch (_) {
+          return false;
+        }
+      };
+
+      window.IBSpotifyPlayer = { show, restore, nextRandom };
 
       const didRestore = restore();
       if (!didRestore) {
@@ -296,6 +393,17 @@
       }
 
       window.addEventListener("resize", () => updateDockPosition());
+      window.addEventListener("scroll", (() => {
+        let raf = 0;
+        return () => {
+          if (raf) return;
+          raf = requestAnimationFrame(() => {
+            raf = 0;
+            updateDockPosition();
+          });
+        };
+      })(), { passive: true });
+
       ensureSpotifySpacer();
     } catch (_) {}
   }
