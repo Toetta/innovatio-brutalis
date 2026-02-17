@@ -25,6 +25,17 @@ function formEncode(obj) {
   return p;
 }
 
+async function fetchJson(url, token) {
+  const r = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  const t = await r.text().catch(() => "");
+  if (!r.ok) throw new Error(`Spotify API ${r.status}: ${t}`);
+  return t ? JSON.parse(t) : null;
+}
+
 function requireEnv(name) {
   const v = process.env[name];
   if (!v || !String(v).trim()) {
@@ -156,6 +167,19 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
       res.end("No refresh_token received. Double-check the app + redirect URI.");
       return;
+    }
+
+    // Helpful: show which Spotify account was used for authorization.
+    try {
+      const accessToken = data.access_token;
+      if (accessToken) {
+        const me = await fetchJson("https://api.spotify.com/v1/me", accessToken);
+        if (me?.id) {
+          console.log(`\nAuthorized Spotify user: ${me.id}${me.display_name ? ` (${me.display_name})` : ""}`);
+        }
+      }
+    } catch (_) {
+      // ignore
     }
 
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" });

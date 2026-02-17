@@ -104,6 +104,31 @@ async function getAccessToken({ clientId, refreshToken }) {
   return j.access_token;
 }
 
+async function getAppAccessToken({ clientId, clientSecret }) {
+  const body = new URLSearchParams();
+  body.set("grant_type", "client_credentials");
+
+  const basic = Buffer.from(`${clientId}:${clientSecret}`, "utf8").toString("base64");
+  const r = await fetch("https://accounts.spotify.com/api/token", {
+    method: "POST",
+    headers: {
+      "content-type": "application/x-www-form-urlencoded",
+      Authorization: `Basic ${basic}`,
+    },
+    body,
+  });
+  const t = await r.text();
+  if (!r.ok) throw new Error(`Client credentials token failed (${r.status}): ${t}`);
+  const j = JSON.parse(t);
+  if (!j.access_token) throw new Error("No access_token in client credentials response");
+  return j.access_token;
+}
+
+function isSpotify403(err) {
+  const msg = String(err?.message || err || "");
+  return msg.includes(" Spotify API 403 ") || msg.includes("Spotify API 403") || msg.includes("403 Forbidden");
+}
+
 async function getPlaylistTracks({ playlistId, token, market }) {
   const tracks = [];
   let url = new URL(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`);
@@ -160,7 +185,21 @@ async function main() {
   console.log("Library playlist meta:", JSON.stringify(libMeta));
   console.log("Allowed playlist meta:", JSON.stringify(allowedMeta));
 
-  const libraryTracks = await getPlaylistTracks({ playlistId: libraryPlaylistId, token, market });
+  let libraryTracks;
+  try {
+    libraryTracks = await getPlaylistTracks({ playlistId: libraryPlaylistId, token, market });
+  } catch (e) {
+    // Some accounts/configurations can produce 403 on playlist reads even for public playlists.
+    // If a client secret is available, fall back to app-only token for READS.
+    const clientSecret = optionalEnv("SPOTIFY_CLIENT_SECRET");
+    if (clientSecret && isSpotify403(e)) {
+      console.log("Library read failed with 403 using user token; retrying with app-only token...");
+      const appToken = await getAppAccessToken({ clientId, clientSecret });
+      libraryTracks = await getPlaylistTracks({ playlistId: libraryPlaylistId, token: appToken, market });
+    } else {
+      throw e;
+    }
+  }
   if (libraryTracks.length === 0) throw new Error("Library playlist returned 0 tracks");
 
   const chosen = pickDeterministic(libraryTracks, `${libraryPlaylistId}|${allowedPlaylistId}`);
