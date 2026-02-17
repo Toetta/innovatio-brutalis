@@ -201,6 +201,11 @@
       let cachedTrackUrls = null;
       let cachedTrackUrlsPromise = null;
 
+      let iframeApi = null;
+      let embedController = null;
+      let autoAdvanceArmed = true;
+      let autoAdvanceLockUntil = 0;
+
       if (!document.getElementById("ib-spotify-player")) {
         const wrap = document.createElement("div");
         wrap.id = "ib-spotify-player";
@@ -208,7 +213,7 @@
         wrap.style.display = "none";
         wrap.innerHTML = `
           <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
-            <iframe id="ib-spotify-frame" title="Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+            <div id="ib-spotify-embed" aria-label="Spotify player"></div>
           </div>
         `;
         document.body.appendChild(wrap);
@@ -318,17 +323,33 @@
 
       const getEls = () => {
         const root = document.getElementById("ib-spotify-player");
-        const frame = document.getElementById("ib-spotify-frame");
-        return { root, frame };
+        const embedHost = document.getElementById("ib-spotify-embed");
+        return { root, embedHost };
       };
 
-      const show = (url) => {
-        const embed = toEmbedUrl(url);
+      const toSpotifyUri = (urlOrUri) => {
+        const s = String(urlOrUri || "").trim();
+        if (!s) return null;
+        if (s.startsWith("spotify:track:") || s.startsWith("spotify:playlist:")) return s;
+        let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `spotify:track:${m[1]}`;
+        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `spotify:playlist:${m[1]}`;
+        m = s.match(/open\.spotify\.com\/embed\/(track|playlist)\/([A-Za-z0-9]+)/);
+        if (m?.[1] && m?.[2]) return `spotify:${m[1]}:${m[2]}`;
+        return null;
+      };
+
+      const showFallbackIframe = (urlOrUri) => {
+        const embed = toEmbedUrl(urlOrUri);
         if (!embed) return false;
-        const { root, frame } = getEls();
-        if (!root || !frame) return false;
-        const prev = String(frame.getAttribute("src") || "").trim();
-        if (prev !== embed) frame.setAttribute("src", embed);
+        const { root, embedHost } = getEls();
+        if (!root || !embedHost) return false;
+        const prev = String(embedHost.dataset.src || "").trim();
+        if (prev !== embed) {
+          embedHost.innerHTML = `<iframe title="Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${embed}"></iframe>`;
+          embedHost.dataset.src = embed;
+        }
         root.style.display = "";
         setSpacerVisible(true);
         updateDockPosition();
@@ -336,29 +357,166 @@
         return true;
       };
 
+      const loadIframeApiOnce = () => {
+        try {
+          if (iframeApi) return Promise.resolve(iframeApi);
+          if (window.__IB_SPOTIFY_IFRAME_API_PROMISE) return window.__IB_SPOTIFY_IFRAME_API_PROMISE;
+
+          window.__IB_SPOTIFY_IFRAME_API_PROMISE = new Promise((resolve) => {
+            const existing = document.getElementById("spotify-iframeapi-init");
+            if (!existing) {
+              const s = document.createElement("script");
+              s.id = "spotify-iframeapi-init";
+              s.async = true;
+              s.src = "https://open.spotify.com/embed/iframe-api/v1";
+              document.head.appendChild(s);
+            }
+
+            const prev = window.onSpotifyIframeApiReady;
+            window.onSpotifyIframeApiReady = (apiObj) => {
+              try { if (typeof prev === "function") prev(apiObj); } catch (_) {}
+              iframeApi = apiObj;
+              resolve(apiObj);
+            };
+
+            // Fallback: if the API never calls ready, resolve null after a bit.
+            setTimeout(() => resolve(null), 5000);
+          });
+
+          return window.__IB_SPOTIFY_IFRAME_API_PROMISE;
+        } catch (_) {
+          return Promise.resolve(null);
+        }
+      };
+
+      const ensureController = async (initialUri) => {
+        const apiObj = await loadIframeApiOnce();
+        if (!apiObj) return null;
+        if (embedController) return embedController;
+
+        const { embedHost } = getEls();
+        if (!embedHost) return null;
+
+        // Clear any fallback iframe.
+        try { embedHost.innerHTML = ""; } catch (_) {}
+
+        return new Promise((resolve) => {
+          try {
+            apiObj.createController(
+              embedHost,
+              {
+                uri: initialUri,
+                width: "100%",
+                height: PLAYER_HEIGHT_PX,
+              },
+              (controller) => {
+                embedController = controller;
+
+                try {
+                  controller.addListener("playback_update", (e) => {
+                    try {
+                      const now = Date.now();
+                      if (!autoAdvanceArmed) return;
+                      if (now < autoAdvanceLockUntil) return;
+                      const d = Number(e?.data?.duration || 0);
+                      const p = Number(e?.data?.position || 0);
+                      const isPaused = Boolean(e?.data?.isPaused);
+                      const isBuffering = Boolean(e?.data?.isBuffering);
+                      if (!d || isBuffering) return;
+
+                      // Consider track ended if we are at the end and paused.
+                      if (isPaused && p >= Math.max(0, d - 900)) {
+                        autoAdvanceLockUntil = now + 4000;
+                        window.IBSpotifyPlayer?.nextRandom?.({ autoplay: true }).catch(() => {});
+                      }
+                    } catch (_) {}
+                  });
+                } catch (_) {}
+
+                resolve(controller);
+              },
+            );
+          } catch (_) {
+            resolve(null);
+          }
+        });
+      };
+
+      const show = (urlOrUri) => {
+        const uri = toSpotifyUri(urlOrUri);
+        if (!uri) return false;
+
+        // Persist intended content (best-effort)
+        try {
+          if (uri.startsWith("spotify:track:")) {
+            const id = uri.split(":")[2];
+            if (id) sessionStorage.setItem("ib_spotify_uri", uri);
+          } else {
+            sessionStorage.setItem("ib_spotify_uri", uri);
+          }
+        } catch (_) {}
+
+        // Fast path: if we already have a controller.
+        if (embedController) {
+          try {
+            embedController.loadUri(uri);
+            try { embedController.play(); } catch (_) {}
+            const { root } = getEls();
+            if (root) root.style.display = "";
+            setSpacerVisible(true);
+            updateDockPosition();
+            return true;
+          } catch (_) {}
+        }
+
+        // Otherwise: fallback iframe (still allows manual play)
+        return showFallbackIframe(urlOrUri);
+      };
+
       const restore = () => {
         try {
           const embed = String(sessionStorage.getItem("ib_spotify_embed_src") || "").trim();
-          if (!embed) return false;
-          const { root, frame } = getEls();
-          if (!root || !frame) return false;
-          frame.setAttribute("src", embed);
+          const uri = String(sessionStorage.getItem("ib_spotify_uri") || "").trim();
+
+          const wantedUri = uri || toSpotifyUri(embed);
+          if (!wantedUri && !embed) return false;
+
+          const { root } = getEls();
+          if (!root) return false;
           root.style.display = "";
           setSpacerVisible(true);
           updateDockPosition();
+
+          // Try controller restore first; fall back to iframe restore.
+          (async () => {
+            try {
+              const c = await ensureController(wantedUri || "spotify:playlist:7h1c4DGKumkFVXH2N8eMFu");
+              if (c && wantedUri) {
+                c.loadUri(wantedUri);
+                try { c.play(); } catch (_) {}
+                return;
+              }
+            } catch (_) {}
+            if (embed) showFallbackIframe(embed);
+          })();
+
           return true;
         } catch (_) {
           return false;
         }
       };
 
-      const nextRandom = async () => {
+      const nextRandom = async ({ autoplay = false } = {}) => {
         try {
           const urls = await ensureTrackUrls();
           const avoidId = getCurrentTrackId();
           const picked = pickDifferentRandom(urls, avoidId);
           if (!picked) return false;
-          return show(picked);
+          const ok = show(picked);
+          if (ok && autoplay) {
+            try { embedController?.play?.(); } catch (_) {}
+          }
+          return ok;
         } catch (_) {
           return false;
         }
@@ -379,7 +537,11 @@
             if (isPlaylist) {
               const urls = await loadTrackUrls();
               const picked = pickRandom(urls);
-              if (picked && show(picked)) return;
+              if (picked) {
+                // Ensure controller so we can autoplay after user interaction.
+                try { await ensureController(toSpotifyUri(picked)); } catch (_) {}
+                if (show(picked)) return;
+              }
             }
 
             show(def);
@@ -391,6 +553,15 @@
           }
         })();
       }
+
+      // Create controller in the background (best effort) so the Next button can autoplay.
+      (async () => {
+        try {
+          const savedUri = String(sessionStorage.getItem("ib_spotify_uri") || "").trim();
+          const initial = savedUri || "spotify:playlist:7h1c4DGKumkFVXH2N8eMFu";
+          await ensureController(initial);
+        } catch (_) {}
+      })();
 
       window.addEventListener("resize", () => updateDockPosition());
       window.addEventListener("scroll", (() => {

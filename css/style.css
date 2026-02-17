@@ -93,6 +93,12 @@ small{color:var(--text-muted)}
 }
 .lang a:hover{background: rgba(184,115,51,.18); text-decoration:none}
 
+/* When we place a button inside the language pill group */
+.lang .btn.small{
+  padding:8px 10px;
+  font-size:12px;
+}
+
 /* Hero */
 .hero{
   margin-top:18px;
