@@ -53,6 +53,7 @@ const clientId = requireEnv("SPOTIFY_CLIENT_ID");
 
 const outFile = (process.env.SPOTIFY_REFRESH_TOKEN_OUT || ".local/spotify-refresh-token.txt").trim();
 const authOutFile = (process.env.SPOTIFY_AUTH_OUT || ".local/spotify-auth.txt").trim();
+const metaOutFile = (process.env.SPOTIFY_REFRESH_META_OUT || ".local/spotify-refresh-meta.json").trim();
 
 const port = Number(process.env.SPOTIFY_AUTH_PORT || 8888);
 const redirectUri = `http://127.0.0.1:${port}/callback`;
@@ -86,6 +87,8 @@ console.log("\n2) Open this URL in your browser:");
 console.log(`   ${authorizeUrl.toString()}\n`);
 console.log("3) After approval, the refresh token will be printed AND saved locally to:");
 console.log(`   ${outFile}\n`);
+console.log("4) Non-sensitive metadata will be saved to:");
+console.log(`   ${metaOutFile}\n`);
 
 // Also write the full URL(s) to a file to avoid terminal line-wrapping/truncation.
 try {
@@ -169,12 +172,16 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+    let meId = null;
+    let meName = null;
     // Helpful: show which Spotify account was used for authorization.
     try {
       const accessToken = data.access_token;
       if (accessToken) {
         const me = await fetchJson("https://api.spotify.com/v1/me", accessToken);
         if (me?.id) {
+          meId = me.id;
+          meName = me.display_name || null;
           console.log(`\nAuthorized Spotify user: ${me.id}${me.display_name ? ` (${me.display_name})` : ""}`);
         }
       }
@@ -198,6 +205,25 @@ const server = http.createServer(async (req, res) => {
       console.log(`\nSaved refresh token to: ${outFile}`);
     } catch (e) {
       console.log(`\nWarning: could not write ${outFile}: ${String(e?.message || e)}`);
+    }
+
+    // Write metadata (no secrets) to help verify freshness/account.
+    try {
+      const dir = path.dirname(metaOutFile);
+      if (dir && dir !== "." && dir !== "..") {
+        await mkdir(dir, { recursive: true });
+      }
+      const meta = {
+        createdAt: new Date().toISOString(),
+        clientId,
+        redirectUri,
+        scopes,
+        authorizedUser: meId ? { id: meId, display_name: meName } : null,
+      };
+      await writeFile(metaOutFile, JSON.stringify(meta, null, 2) + "\n", { encoding: "utf8" });
+      console.log(`Saved metadata to: ${metaOutFile}`);
+    } catch (e) {
+      console.log(`Warning: could not write ${metaOutFile}: ${String(e?.message || e)}`);
     }
 
     console.log("\nRefresh token (store as GitHub secret SPOTIFY_REFRESH_TOKEN):\n");
