@@ -195,29 +195,30 @@
         return window.SpotifySite;
       }
 
+      function openPlaylistInSpotify(){
+        try {
+          const url = `https://open.spotify.com/playlist/${PLAYLIST_ID}`;
+          window.open(url, "_blank", "noopener,noreferrer");
+        } catch (_) {}
+      }
+
       (async () => {
         try {
+          // For public visitors: no login required; Play will open Spotify.
+          // If the user already has a token, we can attempt in-browser playback.
+          if (!hasValidToken()) {
+            setStatus("Spotify: press Play (opens in Spotify).");
+            return;
+          }
+
           const s = getSpotifySite();
-          if (!s) {
-            setStatus("Spotify: script missing (spotify-player.js did not load).");
+          if (!s || !hasClientId()) {
+            setStatus("Spotify: token present but web playback not configured.");
             return;
           }
 
-          if (!hasClientId()) {
-            setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
-            return;
-          }
-
-          const ok = await s.init({
-            clientId: SPOTIFY_CLIENT_ID,
-            redirectUri: REDIRECT_URI,
-          });
-
-          if (ok) {
-            setStatus("Spotify: logged in.");
-          } else {
-            setStatus("Spotify: not logged in — press Play to log in.");
-          }
+          const ok = await s.init({ clientId: SPOTIFY_CLIENT_ID, redirectUri: REDIRECT_URI });
+          setStatus(ok ? "Spotify: logged in." : "Spotify: press Play.");
         } catch (e) {
           console.error(e);
           setStatus("Spotify: init error (see console).");
@@ -230,6 +231,13 @@
           const s = getSpotifySite();
           if (!s) return setStatus("Spotify: script missing (spotify-player.js did not load).");
           if (!hasClientId()) return setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
+
+          // Public mode: if no valid token, just open Spotify (works for everyone)
+          if (!hasValidToken()) {
+            setStatus("Spotify: opening in Spotify…");
+            openPlaylistInSpotify();
+            return;
+          }
 
           // If not logged in: trigger login right away (sync navigation)
           if (!hasValidToken()) {
@@ -254,7 +262,8 @@
             });
           } catch (e) {
             console.error(e);
-            setStatus("Spotify: init error (see console).");
+            setStatus("Spotify: init error — opening in Spotify.");
+            openPlaylistInSpotify();
             return;
           }
 
@@ -290,21 +299,8 @@
 
               try { sessionStorage.setItem("spotify_403_relogin_at", String(now)); } catch (_) {}
 
-              setStatus("Spotify: 403 Forbidden. Trying to re-login…");
-              try {
-                localStorage.removeItem("spotify_access_token");
-                localStorage.removeItem("spotify_token_expires_at");
-              } catch (_) {}
-              try {
-                s.login({
-                  clientId: SPOTIFY_CLIENT_ID,
-                  redirectUri: REDIRECT_URI,
-                  showDialog: true,
-                });
-              } catch (e2) {
-                console.error(e2);
-                setStatus("Spotify: 403 Forbidden. Re-login (new scopes) and make sure PLAYLIST_ID is a playlist you can access (public/owned/collab). ");
-              }
+              setStatus("Spotify: 403 Forbidden — opening in Spotify.");
+              openPlaylistInSpotify();
             } else {
               setStatus(msg ? ("Error: " + msg) : "Could not play right now.");
             }
