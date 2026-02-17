@@ -282,6 +282,12 @@
           return showEmbed(lockedTrackUrl);
         }
 
+        const daily = normalizeTrackUrlOrUri(pickDaily(PUBLIC_TRACK_URLS, LIBRARY_PLAYLIST_ID));
+        if (daily) {
+          lockedTrackUrl = daily;
+          return showEmbed(lockedTrackUrl);
+        }
+
         lockedTrackUrl = `https://open.spotify.com/playlist/${ALLOWED_PLAYLIST_ID}`;
         return showEmbed(lockedTrackUrl);
       }
@@ -301,6 +307,7 @@
 
       (async () => {
         try {
+          await loadPublicTracks();
           setStatus("Spotify: press Play.");
         } catch (e) {
           console.error(e);

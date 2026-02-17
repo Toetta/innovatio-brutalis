@@ -359,6 +359,15 @@
           return showEmbed(lockedTrackUrl);
         }
 
+        // Preferred fallback that always works on a static site:
+        // pick a deterministic daily track from the committed list.
+        const daily = normalizeTrackUrlOrUri(pickDaily(PUBLIC_TRACK_URLS, LIBRARY_PLAYLIST_ID));
+        if (daily) {
+          lockedTrackUrl = daily;
+          return showEmbed(lockedTrackUrl);
+        }
+
+        // If the JSON list is missing, embed the allowed playlist (might be empty until Actions runs).
         lockedTrackUrl = `https://open.spotify.com/playlist/${ALLOWED_PLAYLIST_ID}`;
         return showEmbed(lockedTrackUrl);
       }
@@ -379,6 +388,7 @@
       // Init: läs token om den redan finns i localStorage
       (async () => {
         try {
+          await loadPublicTracks();
           setStatus("Spotify: klicka Spela.");
         } catch (e) {
           console.error(e);
