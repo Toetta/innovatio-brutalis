@@ -20,6 +20,7 @@
       <input id="playlistId" type="text" value="7h1c4DGKumkFVXH2N8eMFu" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit" />
 
       <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+        <button id="loginBtn" class="btn small" type="button">Logga in med Spotify</button>
         <button id="generateBtn" class="btn small" type="button">Generate JSON</button>
         <button id="autoSaveBtn" class="btn small" type="button" style="display:none">Auto-save to /assets/spotify-tracks.json</button>
         <a id="downloadLink" class="btn small" href="#" style="display:none">Download spotify-tracks.json</a>
@@ -33,7 +34,7 @@
       <h2>2) Krav</h2>
       <ul>
         <li>Du måste vara inloggad så att <code>spotify_access_token</code> finns i <code>localStorage</code>.</li>
-        <li>Det räcker att logga in på startsidan som din whitelisted user i Spotify Dashboard (development mode).</li>
+        <li>Du kan logga in här via knappen, eller på startsidan (whitelisted user i Spotify Dashboard, development mode).</li>
         <li>Den här sidan ändrar inget i din Spotify-app; den bara läser playlisten via Web API.</li>
       </ul>
     </section>
@@ -43,10 +44,12 @@
     </footer>
   </div>
 
+  <script src="/spotify-player.js"></script>
   <script>
     const statusEl = document.getElementById('status');
     const outEl = document.getElementById('out');
     const playlistInput = document.getElementById('playlistId');
+    const loginBtn = document.getElementById('loginBtn');
     const generateBtn = document.getElementById('generateBtn');
     const autoSaveBtn = document.getElementById('autoSaveBtn');
     const downloadLink = document.getElementById('downloadLink');
@@ -57,11 +60,42 @@
       location.hostname === 'localhost' ||
       location.hostname === '::1';
 
+    const REDIRECT_URI = isLocal
+      ? 'http://127.0.0.1:8000/callback.html'
+      : 'https://www.innovatio-brutalis.se/callback.html';
+
+    let SPOTIFY_CLIENT_ID = 'c8efeac0956c4a9f831bb9238e23f5c3';
+    try {
+      const savedClientId = localStorage.getItem('spotify_client_id');
+      if (savedClientId) {
+        const candidate = String(savedClientId).trim();
+        if (candidate && candidate !== 'FYLL_I_DIN_CLIENT_ID') {
+          SPOTIFY_CLIENT_ID = candidate;
+        }
+      }
+    } catch (_) {}
+
     const SAVE_SERVER = 'http://127.0.0.1:8787/save';
 
     if (isLocal && autoSaveBtn) autoSaveBtn.style.display = '';
 
     function setStatus(t){ statusEl.textContent = t || ''; }
+
+    function hasValidToken(){
+      try {
+        const t = localStorage.getItem('spotify_access_token');
+        const exp = Number(localStorage.getItem('spotify_token_expires_at') || 0);
+        if (!t || !exp) return false;
+        return Date.now() <= exp;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function updateUi(){
+      const ok = hasValidToken();
+      if (loginBtn) loginBtn.style.display = ok ? 'none' : '';
+    }
 
     function getToken(){
       try {
@@ -77,7 +111,7 @@
 
     async function fetchAllTracks({ playlistId, market='SE' }){
       const token = getToken();
-      if (!token) throw new Error('Missing/expired token. Log in on the homepage first.');
+      if (!token) throw new Error('Missing/expired token. Logga in först (knappen ovan eller via startsidan).');
 
       let url = `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/tracks?limit=100&offset=0&market=${encodeURIComponent(market)}`;
       const tracks = [];
@@ -137,6 +171,7 @@
     }
 
     generateBtn.addEventListener('click', async () => {
+      updateUi();
       outEl.textContent = '';
       downloadLink.style.display = 'none';
       copyBtn.style.display = 'none';
@@ -177,6 +212,7 @@
 
     autoSaveBtn?.addEventListener('click', async () => {
       try {
+        updateUi();
         const txt = outEl.textContent || '';
         if (!txt) {
           setStatus('Nothing to save yet. Press Generate JSON first.');
@@ -194,6 +230,7 @@
 
     copyBtn.addEventListener('click', async () => {
       try {
+        updateUi();
         const txt = outEl.textContent || '';
         if (!txt) return;
         await navigator.clipboard.writeText(txt);
@@ -203,6 +240,39 @@
         setStatus('Copy failed (check browser permissions).');
       }
     });
+
+    loginBtn?.addEventListener('click', async () => {
+      try {
+        if (!window.SpotifySite) {
+          setStatus('spotify-player.js saknas/laddades inte.');
+          return;
+        }
+
+        if (!SPOTIFY_CLIENT_ID) {
+          setStatus('Saknar Spotify Client ID.');
+          return;
+        }
+
+        // Tell callback.html where to return after login.
+        try { localStorage.setItem('spotify_post_login_redirect', location.pathname); } catch (_) {}
+
+        setStatus('Öppnar Spotify login…');
+        window.SpotifySite.login({
+          clientId: SPOTIFY_CLIENT_ID,
+          redirectUri: REDIRECT_URI,
+          showDialog: false,
+        });
+      } catch (e) {
+        console.error(e);
+        setStatus('Login-fel (se console).');
+      }
+    });
+
+    // Initial state
+    updateUi();
+    if (!hasValidToken()) {
+      setStatus('Inte inloggad. Klicka “Logga in med Spotify”.');
+    }
   </script>
 </body>
 </html>

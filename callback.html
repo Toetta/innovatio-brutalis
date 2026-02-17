@@ -8,8 +8,20 @@
   (async () => {
     try {
       await SpotifySite.handleCallback();
-      // tillbaka till startsidan
-      location.href = "/";
+
+      // Efter login: om en sida har begärt en return path, gå tillbaka dit.
+      // Säkerhet: tillåt bara same-origin paths.
+      let target = "/";
+      try {
+        const raw = localStorage.getItem("spotify_post_login_redirect") || "";
+        localStorage.removeItem("spotify_post_login_redirect");
+        const p = String(raw).trim();
+        if (p && p.startsWith("/") && !p.startsWith("//") && !p.includes("://")) {
+          target = p;
+        }
+      } catch (_) {}
+
+      location.href = target;
     } catch (e) {
       console.error(e);
       document.body.innerHTML = "<p>Login misslyckades. Kolla Console.</p>";
