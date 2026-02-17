@@ -102,10 +102,6 @@
       <a ${isEN ? 'class="active"' : ""} href="${enUrl}">EN</a>
     `;
 
-    const nextLabel = isEN ? "Next" : "Nästa";
-    const nextTitle = isEN ? "Play a new random track" : "Spela en ny slumpad låt";
-    const nextBtn = `<button id="ib-spotify-next" class="btn small secondary" type="button" title="${nextTitle}">${nextLabel}</button>`;
-
     return `
       <div class="topbar">
         <nav class="site-nav" aria-label="Site">
@@ -113,10 +109,20 @@
         </nav>
         <nav class="lang" aria-label="Language">
           ${langLinks}
-          ${nextBtn}
         </nav>
       </div>
     `;
+  };
+
+  const updatePlayerControlsLabel = () => {
+    try {
+      const btn = document.getElementById("ib-spotify-next");
+      if (!btn) return;
+      const { isEN } = computeState();
+      const title = isEN ? "Next random track" : "Nästa slumpade låt";
+      btn.setAttribute("title", title);
+      btn.setAttribute("aria-label", title);
+    } catch (_) {}
   };
 
   const wireSpotifyNextButton = () => {
@@ -133,6 +139,7 @@
           }
         } catch (_) {}
       });
+      updatePlayerControlsLabel();
     } catch (_) {}
   };
 
@@ -147,7 +154,7 @@
       container.insertBefore(mount, container.firstChild);
     }
     mount.innerHTML = buildTopbarHTML();
-    wireSpotifyNextButton();
+    updatePlayerControlsLabel();
   };
 
   const ensureSpotifySpacer = () => {
@@ -213,7 +220,10 @@
         wrap.style.display = "none";
         wrap.innerHTML = `
           <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
-            <div id="ib-spotify-embed" aria-label="Spotify player"></div>
+            <div class="ib-spotify-player__row">
+              <div id="ib-spotify-embed" aria-label="Spotify player"></div>
+              <button id="ib-spotify-next" class="btn small secondary ib-spotify-next" type="button">⏭</button>
+            </div>
           </div>
         `;
         document.body.appendChild(wrap);
@@ -523,6 +533,9 @@
       };
 
       window.IBSpotifyPlayer = { show, restore, nextRandom };
+
+      // Wire up controls (player lives outside PJAX swaps)
+      wireSpotifyNextButton();
 
       const didRestore = restore();
       if (!didRestore) {

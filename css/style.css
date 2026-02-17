@@ -93,12 +93,6 @@ small{color:var(--text-muted)}
 }
 .lang a:hover{background: rgba(184,115,51,.18); text-decoration:none}
 
-/* When we place a button inside the language pill group */
-.lang .btn.small{
-  padding:8px 10px;
-  font-size:12px;
-}
-
 /* Hero */
 .hero{
   margin-top:18px;
@@ -208,6 +202,28 @@ small{color:var(--text-muted)}
   overflow: hidden;
   background: linear-gradient(180deg, rgba(21,21,21,.92), rgba(21,21,21,.78));
   box-shadow: var(--shadow);
+}
+
+.ib-spotify-player__row{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.ib-spotify-player__row > #ib-spotify-embed{
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ib-spotify-next{
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .ib-spotify-player iframe{
