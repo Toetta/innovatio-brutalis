@@ -144,3 +144,68 @@ Deep links target elements by `data-card-id` (or `id=`). That means:
 5. No-op on other `/assets/*` apps
    - Open any visualiser under `/assets/` with `?card=...`
    - Expected: no deep-link behavior.
+
+---
+
+# Spotify (homepage)
+
+The homepage “Play” button supports a public mode so **any visitor** can play without OAuth.
+
+## Public random track (no OAuth)
+
+- File: `/assets/spotify-tracks.json`
+- The homepage loads this file and picks a random entry.
+- If the list is empty/missing, it falls back to opening the playlist.
+
+`spotify-tracks.json` format:
+
+```json
+{
+   "updated": "YYYY-MM-DD",
+   "source": "https://open.spotify.com/playlist/<id>",
+   "tracks": [
+      "https://open.spotify.com/track/<id>",
+      "spotify:track:<id>"
+   ]
+}
+```
+
+### How to generate the track list
+
+Because this site is static, the browser can’t fetch playlist contents from Spotify **without an access token**.
+So you generate the list once (as a dev/allowed user), then commit it as static JSON.
+
+1. Log in on the homepage as your own Spotify user (dev/allowed).
+2. Open DevTools Console.
+3. Run:
+
+```js
+(async () => {
+   const playlistId = "7h1c4DGKumkFVXH2N8eMFu";
+   const token = localStorage.getItem("spotify_access_token");
+   if (!token) throw new Error("No token in localStorage. Log in first.");
+
+   let url = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100&offset=0&market=SE`;
+   const tracks = [];
+   while (url) {
+      const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!r.ok) throw new Error(`Spotify API ${r.status}`);
+      const j = await r.json();
+      for (const it of (j.items || [])) {
+         const id = it?.track?.id;
+         if (id) tracks.push(`https://open.spotify.com/track/${id}`);
+      }
+      url = j.next;
+   }
+   console.log(JSON.stringify({ updated: new Date().toISOString().slice(0,10), source: `https://open.spotify.com/playlist/${playlistId}`, tracks }, null, 2));
+})();
+```
+
+4. Paste the JSON output into `/assets/spotify-tracks.json`.
+
+## Development mode vs “everyone can log in”
+
+Even if you move beyond development mode, Spotify Web API calls still require an access token.
+For “anyone can press Play and hear something”, opening a random `open.spotify.com/track/...` link is the simplest public solution.
+
+If you want **everyone to authenticate with your app**, you typically need to request a wider quota/availability in the Spotify dashboard and meet their app requirements (app info + policy links). Web Playback in-browser also generally requires Spotify Premium.

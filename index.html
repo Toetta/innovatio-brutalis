@@ -127,7 +127,7 @@
       </p>
 
       <div class="spotify-hero" aria-label="Spotify">
-        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Spela veckans låt</button>
+        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Spela en slumpad låt</button>
         <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
       </div>
 
@@ -267,20 +267,72 @@
         return window.SpotifySite;
       }
 
-      function openPlaylistInSpotify(){
+      let PUBLIC_TRACK_URLS = [];
+
+      function pickRandom(arr){
+        if (!Array.isArray(arr) || arr.length === 0) return null;
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+
+      function normalizeTrackUrlOrUri(v){
+        if (!v) return null;
+        const s = String(v).trim();
+        if (!s) return null;
+        if (s.startsWith("spotify:track:")) {
+          const id = s.split(":")[2];
+          return id ? `https://open.spotify.com/track/${id}` : null;
+        }
+        const m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/track/${m[1]}`;
+        return null;
+      }
+
+      function openUrlInSpotify(url){
         try {
-          const url = `https://open.spotify.com/playlist/${PLAYLIST_ID}`;
+          if (!url) return false;
           window.open(url, "_blank", "noopener,noreferrer");
-        } catch (_) {}
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function openPlaylistInSpotify(){
+        return openUrlInSpotify(`https://open.spotify.com/playlist/${PLAYLIST_ID}`);
+      }
+
+      function openRandomPublicTrackInSpotify(){
+        // If you set WEEKLY_TRACK to a track URL/URI, it overrides randomness.
+        const weekly = normalizeTrackUrlOrUri(WEEKLY_TRACK);
+        if (weekly) return openUrlInSpotify(weekly);
+
+        const pick = normalizeTrackUrlOrUri(pickRandom(PUBLIC_TRACK_URLS));
+        if (pick) return openUrlInSpotify(pick);
+
+        return openPlaylistInSpotify();
+      }
+
+      async function loadPublicTracks(){
+        try {
+          const r = await fetch(`/assets/spotify-tracks.json?ts=${Date.now()}`, { cache: "no-store" });
+          if (!r.ok) return;
+          const j = await r.json();
+          const tracks = Array.isArray(j) ? j : j?.tracks;
+          if (!Array.isArray(tracks)) return;
+          PUBLIC_TRACK_URLS = tracks.map(normalizeTrackUrlOrUri).filter(Boolean);
+        } catch (_) {
+          // ignore
+        }
       }
 
       // Init: läs token om den redan finns i localStorage
       (async () => {
         try {
+          await loadPublicTracks();
           // For public visitors: no login required; Play will open Spotify.
           // If the user already has a token, we can attempt in-browser playback.
           if (!hasValidToken()) {
-            setStatus("Spotify: klicka Spela (öppnar i Spotify). ");
+            setStatus("Spotify: klicka Spela (öppnar en slumpad låt i Spotify). ");
             return;
           }
 
@@ -304,8 +356,8 @@
           const s = getSpotifySite();
           // Public mode: if no valid token, just open Spotify (works for everyone)
           if (!hasValidToken() || !s || !hasClientId()) {
-            setStatus("Spotify: öppnar i Spotify…");
-            openPlaylistInSpotify();
+            setStatus("Spotify: öppnar en slumpad låt i Spotify…");
+            openRandomPublicTrackInSpotify();
             return;
           }
 
@@ -318,7 +370,7 @@
           } catch (e) {
             console.error(e);
             setStatus("Spotify: init-fel — öppnar i Spotify.");
-            openPlaylistInSpotify();
+            openRandomPublicTrackInSpotify();
             return;
           }
 
@@ -361,7 +413,7 @@
               try {
                 // keep tokens as-is; user might still be able to play via app
               } catch (_) {}
-              openPlaylistInSpotify();
+              openRandomPublicTrackInSpotify();
             } else {
               setStatus(msg ? ("Fel: " + msg) : "Kunde inte spela just nu.");
             }

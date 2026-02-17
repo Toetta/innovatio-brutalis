@@ -62,7 +62,7 @@
       <p class="tagline">Innovatio Brutalis works early in the development chain — from needs analysis and problem framing to concept development, CAD design, prototyping and low-volume manufacturing.</p>
 
       <div class="spotify-hero" aria-label="Spotify">
-        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Play this week’s track</button>
+        <button id="spotifyPlayBtn" class="btn small" type="button">▶ Play a random track</button>
         <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
       </div>
     </section>
@@ -195,19 +195,71 @@
         return window.SpotifySite;
       }
 
-      function openPlaylistInSpotify(){
+      let PUBLIC_TRACK_URLS = [];
+
+      function pickRandom(arr){
+        if (!Array.isArray(arr) || arr.length === 0) return null;
+        return arr[Math.floor(Math.random() * arr.length)];
+      }
+
+      function normalizeTrackUrlOrUri(v){
+        if (!v) return null;
+        const s = String(v).trim();
+        if (!s) return null;
+        if (s.startsWith("spotify:track:")) {
+          const id = s.split(":")[2];
+          return id ? `https://open.spotify.com/track/${id}` : null;
+        }
+        const m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/track/${m[1]}`;
+        return null;
+      }
+
+      function openUrlInSpotify(url){
         try {
-          const url = `https://open.spotify.com/playlist/${PLAYLIST_ID}`;
+          if (!url) return false;
           window.open(url, "_blank", "noopener,noreferrer");
-        } catch (_) {}
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function openPlaylistInSpotify(){
+        return openUrlInSpotify(`https://open.spotify.com/playlist/${PLAYLIST_ID}`);
+      }
+
+      function openRandomPublicTrackInSpotify(){
+        // If you set WEEKLY_TRACK to a track URL/URI, it overrides randomness.
+        const weekly = normalizeTrackUrlOrUri(WEEKLY_TRACK);
+        if (weekly) return openUrlInSpotify(weekly);
+
+        const pick = normalizeTrackUrlOrUri(pickRandom(PUBLIC_TRACK_URLS));
+        if (pick) return openUrlInSpotify(pick);
+
+        return openPlaylistInSpotify();
+      }
+
+      async function loadPublicTracks(){
+        try {
+          const r = await fetch(`/assets/spotify-tracks.json?ts=${Date.now()}`, { cache: "no-store" });
+          if (!r.ok) return;
+          const j = await r.json();
+          const tracks = Array.isArray(j) ? j : j?.tracks;
+          if (!Array.isArray(tracks)) return;
+          PUBLIC_TRACK_URLS = tracks.map(normalizeTrackUrlOrUri).filter(Boolean);
+        } catch (_) {
+          // ignore
+        }
       }
 
       (async () => {
         try {
+          await loadPublicTracks();
           // For public visitors: no login required; Play will open Spotify.
           // If the user already has a token, we can attempt in-browser playback.
           if (!hasValidToken()) {
-            setStatus("Spotify: press Play (opens in Spotify).");
+            setStatus("Spotify: press Play (opens a random track in Spotify)." );
             return;
           }
 
@@ -229,13 +281,10 @@
         playBtn.addEventListener("click", async () => {
           setStatus("Spotify: click…");
           const s = getSpotifySite();
-          if (!s) return setStatus("Spotify: script missing (spotify-player.js did not load).");
-          if (!hasClientId()) return setStatus("Spotify: set SPOTIFY_CLIENT_ID.");
-
-          // Public mode: if no valid token, just open Spotify (works for everyone)
-          if (!hasValidToken()) {
-            setStatus("Spotify: opening in Spotify…");
-            openPlaylistInSpotify();
+          // Public mode: no token needed; just open a random track in Spotify.
+          if (!hasValidToken() || !s || !hasClientId()) {
+            setStatus("Spotify: opening a random track in Spotify…");
+            openRandomPublicTrackInSpotify();
             return;
           }
 
@@ -263,7 +312,7 @@
           } catch (e) {
             console.error(e);
             setStatus("Spotify: init error — opening in Spotify.");
-            openPlaylistInSpotify();
+            openRandomPublicTrackInSpotify();
             return;
           }
 
@@ -300,7 +349,7 @@
               try { sessionStorage.setItem("spotify_403_relogin_at", String(now)); } catch (_) {}
 
               setStatus("Spotify: 403 Forbidden — opening in Spotify.");
-              openPlaylistInSpotify();
+              openRandomPublicTrackInSpotify();
             } else {
               setStatus(msg ? ("Error: " + msg) : "Could not play right now.");
             }
