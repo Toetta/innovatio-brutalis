@@ -64,6 +64,7 @@
       <div class="spotify-hero" aria-label="Spotify">
         <button id="spotifyPlayBtn" class="btn small" type="button">▶ Play today’s track</button>
         <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
+        <div id="spotifyEmbed" class="spotify-embed" style="display:none"></div>
       </div>
     </section>
 
@@ -171,8 +172,27 @@
 
       const statusEl = document.getElementById("spotifyStatus");
       const playBtn  = document.getElementById("spotifyPlayBtn");
+      const embedEl = document.getElementById("spotifyEmbed");
 
       function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
+
+      function toEmbedUrl(url){
+        const s = String(url || "").trim();
+        let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
+        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
+        return null;
+      }
+
+      function showEmbed(url){
+        if (!embedEl) return false;
+        const embedUrl = toEmbedUrl(url);
+        if (!embedUrl) return false;
+        embedEl.style.display = "";
+        embedEl.innerHTML = `<iframe title="Spotify" src="${embedUrl}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+        return true;
+      }
 
       function hasClientId(){
         return Boolean(SPOTIFY_CLIENT_ID) && SPOTIFY_CLIENT_ID !== "FYLL_I_DIN_CLIENT_ID";
@@ -238,27 +258,21 @@
       }
 
       function openUrlInSpotify(url){
-        try {
-          if (!url) return false;
-          const embed = toEmbedUrlIfTrack(url);
-          window.open(embed || url, "_blank", "noopener,noreferrer");
-          return true;
-        } catch (_) {
-          return false;
-        }
+        if (!url) return false;
+        return showEmbed(url);
       }
 
       function openPlaylistInSpotify(){
-        return openUrlInSpotify(`https://open.spotify.com/playlist/${PLAYLIST_ID}`);
+        return showEmbed(`https://open.spotify.com/playlist/${PLAYLIST_ID}`);
       }
 
       function openDailyPublicTrackInSpotify(){
         // If you set WEEKLY_TRACK to a track URL/URI, it overrides randomness.
         const weekly = normalizeTrackUrlOrUri(WEEKLY_TRACK);
-        if (weekly) return openUrlInSpotify(weekly);
+        if (weekly) return showEmbed(weekly);
 
         const pick = normalizeTrackUrlOrUri(pickDaily(PUBLIC_TRACK_URLS, PLAYLIST_ID));
-        if (pick) return openUrlInSpotify(pick);
+        if (pick) return showEmbed(pick);
 
         return openPlaylistInSpotify();
       }
@@ -352,8 +366,8 @@
             if (playedInWeb) {
               setStatus(`Playing in browser: ${track.name || "track"}`);
             } else {
-              s.openInSpotify(track);
-              setStatus("Opened in Spotify (fallback)." );
+              showEmbed(track.url);
+              setStatus("Showing in Spotify (embed)." );
             }
           } catch (e) {
             console.error(e);

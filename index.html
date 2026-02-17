@@ -129,6 +129,7 @@
       <div class="spotify-hero" aria-label="Spotify">
         <button id="spotifyPlayBtn" class="btn small" type="button">▶ Spela dagens låt</button>
         <div id="spotifyStatus" class="spotify-status" style="margin-top:8px;opacity:.8"></div>
+        <div id="spotifyEmbed" class="spotify-embed" style="display:none"></div>
       </div>
 
       
@@ -243,8 +244,27 @@
 
       const statusEl = document.getElementById("spotifyStatus");
       const playBtn  = document.getElementById("spotifyPlayBtn");
+      const embedEl = document.getElementById("spotifyEmbed");
 
       function setStatus(t){ if (statusEl) statusEl.textContent = t || ""; }
+
+      function toEmbedUrl(url){
+        const s = String(url || "").trim();
+        let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
+        m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
+        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
+        return null;
+      }
+
+      function showEmbed(url){
+        if (!embedEl) return false;
+        const embedUrl = toEmbedUrl(url);
+        if (!embedUrl) return false;
+        embedEl.style.display = "";
+        embedEl.innerHTML = `<iframe title="Spotify" src="${embedUrl}" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>`;
+        return true;
+      }
 
       function hasClientId(){
         return Boolean(SPOTIFY_CLIENT_ID) && SPOTIFY_CLIENT_ID !== "FYLL_I_DIN_CLIENT_ID";
@@ -311,18 +331,13 @@
       }
 
       function openUrlInSpotify(url){
-        try {
-          if (!url) return false;
-          const embed = toEmbedUrlIfTrack(url);
-          window.open(embed || url, "_blank", "noopener,noreferrer");
-          return true;
-        } catch (_) {
-          return false;
-        }
+        if (!url) return false;
+        // No new tabs/popups: render inline where the button is.
+        return showEmbed(url);
       }
 
       function openPlaylistInSpotify(){
-        return openUrlInSpotify(`https://open.spotify.com/playlist/${PLAYLIST_ID}`);
+        return showEmbed(`https://open.spotify.com/playlist/${PLAYLIST_ID}`);
       }
 
       function openDailyPublicTrackInSpotify(){
@@ -331,7 +346,7 @@
         if (weekly) return openUrlInSpotify(weekly);
 
         const pick = normalizeTrackUrlOrUri(pickDaily(PUBLIC_TRACK_URLS, PLAYLIST_ID));
-        if (pick) return openUrlInSpotify(pick);
+        if (pick) return showEmbed(pick);
 
         return openPlaylistInSpotify();
       }
@@ -412,9 +427,9 @@
             if (playedInWeb) {
               setStatus(`Spelar i webben: ${track.name || "låt"}`);
             } else {
-              // Fallback: öppna i Spotify
-              s.openInSpotify(track);
-              setStatus("Öppnade i Spotify (fallback).");
+              // Fallback: embed inline
+              showEmbed(track.url);
+              setStatus("Visar i Spotify (embed). ");
             }
           } catch (e) {
             console.error(e);
