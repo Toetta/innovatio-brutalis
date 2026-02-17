@@ -127,11 +127,39 @@
     mount.innerHTML = buildTopbarHTML();
   };
 
+  const ensureSpotifySpacer = () => {
+    try {
+      const container = document.querySelector(".container");
+      const topbarMount = document.getElementById("site-topbar");
+      if (!container || !topbarMount) return null;
+
+      let spacer = document.getElementById("ib-spotify-spacer");
+      if (!spacer) {
+        spacer = document.createElement("div");
+        spacer.id = "ib-spotify-spacer";
+        spacer.setAttribute("aria-hidden", "true");
+      }
+
+      // Keep it directly under the topbar mount.
+      const desiredParent = container;
+      if (spacer.parentNode !== desiredParent) desiredParent.appendChild(spacer);
+      if (topbarMount.nextSibling !== spacer) {
+        desiredParent.insertBefore(spacer, topbarMount.nextSibling);
+      }
+      return spacer;
+    } catch (_) {
+      return null;
+    }
+  };
+
   refreshTopbar();
 
   // Persistent Spotify embed player (main-site only)
   if (!shouldNoopApp()) {
     try {
+      const PLAYER_HEIGHT_PX = 152;
+      const PLAYER_GAP_PX = 12;
+
       if (!document.getElementById("ib-spotify-player")) {
         const wrap = document.createElement("div");
         wrap.id = "ib-spotify-player";
@@ -144,6 +172,25 @@
         `;
         document.body.appendChild(wrap);
       }
+
+      const updateDockPosition = () => {
+        try {
+          const root = document.getElementById("ib-spotify-player");
+          if (!root || root.style.display === "none") return;
+
+          const topbar = document.querySelector("#site-topbar .topbar") || document.getElementById("site-topbar");
+          if (!topbar) return;
+          const rect = topbar.getBoundingClientRect();
+          const top = Math.max(8, Math.round(rect.bottom + 8));
+          document.documentElement.style.setProperty("--ib-spotify-top", `${top}px`);
+        } catch (_) {}
+      };
+
+      const setSpacerVisible = (visible) => {
+        const spacer = ensureSpotifySpacer();
+        if (!spacer) return;
+        spacer.style.height = visible ? `${PLAYER_HEIGHT_PX + PLAYER_GAP_PX}px` : "0px";
+      };
 
       const toEmbedUrl = (url) => {
         const s = String(url || "").trim();
@@ -170,6 +217,8 @@
         const prev = String(frame.getAttribute("src") || "").trim();
         if (prev !== embed) frame.setAttribute("src", embed);
         root.style.display = "";
+        setSpacerVisible(true);
+        updateDockPosition();
         try { sessionStorage.setItem("ib_spotify_embed_src", embed); } catch (_) {}
         return true;
       };
@@ -182,6 +231,8 @@
           if (!root || !frame) return;
           frame.setAttribute("src", embed);
           root.style.display = "";
+          setSpacerVisible(true);
+          updateDockPosition();
         } catch (_) {}
       };
 
@@ -191,6 +242,14 @@
       };
 
       restore();
+
+      // Keep it docked under the menu even when it wraps.
+      window.addEventListener("resize", () => {
+        updateDockPosition();
+      });
+
+      // Ensure spacer exists even before first play.
+      ensureSpotifySpacer();
     } catch (_) {}
   }
 
@@ -326,6 +385,7 @@
       document.title = doc.title || document.title;
 
       refreshTopbar();
+      ensureSpotifySpacer();
       refreshYear();
       try { window.SiteDeepLinks?.refresh?.(); } catch (_) {}
     };
