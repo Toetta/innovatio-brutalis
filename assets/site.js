@@ -13,7 +13,10 @@
     try {
       const pathLower = lower(window.location.pathname || "");
       if (pathLower.startsWith("/assets/")) return true;
-      if (pathLower.includes("fu-bookkeeping")) return true;
+
+      // FU-Bookkeeping: only disable the main-site runtime on the actual app pages (served from /assets).
+      // The landing pages under /fu-bookkeeping/ should still get the global topbar + Spotify player.
+      if (pathLower.startsWith("/assets/fu-bookkeeping")) return true;
       if (lower(document.body?.dataset?.app || "") === "fu-bookkeeping") return true;
       return false;
     } catch (_) {
@@ -1005,7 +1008,7 @@
         if (url.origin !== window.location.origin) return false;
         const p = lower(url.pathname || "");
         if (p.startsWith("/assets/")) return false;
-        if (p.includes("fu-bookkeeping")) return false;
+        // Allow landing pages like /fu-bookkeeping/ to be PJAXed; the actual tool lives under /assets/.
         // Avoid hijacking direct file downloads
         const last = p.split("/").filter(Boolean).slice(-1)[0] || "";
         if (last.includes(".") && !last.endsWith(".html")) return false;

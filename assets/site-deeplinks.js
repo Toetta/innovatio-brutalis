@@ -14,15 +14,16 @@
       // Main-site only: never run on /assets/* pages (apps/popups/live tools)
       if (path.startsWith("/assets/")) return true;
 
-      // Hard guard for FU-Bookkeeping (explicit requirement)
-      if (path.includes("fu-bookkeeping")) return true;
+      // Hard guard for FU-Bookkeeping TOOL pages only (served from /assets).
+      // Landing pages under /fu-bookkeeping/ are part of the main site.
+      if (path.startsWith("/assets/fu-bookkeeping")) return true;
       if (document.querySelector('body[data-app="fu-bookkeeping"]')) return true;
       if (lower(document.body?.dataset?.app || "") === "fu-bookkeeping") return true;
 
       // Extra safety: if any script src looks like FU-Bookkeeping
       for (const s of Array.from(document.scripts || [])) {
         const src = lower(s?.src || "");
-        if (src.includes("fu-bookkeeping")) return true;
+        if (src.includes("/assets/fu-bookkeeping")) return true;
       }
 
       return false;
