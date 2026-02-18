@@ -235,6 +235,34 @@
   ensureMainRegion();
   updateTopbarHeightVar();
 
+  // --- Analytics (GA4 via gtag) ---
+  const gaEvent = (name, params = {}) => {
+    try {
+      if (shouldNoopApp()) return;
+      if (typeof window.gtag !== "function") return;
+      const safeParams = (params && typeof params === "object") ? params : {};
+      window.gtag("event", String(name), {
+        ...safeParams,
+        page_path: window.location.pathname || undefined,
+      });
+    } catch (_) {}
+  };
+
+  const gaThrottle = (() => {
+    const last = new Map();
+    return (key, minMs) => {
+      try {
+        const now = Date.now();
+        const prev = Number(last.get(key) || 0);
+        if (prev && (now - prev) < (Number(minMs) || 0)) return false;
+        last.set(key, now);
+        return true;
+      } catch (_) {
+        return true;
+      }
+    };
+  })();
+
   // Keep the measured topbar height accurate as layout changes (wrapping, zoom, resize).
   try {
     const scheduleTopbarMeasure = () => {
@@ -261,6 +289,59 @@
       let embedController = null;
       let autoAdvanceArmed = true;
       let autoAdvanceLockUntil = 0;
+
+      let gaLastPaused = null;
+      let gaLastTrackUri = null;
+      let gaLastEmbedSrc = null;
+
+      const markSpotifyUsedOnce = (reason, extra = {}) => {
+        try {
+          const key = "ib_spotify_used_fired";
+          if (String(sessionStorage.getItem(key) || "") === "1") return;
+          sessionStorage.setItem(key, "1");
+          gaEvent("spotify_player_used", {
+            reason: String(reason || "interaction"),
+            ...((extra && typeof extra === "object") ? extra : {}),
+          });
+        } catch (_) {
+          // If sessionStorage fails, still attempt to send once (throttled)
+          try {
+            if (gaThrottle("spotify_used_fallback", 2000)) {
+              gaEvent("spotify_player_used", { reason: String(reason || "interaction") });
+            }
+          } catch (_) {}
+        }
+      };
+
+      const contentTypeFromUri = (uri) => {
+        const s = String(uri || "");
+        if (s.startsWith("spotify:track:")) return "track";
+        if (s.startsWith("spotify:playlist:")) return "playlist";
+        return "unknown";
+      };
+
+      const trackIdFromSpotifyUri = (uri) => {
+        try {
+          const s = String(uri || "");
+          if (!s.startsWith("spotify:track:")) return null;
+          const id = s.split(":")[2];
+          return id || null;
+        } catch (_) {
+          return null;
+        }
+      };
+
+      const inferTrackUriFromPlaybackEvent = (e) => {
+        try {
+          const cand = e?.data?.track?.uri || e?.data?.item?.uri || e?.data?.uri;
+          if (typeof cand === "string" && cand.startsWith("spotify:")) return cand;
+        } catch (_) {}
+        try {
+          const saved = String(sessionStorage.getItem("ib_spotify_uri") || "").trim();
+          if (saved) return saved;
+        } catch (_) {}
+        return null;
+      };
 
       if (!document.getElementById("ib-spotify-player")) {
         const wrap = document.createElement("div");
@@ -498,6 +579,31 @@
         placeSpotifyPlayerUnderTopbar();
         updateTopbarHeightVar();
         try { sessionStorage.setItem("ib_spotify_embed_src", embed); } catch (_) {}
+
+        // Analytics: fallback iframe shown (cannot reliably detect play/pause there).
+        if (gaThrottle("spotify_fallback_show", 1500)) {
+          try {
+            const uri = toSpotifyUri(urlOrUri);
+            const ct = contentTypeFromUri(uri);
+            const track_id = trackIdFromSpotifyUri(uri);
+            gaEvent("spotify_player_impression", {
+              player_mode: "iframe",
+              content_type: ct,
+              track_id: track_id || undefined,
+            });
+          } catch (_) {}
+        }
+
+        // Track embed src changes to measure "content switched" even in iframe fallback.
+        try {
+          if (embed && embed !== gaLastEmbedSrc && gaThrottle("spotify_iframe_src_change", 1200)) {
+            gaLastEmbedSrc = embed;
+            gaEvent("spotify_player_track_change", {
+              player_mode: "iframe",
+              embed_src: embed,
+            });
+          }
+        } catch (_) {}
         return true;
       };
 
@@ -574,7 +680,48 @@
                         window.IBSpotifyPlayer?.nextRandom?.({ autoplay: true }).catch(() => {});
                       }
                     } catch (_) {}
+
+                    // Analytics: play/pause + track changes (throttled + transition-based)
+                    try {
+                      if (isBuffering) return;
+                      const trackUri = inferTrackUriFromPlaybackEvent(e);
+                      if (trackUri && trackUri !== gaLastTrackUri && gaThrottle("spotify_track_change", 900)) {
+                        gaLastTrackUri = trackUri;
+                        gaEvent("spotify_player_track_change", {
+                          player_mode: "controller",
+                          content_type: contentTypeFromUri(trackUri),
+                          track_id: trackIdFromSpotifyUri(trackUri) || undefined,
+                        });
+                      }
+
+                      if (gaLastPaused === null) {
+                        gaLastPaused = isPaused;
+                      } else if (gaLastPaused !== isPaused && gaThrottle("spotify_play_pause", 700)) {
+                        gaLastPaused = isPaused;
+                        gaEvent(isPaused ? "spotify_player_pause" : "spotify_player_play", {
+                          player_mode: "controller",
+                          content_type: contentTypeFromUri(trackUri),
+                          track_id: trackIdFromSpotifyUri(trackUri) || undefined,
+                        });
+
+                        // Count a "use" when we observe the first play.
+                        if (!isPaused) {
+                          markSpotifyUsedOnce("play", {
+                            player_mode: "controller",
+                            content_type: contentTypeFromUri(trackUri),
+                            track_id: trackIdFromSpotifyUri(trackUri) || undefined,
+                          });
+                        }
+                      }
+                    } catch (_) {}
                   });
+                } catch (_) {}
+
+                // Analytics: controller ready
+                try {
+                  if (gaThrottle("spotify_controller_ready", 2000)) {
+                    gaEvent("spotify_player_ready", { player_mode: "controller" });
+                  }
                 } catch (_) {}
 
                 resolve(controller);
@@ -609,6 +756,17 @@
             if (root) root.style.display = "";
             placeSpotifyPlayerUnderTopbar();
             updateTopbarHeightVar();
+
+            // Analytics: impression/content switch (controller mode)
+            try {
+              if (gaThrottle("spotify_show_controller", 900)) {
+                gaEvent("spotify_player_impression", {
+                  player_mode: "controller",
+                  content_type: contentTypeFromUri(uri),
+                  track_id: trackIdFromSpotifyUri(uri) || undefined,
+                });
+              }
+            } catch (_) {}
             return true;
           } catch (_) {}
         }
@@ -655,6 +813,24 @@
           const urls = await ensureTrackUrls();
           const picked = nextFromShuffleDeck(urls);
           if (!picked) return false;
+
+          // Analytics: user clicked next (or auto-advanced)
+          try {
+            const reason = autoplay ? "autoplay" : "user";
+            if (gaThrottle("spotify_next", 500)) {
+              const id = String(picked).match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/)?.[1] || null;
+              gaEvent("spotify_player_next", {
+                reason,
+                track_id: id || undefined,
+              });
+            }
+
+            // Count a "use" for the first explicit user Next interaction.
+            if (!autoplay) {
+              markSpotifyUsedOnce("next", { player_mode: embedController ? "controller" : "iframe" });
+            }
+          } catch (_) {}
+
           const ok = show(picked);
           if (ok && autoplay) {
             try { embedController?.play?.(); } catch (_) {}
