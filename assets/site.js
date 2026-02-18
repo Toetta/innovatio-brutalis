@@ -192,14 +192,14 @@
       // If the Spotify player exists, it should live between topbar and main to avoid
       // being moved around on every PJAX navigation (which can reset iframe playback).
       if (player && player.parentNode === container) {
-        if (topbarMount.nextSibling !== player) {
+        if (topbarMount.nextElementSibling !== player) {
           container.insertBefore(player, topbarMount.nextSibling);
         }
-        if (player.nextSibling !== main) {
+        if (player.nextElementSibling !== main) {
           container.insertBefore(main, player.nextSibling);
         }
       } else {
-        if (topbarMount.nextSibling !== main) {
+        if (topbarMount.nextElementSibling !== main) {
           container.insertBefore(main, topbarMount.nextSibling);
         }
       }
@@ -219,7 +219,7 @@
 
       const { container, topbarMount, main } = shell;
       if (root.parentNode !== container) container.insertBefore(root, main);
-      if (topbarMount.nextSibling !== root) container.insertBefore(root, topbarMount.nextSibling);
+      if (topbarMount.nextElementSibling !== root) container.insertBefore(root, topbarMount.nextSibling);
     } catch (_) {}
   };
 
