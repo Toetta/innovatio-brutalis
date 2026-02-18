@@ -50,6 +50,7 @@ async function fetchJson(url, token) {
       // Some environments/WAFs are picky; mimic a normal browser UA.
       "User-Agent":
         "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+      "Accept-Language": "en-US,en;q=0.9",
     },
   });
   const t = await r.text().catch(() => "");
@@ -92,6 +93,10 @@ async function getAccessToken({ clientId, refreshToken }) {
 async function getPlaylistTrackUrls({ playlistId, token, market }) {
   const urls = [];
 
+  // If market isn't specified, use Spotify's standard relinking behavior.
+  // (This is supported for user tokens; for client-credentials it can fail.)
+  const effectiveMarket = market || "from_token";
+
   const limit = 100;
   let offset = 0;
   let expectedTotal = null;
@@ -100,7 +105,17 @@ async function getPlaylistTrackUrls({ playlistId, token, market }) {
     const url = new URL(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`);
     url.searchParams.set("limit", String(limit));
     url.searchParams.set("offset", String(offset));
-    if (market) url.searchParams.set("market", market);
+    if (effectiveMarket) url.searchParams.set("market", effectiveMarket);
+    // Avoid episodes/other types if Spotify ever mixes them in.
+    url.searchParams.set("additional_types", "track");
+    // Keep response smaller/more consistent across environments.
+    url.searchParams.set(
+      "fields",
+      [
+        "items(track(uri,id,type,is_local,external_urls(spotify)))",
+        "total",
+      ].join(",")
+    );
 
     // IMPORTANT: Do NOT follow Spotify's `next` URL blindly.
     // In some environments (including CI) we can observe 403s on the `next` URL even
