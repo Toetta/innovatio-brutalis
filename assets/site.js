@@ -294,6 +294,10 @@
       let autoAdvanceArmed = true;
       let autoAdvanceLockUntil = 0;
 
+      // Playback state tracking (best-effort)
+      let lastPlaybackIsPaused = null;
+      let lastPlaybackPos = 0;
+
       let gaLastPaused = null;
       let gaLastTrackUri = null;
       let gaLastEmbedSrc = null;
@@ -678,8 +682,19 @@
                       const isBuffering = Boolean(e?.data?.isBuffering);
                       if (!d || isBuffering) return;
 
+                      // Track state for pause/end detection.
+                      const prevPaused = lastPlaybackIsPaused;
+                      const prevPos = Number(lastPlaybackPos || 0);
+                      lastPlaybackIsPaused = isPaused;
+                      lastPlaybackPos = p;
+
                       // Consider track ended if we are at the end and paused.
-                      if (isPaused && p >= Math.max(0, d - 900)) {
+                      // NOTE: We intentionally avoid auto-advancing on normal user pauses.
+                      // Heuristic: only advance when the pause happens at (very) end and we were playing just before.
+                      const nearEnd = p >= Math.max(0, d - 350);
+                      const pausedTransition = (prevPaused === false || prevPaused === null) && isPaused;
+                      const progressed = p >= prevPos;
+                      if (pausedTransition && nearEnd && progressed) {
                         autoAdvanceLockUntil = now + 4000;
                         window.IBSpotifyPlayer?.nextRandom?.({ autoplay: true }).catch(() => {});
                       }
@@ -737,7 +752,7 @@
         });
       };
 
-      const show = (urlOrUri) => {
+      const show = (urlOrUri, { autoplay = false } = {}) => {
         const uri = toSpotifyUri(urlOrUri);
         if (!uri) return false;
 
@@ -755,7 +770,9 @@
         if (embedController) {
           try {
             embedController.loadUri(uri);
-            try { embedController.play(); } catch (_) {}
+            if (autoplay) {
+              try { embedController.play(); } catch (_) {}
+            }
             const { root } = getEls();
             if (root) root.style.display = "";
             placeSpotifyPlayerUnderTopbar();
@@ -799,7 +816,6 @@
               const c = await ensureController(wantedUri || "spotify:playlist:7h1c4DGKumkFVXH2N8eMFu");
               if (c && wantedUri) {
                 c.loadUri(wantedUri);
-                try { c.play(); } catch (_) {}
                 return;
               }
             } catch (_) {}
@@ -812,7 +828,7 @@
         }
       };
 
-      const nextRandom = async ({ autoplay = false } = {}) => {
+      const nextRandom = async ({ autoplay = true } = {}) => {
         try {
           const urls = await ensureTrackUrls();
           const picked = nextFromShuffleDeck(urls);
@@ -835,10 +851,7 @@
             }
           } catch (_) {}
 
-          const ok = show(picked);
-          if (ok && autoplay) {
-            try { embedController?.play?.(); } catch (_) {}
-          }
+          const ok = show(picked, { autoplay });
           return ok;
         } catch (_) {
           return false;
@@ -866,15 +879,15 @@
               if (picked) {
                 // Ensure controller so we can autoplay after user interaction.
                 try { await ensureController(toSpotifyUri(picked)); } catch (_) {}
-                if (show(picked)) return;
+                if (show(picked, { autoplay: false })) return;
               }
             }
 
-            show(def);
+            show(def, { autoplay: false });
           } catch (_) {
             try {
               const def = document.querySelector('meta[name="ib-spotify-default"]')?.getAttribute("content")?.trim();
-              if (def) show(def);
+              if (def) show(def, { autoplay: false });
             } catch (_) {}
           }
         })();
