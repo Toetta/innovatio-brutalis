@@ -3,6 +3,8 @@ window.SpotifySite = (() => {
 
   const LS_TOKEN = "spotify_access_token";
   const LS_EXP   = "spotify_token_expires_at";
+  const LS_RCVD  = "spotify_token_received_at";
+  const LS_EXPIRES_IN = "spotify_token_expires_in";
   const LS_VERIF = "spotify_pkce_verifier";
   const LS_STATE = "spotify_pkce_state";
   const LS_VERIF_PREFIX = "spotify_pkce_verifier_";
@@ -23,6 +25,9 @@ window.SpotifySite = (() => {
     "playlist-read-collaborative",
   ].join(" ");
 
+  // Save requested scopes for diagnostics (even if token response omits scope).
+  try { localStorage.setItem("spotify_requested_scopes", SCOPES); } catch (_) {}
+
   function nowMs(){ return Date.now(); }
 
   function getToken() {
@@ -34,8 +39,11 @@ window.SpotifySite = (() => {
 
   function setToken(token, expiresInSec) {
     accessToken = token;
+    const receivedAt = nowMs();
     localStorage.setItem(LS_TOKEN, token);
-    localStorage.setItem(LS_EXP, String(nowMs() + (expiresInSec * 1000) - 30_000));
+    localStorage.setItem(LS_RCVD, String(receivedAt));
+    localStorage.setItem(LS_EXPIRES_IN, String(Number(expiresInSec || 0)));
+    localStorage.setItem(LS_EXP, String(receivedAt + (expiresInSec * 1000) - 30_000));
   }
 
   function base64UrlEncode(arrBuf) {
@@ -102,6 +110,8 @@ window.SpotifySite = (() => {
     window.__SPOTIFY_CLIENT_ID = clientId;
     window.__SPOTIFY_REDIRECT_URI = redirectUri;
 
+    try { localStorage.setItem("spotify_requested_scopes", SCOPES); } catch (_) {}
+
     const challenge = await pkceChallenge(verifier);
 
     const params = new URLSearchParams({
@@ -167,6 +177,12 @@ window.SpotifySite = (() => {
 
     const j = await r.json();
     setToken(j.access_token, j.expires_in);
+
+    // Helpful diagnostics for tools/pages (non-sensitive)
+    try {
+      if (typeof j?.scope === "string") localStorage.setItem("spotify_token_scope", j.scope);
+      if (typeof j?.token_type === "string") localStorage.setItem("spotify_token_type", j.token_type);
+    } catch (_) {}
     return true;
   }
 

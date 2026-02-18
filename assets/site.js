@@ -283,6 +283,106 @@
         return arr[idx];
       };
 
+      const secureRandomInt = (maxExclusive) => {
+        try {
+          const max = Number(maxExclusive) || 0;
+          if (max <= 1) return 0;
+          const c = window.crypto;
+          if (!c?.getRandomValues) return Math.floor(Math.random() * max);
+
+          // Rejection sampling to avoid modulo bias
+          const buf = new Uint32Array(1);
+          const limit = Math.floor(0x100000000 / max) * max;
+          let x = 0;
+          do {
+            c.getRandomValues(buf);
+            x = buf[0] >>> 0;
+          } while (x >= limit);
+          return x % max;
+        } catch (_) {
+          return Math.floor(Math.random() * (Number(maxExclusive) || 1));
+        }
+      };
+
+      const shuffleInPlace = (arr) => {
+        if (!Array.isArray(arr) || arr.length < 2) return arr;
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = secureRandomInt(i + 1);
+          const tmp = arr[i];
+          arr[i] = arr[j];
+          arr[j] = tmp;
+        }
+        return arr;
+      };
+
+      const loadJsonArrayFromSession = (key) => {
+        try {
+          const raw = String(sessionStorage.getItem(key) || "").trim();
+          if (!raw) return [];
+          const j = JSON.parse(raw);
+          return Array.isArray(j) ? j : [];
+        } catch (_) {
+          return [];
+        }
+      };
+
+      const saveJsonArrayToSession = (key, arr) => {
+        try {
+          if (!Array.isArray(arr)) return;
+          sessionStorage.setItem(key, JSON.stringify(arr));
+        } catch (_) {}
+      };
+
+      const nextFromShuffleDeck = (allUrls) => {
+        try {
+          if (!Array.isArray(allUrls) || allUrls.length === 0) return null;
+
+          const avoidId = getCurrentTrackId();
+          const recentKey = "ib_spotify_recent";
+          const queueKey = "ib_spotify_queue";
+          const maxRecent = 20;
+
+          let queue = loadJsonArrayFromSession(queueKey).filter(Boolean);
+          let recent = loadJsonArrayFromSession(recentKey).filter(Boolean);
+
+          const refill = () => {
+            queue = allUrls.slice();
+            shuffleInPlace(queue);
+          };
+
+          if (queue.length === 0) refill();
+
+          // Try a few candidates to avoid immediate repeats and recent history
+          for (let i = 0; i < 12; i++) {
+            if (queue.length === 0) refill();
+            const candidate = queue.pop();
+            const m = String(candidate || "").match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+            const id = m?.[1] || null;
+            if (avoidId && id && id === avoidId) continue;
+            if (recent.includes(candidate)) continue;
+
+            recent.unshift(candidate);
+            if (recent.length > maxRecent) recent.length = maxRecent;
+            saveJsonArrayToSession(recentKey, recent);
+            saveJsonArrayToSession(queueKey, queue);
+            return candidate;
+          }
+
+          // Fallback: take whatever is next
+          if (queue.length === 0) refill();
+          const picked = queue.pop() || pickDifferentRandom(allUrls, avoidId) || pickRandom(allUrls);
+          if (picked) {
+            recent.unshift(picked);
+            if (recent.length > maxRecent) recent.length = maxRecent;
+            saveJsonArrayToSession(recentKey, recent);
+            saveJsonArrayToSession(queueKey, queue);
+          }
+          return picked;
+        } catch (_) {
+          return pickDifferentRandom(allUrls, getCurrentTrackId());
+        }
+      };
+
       const getCurrentTrackId = () => {
         try {
           const embed = String(sessionStorage.getItem("ib_spotify_embed_src") || "").trim();
@@ -524,8 +624,7 @@
       const nextRandom = async ({ autoplay = false } = {}) => {
         try {
           const urls = await ensureTrackUrls();
-          const avoidId = getCurrentTrackId();
-          const picked = pickDifferentRandom(urls, avoidId);
+          const picked = nextFromShuffleDeck(urls);
           if (!picked) return false;
           const ok = show(picked);
           if (ok && autoplay) {

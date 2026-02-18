@@ -3,12 +3,16 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <title>Spotify tracks builder</title>
   <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
   <div class="container" style="max-width: 860px;">
     <h1>Spotify tracks builder</h1>
+    <div style="opacity:.7;margin-top:-8px">Build: 2026-02-18-5</div>
     <p style="opacity:.85;max-width:70ch">
       Den här sidan används för att generera <code>/assets/spotify-tracks.json</code> (alla låtar i en playlist)
       så att startsidan kan spela <em>dagens låt</em> för alla utan OAuth.
@@ -16,18 +20,20 @@
 
     <section class="card" style="margin-top:18px;">
       <h2>1) Playlist</h2>
-      <label for="playlistId" style="display:block;margin:8px 0 6px;opacity:.85">Playlist ID</label>
-      <input id="playlistId" type="text" value="7h1c4DGKumkFVXH2N8eMFu" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit" />
+      <label for="playlistId" style="display:block;margin:8px 0 6px;opacity:.85">Playlist-länk eller ID</label>
+      <input id="playlistId" type="text" value="https://open.spotify.com/playlist/7h1c4DGKumkFVXH2N8eMFu?si=270150315cd241b2" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:inherit" />
 
       <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button id="loginBtn" class="btn small" type="button">Logga in med Spotify</button>
         <button id="generateBtn" class="btn small" type="button">Generate JSON</button>
         <button id="autoSaveBtn" class="btn small" type="button" style="display:none">Auto-save to /assets/spotify-tracks.json</button>
+        <button id="resetBtn" class="btn small secondary" type="button">Reset login</button>
         <a id="downloadLink" class="btn small" href="#" style="display:none">Download spotify-tracks.json</a>
         <button id="copyBtn" class="btn small" type="button" style="display:none">Copy JSON</button>
       </div>
 
-      <div id="status" style="margin-top:10px;opacity:.85"></div>
+      <div id="diag" style="margin-top:10px;opacity:.85;white-space:pre-wrap"></div>
+      <div id="status" style="margin-top:10px;opacity:.85;white-space:pre-wrap"></div>
       <pre id="out" style="margin-top:12px;max-height:420px;overflow:auto;background:rgba(0,0,0,.22);padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.08)"></pre>
 
       <hr class="sep" />
@@ -47,11 +53,13 @@
   <script src="../spotify-player.js"></script>
   <script>
     const statusEl = document.getElementById('status');
+    const diagEl = document.getElementById('diag');
     const outEl = document.getElementById('out');
     const playlistInput = document.getElementById('playlistId');
     const loginBtn = document.getElementById('loginBtn');
     const generateBtn = document.getElementById('generateBtn');
     const autoSaveBtn = document.getElementById('autoSaveBtn');
+    const resetBtn = document.getElementById('resetBtn');
     const downloadLink = document.getElementById('downloadLink');
     const copyBtn = document.getElementById('copyBtn');
 
@@ -64,22 +72,19 @@
 
     const REDIRECT_URI = `${location.origin}/callback.html`;
 
-    let SPOTIFY_CLIENT_ID = 'c8efeac0956c4a9f831bb9238e23f5c3';
-    try {
-      const savedClientId = localStorage.getItem('spotify_client_id');
-      if (savedClientId) {
-        const candidate = String(savedClientId).trim();
-        if (candidate && candidate !== 'FYLL_I_DIN_CLIENT_ID') {
-          SPOTIFY_CLIENT_ID = candidate;
-        }
-      }
-    } catch (_) {}
+    // Use the repo's configured client id (avoid accidental overrides in localStorage).
+    const SPOTIFY_CLIENT_ID = 'c8efeac0956c4a9f831bb9238e23f5c3';
 
     const SAVE_SERVER = 'http://127.0.0.1:8787/save';
 
     if (isLocal && autoSaveBtn) autoSaveBtn.style.display = '';
 
     function setStatus(t){ statusEl.textContent = t || ''; }
+
+    function setDiag(t){
+      if (!diagEl) return;
+      diagEl.textContent = t || '';
+    }
 
     function hasValidToken(){
       try {
@@ -98,6 +103,22 @@
         loginBtn.style.display = '';
         loginBtn.textContent = ok ? 'Logga in igen' : 'Logga in med Spotify';
       }
+    }
+
+    function parsePlaylistInput(raw){
+      const s = String(raw || '').trim();
+      if (!s) return { playlistId: '', sourceUrl: '' };
+      const m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
+      if (m?.[1]) {
+        let sourceUrl = `https://open.spotify.com/playlist/${m[1]}`;
+        try {
+          const u = new URL(s);
+          const si = u.searchParams.get('si');
+          if (si) sourceUrl += `?si=${encodeURIComponent(si)}`;
+        } catch (_) {}
+        return { playlistId: m[1], sourceUrl };
+      }
+      return { playlistId: s, sourceUrl: `https://open.spotify.com/playlist/${s}` };
     }
 
     // OAuth/PKCE requires a stable http(s) origin. Running this page via file:// cannot work.
@@ -121,23 +142,124 @@
       }
     }
 
-    async function fetchAllTracks({ playlistId, market='SE' }){
+    async function whoAmIWithDetails(){
+      const token = getToken();
+      if (!token) return { ok: false, error: 'Missing/expired token' };
+      try {
+        const r = await fetch('https://api.spotify.com/v1/me', {
+          method: 'GET',
+          cache: 'no-store',
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+        });
+        const txt = await r.text().catch(() => '');
+        if (!r.ok) return { ok: false, error: `HTTP ${r.status}: ${txt}` };
+        let j = null;
+        try { j = JSON.parse(txt); } catch (_) {}
+        return {
+          ok: true,
+          me: {
+            id: j?.id || null,
+            display_name: j?.display_name || null,
+            product: j?.product || null,
+          }
+        };
+      } catch (e) {
+        return { ok: false, error: String(e?.message || e || 'Fetch failed') };
+      }
+    }
+
+    let lastPlaylistMetaLine = '';
+
+    async function preflightPlaylist({ playlistId }){
+      const token = getToken();
+      if (!token) throw new Error('Missing/expired token. Logga in först (knappen ovan eller via startsidan).');
+      const url = `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}?fields=name,public,collaborative,owner(id,display_name),tracks(total),type,uri`;
+      const r = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store',
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
+      });
+      const txt = await r.text().catch(()=> '');
+      if (!r.ok) {
+        if (r.status === 403) {
+          throw new Error(
+            `Spotify API 403 (Forbidden) vid playlist meta.\n\n` +
+            `URL: ${url}\n\n` +
+            `Client ID: ${SPOTIFY_CLIENT_ID}\n` +
+            `Redirect URI: ${REDIRECT_URI}\n\n` +
+            `Detalj: ${txt}`
+          );
+        }
+        throw new Error(`Spotify API ${r.status} vid playlist meta: ${txt}`);
+      }
+      try {
+        const j = JSON.parse(txt);
+        try {
+          const name = j?.name ? String(j.name) : '';
+          const ownerId = j?.owner?.id ? String(j.owner.id) : '';
+          const ownerName = j?.owner?.display_name ? String(j.owner.display_name) : '';
+          const pub = (typeof j?.public === 'boolean') ? String(j.public) : '';
+          const collab = (typeof j?.collaborative === 'boolean') ? String(j.collaborative) : '';
+          const total = Number(j?.tracks?.total || 0);
+          const kind = j?.type ? String(j.type) : '';
+          const uri = j?.uri ? String(j.uri) : '';
+          const metaLine = `Playlist meta: ${name || '(no name)'} | owner: ${ownerId || '?'}${ownerName ? ` (${ownerName})` : ''} | public: ${pub || '?'} | collaborative: ${collab || '?'} | total: ${Number.isFinite(total) ? total : '?'} | type: ${kind || '?'} | uri: ${uri || '?'}\n`;
+          lastPlaylistMetaLine = metaLine.trim();
+          setDiag((diagEl?.textContent ? (diagEl.textContent.trimEnd() + '\n') : '') + metaLine);
+        } catch (_) {}
+        return j;
+      } catch {
+        return null;
+      }
+    }
+
+    async function fetchAllTracks({ playlistId }){
       const token = getToken();
       if (!token) throw new Error('Missing/expired token. Logga in först (knappen ovan eller via startsidan).');
 
-      let url = `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/tracks?limit=100&offset=0&market=${encodeURIComponent(market)}`;
+      await preflightPlaylist({ playlistId });
+
+      const base = `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/tracks?limit=100&offset=0&market=from_token`;
+      const baseNoMarket = `https://api.spotify.com/v1/playlists/${encodeURIComponent(playlistId)}/tracks?limit=100&offset=0`;
+      let url = base;
       const tracks = [];
+      let triedMarketFallback = false;
 
       while (url) {
         const r = await fetch(url, {
           method: 'GET',
-          headers: { Authorization: `Bearer ${token}` }
+          cache: 'no-store',
+          headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' }
         });
         if (!r.ok) {
           const txt = await r.text().catch(()=> '');
           if (r.status === 403) {
+            if (!triedMarketFallback && url === base) {
+              triedMarketFallback = true;
+              url = baseNoMarket;
+              setStatus('403 på playlist tracks. Retrying without market…');
+              continue;
+            }
+            let scope = '';
+            let type = '';
+            let reqScope = '';
+            try { scope = String(localStorage.getItem('spotify_token_scope') || '').trim(); } catch (_) {}
+            try { type = String(localStorage.getItem('spotify_token_type') || '').trim(); } catch (_) {}
+            try { reqScope = String(localStorage.getItem('spotify_requested_scopes') || '').trim(); } catch (_) {}
             throw new Error(
-              `Spotify API 403 (Forbidden). Det betyder oftast att kontot saknar access till playlisten eller att appen är i Development mode och kontot inte är tillåtet (Spotify Dashboard → Users & Access). Prova “Logga in igen”.\n\nDetalj: ${txt}`
+              `Spotify API 403 (Forbidden) vid playlist tracks.\n\n` +
+              `${lastPlaylistMetaLine ? (lastPlaylistMetaLine + '\n\n') : ''}` +
+              `URL: ${url}\n\n` +
+              `Tried market fallback: ${triedMarketFallback ? 'yes (from_token → none)' : 'no'}\n` +
+              `URL (from_token): ${base}\n` +
+              `URL (no market): ${baseNoMarket}\n\n` +
+              `Client ID: ${SPOTIFY_CLIENT_ID}\n` +
+              `Redirect URI: ${REDIRECT_URI}\n` +
+              `Token type: ${type || '(unknown)'}\n` +
+              `Token scopes: ${scope || '(unknown)'}\n\n` +
+              `Requested scopes: ${reqScope || '(unknown)'}\n\n` +
+              `Om det är 403 trots rätt scopes: kontrollera Spotify Dashboard → Users & Access för appen, och att kontot har access till playlisten.\n\n` +
+              `Detalj: ${txt}`
             );
           }
           throw new Error(`Spotify API ${r.status}: ${txt}`);
@@ -154,10 +276,10 @@
       return tracks;
     }
 
-    function buildJson({ playlistId, tracks }){
+    function buildJson({ sourceUrl, tracks }){
       const obj = {
         updated: new Date().toISOString().slice(0,10),
-        source: `https://open.spotify.com/playlist/${playlistId}`,
+        source: String(sourceUrl || '').trim(),
         tracks
       };
       return JSON.stringify(obj, null, 2);
@@ -193,9 +315,11 @@
       downloadLink.style.display = 'none';
       copyBtn.style.display = 'none';
 
-      const playlistId = String(playlistInput.value || '').trim();
+      const parsed = parsePlaylistInput(playlistInput.value);
+      const playlistId = String(parsed.playlistId || '').trim();
+      const sourceUrl = String(parsed.sourceUrl || '').trim();
       if (!playlistId) {
-        setStatus('Enter a playlist id');
+        setStatus('Ange en playlist-länk eller ett playlist-ID');
         return;
       }
 
@@ -203,7 +327,7 @@
       try {
         const tracks = await fetchAllTracks({ playlistId });
         const unique = Array.from(new Set(tracks));
-        const jsonText = buildJson({ playlistId, tracks: unique });
+        const jsonText = buildJson({ sourceUrl, tracks: unique });
 
         outEl.textContent = jsonText;
         makeDownload(jsonText);
@@ -275,15 +399,21 @@
         }
 
         // Tell callback.html where to return after login.
-        try { localStorage.setItem('spotify_post_login_redirect', location.pathname); } catch (_) {}
+        try { localStorage.setItem('spotify_post_login_redirect', location.pathname + location.search); } catch (_) {}
 
-        const relogin = hasValidToken();
-        setStatus(relogin ? 'Öppnar Spotify login (re-consent)…' : 'Öppnar Spotify login…');
+        // Force clean re-consent.
+        try {
+          localStorage.removeItem('spotify_access_token');
+          localStorage.removeItem('spotify_token_expires_at');
+          localStorage.removeItem('spotify_token_scope');
+          localStorage.removeItem('spotify_token_type');
+        } catch (_) {}
+
+        setStatus('Öppnar Spotify login (re-consent)…');
         window.SpotifySite.login({
           clientId: SPOTIFY_CLIENT_ID,
           redirectUri: REDIRECT_URI,
-          // If the user already has a token but hits 403, re-consent is usually needed.
-          showDialog: relogin,
+          showDialog: true,
         });
       } catch (e) {
         console.error(e);
@@ -291,14 +421,116 @@
       }
     });
 
+    resetBtn?.addEventListener('click', () => {
+      try {
+        const keys = [
+          'spotify_access_token',
+          'spotify_token_expires_at',
+          'spotify_token_received_at',
+          'spotify_token_expires_in',
+          'spotify_token_scope',
+          'spotify_token_type',
+          'spotify_pkce_verifier',
+          'spotify_pkce_state',
+          'spotify_client_id',
+          'spotify_redirect_uri',
+          'spotify_post_login_redirect',
+        ];
+        for (const k of keys) {
+          try { localStorage.removeItem(k); } catch (_) {}
+        }
+        try {
+          for (let i = localStorage.length - 1; i >= 0; i--) {
+            const k = localStorage.key(i);
+            if (k && k.startsWith('spotify_pkce_verifier_')) {
+              try { localStorage.removeItem(k); } catch (_) {}
+            }
+          }
+        } catch (_) {}
+        setStatus('Reset done. Klicka “Logga in med Spotify”.');
+        updateUi();
+        setTimeout(() => refreshDiag(), 50);
+      } catch (_) {
+        setStatus('Reset failed (see console).');
+      }
+    });
+
     // Initial state
     updateUi();
     if (isServedOverHttp) {
       setStatus(hasValidToken()
-        ? 'Inloggad. Klicka “Generate JSON”. Vid 403: klicka “Logga in igen”.'
-        : 'Inte inloggad. Klicka “Logga in med Spotify”.'
+        ? 'Inloggad. Klistra in en playlist-länk eller ett playlist-ID i fältet ovan och klicka “Generate JSON”. Vid 403: klicka “Logga in igen”.'
+        : 'Inte inloggad. Klistra in en playlist-länk eller ett playlist-ID i fältet ovan och klicka “Logga in med Spotify”.'
       );
     }
+
+    const refreshDiag = async () => {
+      try {
+        if (!isServedOverHttp) return;
+        const exp = Number(localStorage.getItem('spotify_token_expires_at') || 0);
+        const rcvd = Number(localStorage.getItem('spotify_token_received_at') || 0);
+        const expIn = Number(localStorage.getItem('spotify_token_expires_in') || 0);
+        const tokenPresent = Boolean(localStorage.getItem('spotify_access_token'));
+        const tokenValid = hasValidToken();
+        const now = Date.now();
+        const nowUtcTxt = new Date(now).toISOString();
+        const nowLocalTxt = new Date(now).toLocaleString();
+        const expUtcTxt = exp ? new Date(exp).toISOString() : '(unknown)';
+        const expLocalTxt = exp ? new Date(exp).toLocaleString() : '(unknown)';
+        const rcvdUtcTxt = rcvd ? new Date(rcvd).toISOString() : '(unknown)';
+        const rcvdLocalTxt = rcvd ? new Date(rcvd).toLocaleString() : '(unknown)';
+        const remainingMs = exp ? (exp - now) : 0;
+        const remainingTxt = exp ? `${Math.round(remainingMs / 1000)}s` : '(unknown)';
+
+        const meRes = await whoAmIWithDetails();
+        const me = meRes?.ok ? meRes.me : null;
+        const meTxt = me?.id
+          ? `${me.id}${me.display_name ? ` (${me.display_name})` : ''}${me.product ? ` [${me.product}]` : ''}`
+          : `(not available: ${String(meRes?.error || 'unknown')})`;
+
+        let scope = '';
+        let type = '';
+        let reqScope = '';
+        try { scope = String(localStorage.getItem('spotify_token_scope') || '').trim(); } catch (_) {}
+        try { type = String(localStorage.getItem('spotify_token_type') || '').trim(); } catch (_) {}
+        try { reqScope = String(localStorage.getItem('spotify_requested_scopes') || '').trim(); } catch (_) {}
+
+        setDiag(
+          `Client ID: ${SPOTIFY_CLIENT_ID}\n` +
+          `Redirect: ${REDIRECT_URI}\n` +
+          `Now (UTC): ${nowUtcTxt}\n` +
+          `Now (local): ${nowLocalTxt}\n` +
+          `Token present: ${tokenPresent ? 'yes' : 'no'}\n` +
+          `Token valid: ${tokenValid ? 'yes' : 'no'}\n` +
+          `Token received at (UTC): ${rcvdUtcTxt}\n` +
+          `Token received at (local): ${rcvdLocalTxt}\n` +
+          `Token expires at (UTC): ${expUtcTxt}\n` +
+          `Token expires at (local): ${expLocalTxt}\n` +
+          `Token remaining: ${remainingTxt}\n` +
+          `Token expires_in: ${expIn ? `${expIn}s` : '(unknown)'}\n` +
+          `User (/me): ${meTxt}\n` +
+          `Token type: ${type || '(unknown)'}\n` +
+          `Token scopes: ${scope || '(unknown)'}\n` +
+          `Requested scopes: ${reqScope || '(unknown)'}\n`
+        );
+      } catch (_) {}
+    };
+
+    (async () => { await refreshDiag(); })();
+
+    // Allow prefill via URL: /assets/spotify-tracks-builder.html?playlist=<url-or-id>
+    try {
+      const params = new URLSearchParams(location.search);
+      const p = (params.get('playlist') || params.get('id') || '').trim();
+      if (p && playlistInput) {
+        playlistInput.value = p;
+      }
+    } catch (_) {}
+
+    loginBtn?.addEventListener('click', () => { setTimeout(() => refreshDiag(), 1200); });
+    resetBtn?.addEventListener('click', () => { setTimeout(() => refreshDiag(), 50); });
+    generateBtn?.addEventListener('click', () => { setTimeout(() => refreshDiag(), 200); });
+    window.addEventListener('focus', () => { refreshDiag(); });
   </script>
 </body>
 </html>
