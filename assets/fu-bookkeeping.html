@@ -2164,6 +2164,9 @@ cur = {
       state.vouchers.push(v);
     });
 
+    // Ensure kontoplan contains all accounts referenced by vouchers (important for correct reports)
+    ensureAccountsForVouchers(state.vouchers);
+
     // Pick active year
     const active = currentYearId || state.activeYearId || state.fiscalYears[0]?.id;
     if (active) state.activeYearId = active;
@@ -3458,7 +3461,25 @@ if (!d.features) d.features = { sruEnabled: false };
     return "other";
   }
 
-  function accountTypeLabel(t){
+  
+  function ensureAccountsForVouchers(vouchers){
+    try{
+      state.accounts = state.accounts || {};
+      (vouchers||[]).forEach(v=>{
+        (v.lines||[]).forEach(l=>{
+          const acc = String(l.account||"").trim();
+          if (!acc) return;
+          if (!state.accounts[acc]){
+            state.accounts[acc] = { name:"", type: guessTypeFromAccountNo(acc) };
+          } else if (!state.accounts[acc].type){
+            state.accounts[acc].type = guessTypeFromAccountNo(acc);
+          }
+        });
+      });
+    } catch (e){ /* ignore */ }
+  }
+
+function accountTypeLabel(t){
     if (t === "asset") return "Tillgång";
     if (t === "liability") return "EK/skuld";
     if (t === "income") return "Intäkt";
