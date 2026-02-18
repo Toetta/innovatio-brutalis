@@ -1358,6 +1358,12 @@
         <div class="card">
           <h2>Backup (JSON)</h2>
           <div class="row" style="gap:10px; flex-wrap:wrap;">
+            <button class="btn secondary" id="btnChooseBackupDir" title="Välj mapp för autobackup">Välj backup-mapp…</button>
+            <label class="pill" style="display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #2a2e37; border-radius:999px; user-select:none;">
+              <input type="checkbox" id="chkAutoBackup" checked style="margin:0;" />
+              Autobackup (max 1/dag)
+            </label>
+            <span id="backupDirStatus" class="muted small" style="margin-left:auto; min-width:240px; text-align:right;"></span>
             <button class="btn" id="btnExportJson">Ladda ner backup.json</button>
             <label class="btn secondary" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
               Importera JSON
@@ -1833,6 +1839,136 @@
     downloadText("backup.json", json, "application/json");
   }
 
+// --- Auto-backup (JSON) to user-chosen folder (max 1 file/day) ---
+const AUTO_BACKUP_LAST_DAY_KEY = "FU_AUTOBACKUP_LAST_DAY_V1";
+const AUTO_BACKUP_ENABLED_KEY  = "FU_AUTOBACKUP_ENABLED_V1";
+let backupDirHandle = null;
+
+function autoBackupEnabled(){
+  try {
+    const v = localStorage.getItem(AUTO_BACKUP_ENABLED_KEY);
+    if (v == null) return true; // default ON
+    return v === "1" || v === "true";
+  } catch {
+    return true;
+  }
+}
+function setAutoBackupEnabled(on){
+  try { localStorage.setItem(AUTO_BACKUP_ENABLED_KEY, on ? "1" : "0"); } catch {}
+}
+function getLastBackupDay(){
+  try { return String(localStorage.getItem(AUTO_BACKUP_LAST_DAY_KEY) || "").trim(); } catch { return ""; }
+}
+function setLastBackupDay(day){
+  try { localStorage.setItem(AUTO_BACKUP_LAST_DAY_KEY, String(day||"")); } catch {}
+}
+function backupFileNameForDay(day){
+  const d = String(day || todayISO() || "").trim() || new Date().toISOString().slice(0,10);
+  return `${d}_fu-bookkeeping_backup.json`;
+}
+function backupApiSupported(){
+  return !!(window.showDirectoryPicker && window.FileSystemFileHandle && window.FileSystemDirectoryHandle);
+}
+async function backupEnsurePermission(request){
+  if (!backupDirHandle) return false;
+  try {
+    const mode = "readwrite";
+    const q = await backupDirHandle.queryPermission({ mode });
+    if (q === "granted") return true;
+    if (!request) return false;
+    const r = await backupDirHandle.requestPermission({ mode });
+    return r === "granted";
+  } catch {
+    return false;
+  }
+}
+async function backupWriteJsonToDir(day){
+  if (!backupDirHandle) throw new Error("Ingen backup-mapp vald");
+  const filename = backupFileNameForDay(day);
+  const fileHandle = await backupDirHandle.getFileHandle(filename, { create: true });
+  const writable = await fileHandle.createWritable();
+  const json = JSON.stringify(state, null, 2) + "\n";
+  await writable.write(json);
+  await writable.close();
+  return filename;
+}
+async function maybeDailyAutoBackup(trigger){
+  try {
+    if (!backupApiSupported()) return;
+    if (!autoBackupEnabled()) return;
+    if (!backupDirHandle) return;
+
+    const today = todayISO();
+    if (!today) return;
+
+    const last = getLastBackupDay();
+    if (last === today) return;
+
+    const ok = await backupEnsurePermission(false); // never prompt automatically
+    if (!ok) return;
+
+    const filename = await backupWriteJsonToDir(today);
+    setLastBackupDay(today);
+    updateBackupUI();
+    // keep it quiet – but log for debugging
+    console.info("[AutoBackup] wrote", filename, "trigger=", trigger || "");
+  } catch (e){
+    console.warn("[AutoBackup] failed", e);
+  }
+}
+async function chooseBackupFolder(){
+  if (!backupApiSupported()){
+    showToast("Autobackup kräver Chrome/Edge + HTTPS (File System Access API).", 6500);
+    return;
+  }
+  try{
+    const h = await window.showDirectoryPicker({ mode: "readwrite" });
+    if (!h) return;
+    backupDirHandle = h;
+    await idbSet("backupDirHandle", backupDirHandle);
+
+    const ok = await backupEnsurePermission(true); // user click → allow prompt
+    if (!ok){
+      showToast("Behörighet nekad till backup-mappen.", 6000);
+      updateBackupUI();
+      return;
+    }
+
+    updateBackupUI();
+    // Create today's backup immediately (still max 1/day)
+    await maybeDailyAutoBackup("choose-folder");
+    showToast("Backup-mapp vald.", 2500);
+  } catch (e){
+    if (e && e.name === "AbortError") return;
+    console.error(e);
+    showToast("Kunde inte välja backup-mapp.", 6000);
+  }
+}
+function updateBackupUI(){
+  try{
+    const el = document.getElementById("backupDirStatus");
+    const chk = document.getElementById("chkAutoBackup");
+    const btn = document.getElementById("btnChooseBackupDir");
+    if (chk) chk.checked = autoBackupEnabled();
+    const last = getLastBackupDay();
+    const has = !!backupDirHandle;
+
+    if (btn){
+      btn.textContent = has ? "Byt backup-mapp…" : "Välj backup-mapp…";
+    }
+    if (el){
+      if (!backupApiSupported()){
+        el.textContent = "Autobackup stöds ej i denna webbläsare.";
+      } else if (!has){
+        el.textContent = "Ingen backup-mapp vald.";
+      } else {
+        el.textContent = last ? (`Senast backup: ${last}`) : "Backup-mapp vald.";
+      }
+    }
+  } catch {}
+}
+
+
   async function importBackupJsonFile(file){
     if (!file) return;
     const txt = await file.text();
@@ -2163,9 +2299,6 @@ cur = {
       if (!v.status) v.status = "active";
       state.vouchers.push(v);
     });
-
-    // Ensure kontoplan contains all accounts referenced by vouchers (important for correct reports)
-    ensureAccountsForVouchers(state.vouchers);
 
     // Pick active year
     const active = currentYearId || state.activeYearId || state.fiscalYears[0]?.id;
@@ -2893,6 +3026,8 @@ if (!d.features) d.features = { sruEnabled: false };
     try { if (typeof applyStdAccountsMapRepair === "function") applyStdAccountsMapRepair({ onlyReplacement: true }); } catch (e){ console.error(e); }
 
     save();
+    try { updateBackupUI(); } catch (e){}
+    try { await maybeDailyAutoBackup("fsLoadState"); } catch (e){}
   }
 
   async function fsDisconnect(){
@@ -3461,25 +3596,7 @@ if (!d.features) d.features = { sruEnabled: false };
     return "other";
   }
 
-  
-  function ensureAccountsForVouchers(vouchers){
-    try{
-      state.accounts = state.accounts || {};
-      (vouchers||[]).forEach(v=>{
-        (v.lines||[]).forEach(l=>{
-          const acc = String(l.account||"").trim();
-          if (!acc) return;
-          if (!state.accounts[acc]){
-            state.accounts[acc] = { name:"", type: guessTypeFromAccountNo(acc) };
-          } else if (!state.accounts[acc].type){
-            state.accounts[acc].type = guessTypeFromAccountNo(acc);
-          }
-        });
-      });
-    } catch (e){ /* ignore */ }
-  }
-
-function accountTypeLabel(t){
+  function accountTypeLabel(t){
     if (t === "asset") return "Tillgång";
     if (t === "liability") return "EK/skuld";
     if (t === "income") return "Intäkt";
@@ -7891,6 +8008,19 @@ if (jsonImport) jsonImport.addEventListener("change", async (e)=>{
 });
 if (btnWipe) btnWipe.addEventListener("click", async (e)=>{ e.preventDefault(); await wipeAllData(); });
 
+// Auto-backup UI wiring
+try {
+  const btnChooseBackupDir = document.getElementById("btnChooseBackupDir");
+  const chkAutoBackup = document.getElementById("chkAutoBackup");
+  if (btnChooseBackupDir) btnChooseBackupDir.addEventListener("click", async (e)=>{ e.preventDefault(); await chooseBackupFolder(); });
+  if (chkAutoBackup) chkAutoBackup.addEventListener("change", async ()=>{
+    setAutoBackupEnabled(!!chkAutoBackup.checked);
+    updateBackupUI();
+    // If user just enabled it and a folder exists, we can create today's backup (user interaction already happened)
+    try { await maybeDailyAutoBackup("toggle-enabled"); } catch {}
+  });
+} catch (e){ console.error(e); }
+
 if (btnExportSie4) btnExportSie4.addEventListener("click", (e)=>{
   e.preventDefault();
   exportSie4((sieYearSelect && sieYearSelect.value) || state.activeYearId);
@@ -8007,6 +8137,14 @@ idbGet("dataFileHandle").then(async (h)=>{
     }
   }
 }).catch(()=>{});
+
+// Restore backup folder handle + attempt daily autobackup (silent)
+idbGet("backupDirHandle").then(async (h)=>{
+  if (h) backupDirHandle = h;
+  updateBackupUI();
+  await maybeDailyAutoBackup("startup");
+}).catch(()=>{ try { updateBackupUI(); } catch (e){} });
+
 try { updateFsUI(); } catch (e){ /* ignore */ }
 
 
