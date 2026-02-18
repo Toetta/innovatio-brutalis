@@ -5659,6 +5659,7 @@ if (!d.features) d.features = { sruEnabled: false };
       });
       save();
       renderVouchers();
+      try { if (lastReportHtml) generateReport(); } catch (e){ console.error(e); }
       showToast(added ? `Skapade ${added} exempelverifikationer.` : "Exempelverifikationerna fanns redan.", 4500);
     });
 
@@ -6994,6 +6995,8 @@ if (!d.features) d.features = { sruEnabled: false };
     save();
     newVoucher();
     renderVouchers();
+    // If user already generated a report, keep it in sync
+    try { if (lastReportHtml) generateReport(); } catch (e){ console.error(e); }
   }
 
   function viewVoucherToEditor(id){
@@ -7061,6 +7064,8 @@ if (!d.features) d.features = { sruEnabled: false };
 
     save();
     if (viewingVoucherId === id) newVoucher();
+    // Keep any previously generated report in sync
+    try { if (lastReportHtml) generateReport(); } catch (e){ console.error(e); }
   }
 
 
@@ -8351,13 +8356,36 @@ ${adjAcc}: ${fmtSEK(vv.lines[1].amount)}`))) return;
 
 
 // --- Report generator wiring ---
+let reportAutoTimer = null;
+function scheduleReportAutoGenerate(){
+  if (!reportOutput) return;
+  if (reportAutoTimer) clearTimeout(reportAutoTimer);
+  reportAutoTimer = setTimeout(()=>{
+    reportAutoTimer = null;
+    try { generateReport(); } catch (e){ console.error(e); }
+  }, 150);
+}
+
 if (btnRptGenerate) btnRptGenerate.addEventListener("click", generateReport);
 if (btnRptPrint) btnRptPrint.addEventListener("click", printLastReport);
 if (btnRptCsv) btnRptCsv.addEventListener("click", ()=> exportLastReport("csv"));
 if (btnRptXls) btnRptXls.addEventListener("click", ()=> exportLastReport("xls"));
-if (btnRptFullYear) btnRptFullYear.addEventListener("click", () => { setRangeFullYear(); });
-if (btnRptThisMonth) btnRptThisMonth.addEventListener("click", () => { setRangeThisMonth(); });
-if (btnRptThisQuarter) btnRptThisQuarter.addEventListener("click", () => { setRangeThisQuarter(); });
+if (btnRptFullYear) btnRptFullYear.addEventListener("click", () => { setRangeFullYear(); scheduleReportAutoGenerate(); });
+if (btnRptThisMonth) btnRptThisMonth.addEventListener("click", () => { setRangeThisMonth(); scheduleReportAutoGenerate(); });
+if (btnRptThisQuarter) btnRptThisQuarter.addEventListener("click", () => { setRangeThisQuarter(); scheduleReportAutoGenerate(); });
+
+if (rptType) rptType.addEventListener("change", ()=> scheduleReportAutoGenerate());
+
+[rptFrom, rptTo].filter(Boolean).forEach(el=>{
+  el.addEventListener("change", ()=> scheduleReportAutoGenerate());
+  el.addEventListener("blur", ()=> scheduleReportAutoGenerate(), true);
+  el.addEventListener("keydown", (e)=>{
+    if (e.key === "Enter"){
+      e.preventDefault();
+      scheduleReportAutoGenerate();
+    }
+  });
+});
 
 if (rptYearSelect){
   rptYearSelect.addEventListener("change", () => {
@@ -8368,6 +8396,7 @@ if (rptYearSelect){
     if (btnRptPrint) btnRptPrint.disabled = true;
     if (btnRptCsv) btnRptCsv.disabled = true;
     if (btnRptXls) btnRptXls.disabled = true;
+    scheduleReportAutoGenerate();
   });
 }
 
