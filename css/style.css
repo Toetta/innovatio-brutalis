@@ -32,11 +32,24 @@ small{color:var(--text-muted)}
 
 .container{max-width:var(--maxw); margin:0 auto; padding:28px 20px}
 
-/* Keep top navigation visible while scrolling */
+/* Fixed top navigation: content must never scroll under it */
 #site-topbar{
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(var(--maxw), calc(100vw - 40px));
   z-index: 60;
+}
+
+/* Reserve space for fixed topbar + player so content never enters that area */
+#ib-main{
+  padding-top: calc(var(--ib-topbar-h, 56px) + 16px + var(--ib-player-h, 0px) + 24px);
+}
+
+/* Anchor jumps should land below the fixed UI */
+*[id]{
+  scroll-margin-top: calc(var(--ib-topbar-h, 56px) + 16px + var(--ib-player-h, 0px) + 24px);
 }
 
 /* Topbar */
@@ -185,11 +198,13 @@ small{color:var(--text-muted)}
 
 /* Persistent Spotify player (stays across internal navigation) */
 .ib-spotify-player{
-  position: sticky;
+  position: fixed;
   top: calc(var(--ib-topbar-h, 56px) + 16px);
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 70;
   width: min(420px, calc(100vw - 32px));
-  margin: 12px auto 0 auto;
+  margin: 0;
 }
 
 .ib-spotify-player__inner{

@@ -235,9 +235,32 @@
     } catch (_) {}
   };
 
+  const updatePlayerHeightVar = () => {
+    try {
+      const p = document.getElementById("ib-spotify-player");
+      if (!p) {
+        document.documentElement.style.setProperty("--ib-player-h", "0px");
+        return;
+      }
+
+      const style = window.getComputedStyle ? window.getComputedStyle(p) : null;
+      const hidden = (style && style.display === "none") || p.style.display === "none";
+      if (hidden) {
+        document.documentElement.style.setProperty("--ib-player-h", "0px");
+        return;
+      }
+
+      const h = Math.max(0, Math.ceil(p.getBoundingClientRect().height || p.offsetHeight || 0));
+      document.documentElement.style.setProperty("--ib-player-h", `${h}px`);
+    } catch (_) {
+      try { document.documentElement.style.setProperty("--ib-player-h", "0px"); } catch (_) {}
+    }
+  };
+
   refreshTopbar();
   ensureMainRegion();
   updateTopbarHeightVar();
+  updatePlayerHeightVar();
 
   // --- Analytics (GA4 via gtag) ---
   const gaEvent = (name, params = {}) => {
@@ -271,8 +294,11 @@
   try {
     const scheduleTopbarMeasure = () => {
       try { updateTopbarHeightVar(); } catch (_) {}
+      try { updatePlayerHeightVar(); } catch (_) {}
       try { requestAnimationFrame(() => { try { updateTopbarHeightVar(); } catch (_) {} }); } catch (_) {}
+      try { requestAnimationFrame(() => { try { updatePlayerHeightVar(); } catch (_) {} }); } catch (_) {}
       try { setTimeout(() => { try { updateTopbarHeightVar(); } catch (_) {} }, 120); } catch (_) {}
+      try { setTimeout(() => { try { updatePlayerHeightVar(); } catch (_) {} }, 120); } catch (_) {}
     };
 
     window.addEventListener("resize", scheduleTopbarMeasure, { passive: true });
@@ -370,6 +396,7 @@
       // Place the player in-flow right under the topbar so content never goes behind it.
       placeSpotifyPlayerUnderTopbar();
       updateTopbarHeightVar();
+      updatePlayerHeightVar();
 
       const toEmbedUrl = (url) => {
         const s = String(url || "").trim();
@@ -586,6 +613,7 @@
         root.style.display = "";
         placeSpotifyPlayerUnderTopbar();
         updateTopbarHeightVar();
+        updatePlayerHeightVar();
         try { sessionStorage.setItem("ib_spotify_embed_src", embed); } catch (_) {}
 
         // Analytics: fallback iframe shown (cannot reliably detect play/pause there).
@@ -777,6 +805,7 @@
             if (root) root.style.display = "";
             placeSpotifyPlayerUnderTopbar();
             updateTopbarHeightVar();
+            updatePlayerHeightVar();
 
             // Analytics: impression/content switch (controller mode)
             try {
@@ -809,6 +838,7 @@
           root.style.display = "";
           placeSpotifyPlayerUnderTopbar();
           updateTopbarHeightVar();
+          updatePlayerHeightVar();
 
           // Try controller restore first; fall back to iframe restore.
           (async () => {
@@ -902,9 +932,7 @@
         } catch (_) {}
       })();
 
-      window.addEventListener("resize", () => {
-        updateTopbarHeightVar();
-      });
+      // Global resize handler already maintains --ib-topbar-h and --ib-player-h.
     } catch (_) {}
   }
 
