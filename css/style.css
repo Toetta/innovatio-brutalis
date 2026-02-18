@@ -36,9 +36,13 @@ small{color:var(--text-muted)}
 #site-topbar{
   position: fixed;
   top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(var(--maxw), calc(100vw - 40px));
+  left: 0;
+  right: 0;
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 0 20px;
+  transform: none;
   z-index: 60;
 }
 
@@ -200,11 +204,12 @@ small{color:var(--text-muted)}
 .ib-spotify-player{
   position: fixed;
   top: calc(var(--ib-topbar-h, 56px) + 16px);
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  transform: none;
   z-index: 70;
   width: min(420px, calc(100vw - 32px));
-  margin: 0;
+  margin: 0 auto;
 }
 
 .ib-spotify-player__inner{
