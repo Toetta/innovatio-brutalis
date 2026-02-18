@@ -235,6 +235,19 @@
   ensureMainRegion();
   updateTopbarHeightVar();
 
+  // Keep the measured topbar height accurate as layout changes (wrapping, zoom, resize).
+  try {
+    const scheduleTopbarMeasure = () => {
+      try { updateTopbarHeightVar(); } catch (_) {}
+      try { requestAnimationFrame(() => { try { updateTopbarHeightVar(); } catch (_) {} }); } catch (_) {}
+      try { setTimeout(() => { try { updateTopbarHeightVar(); } catch (_) {} }, 120); } catch (_) {}
+    };
+
+    window.addEventListener("resize", scheduleTopbarMeasure, { passive: true });
+    window.addEventListener("orientationchange", scheduleTopbarMeasure, { passive: true });
+    scheduleTopbarMeasure();
+  } catch (_) {}
+
   // Persistent Spotify embed player (survives PJAX navigation)
   if (!shouldNoopApp()) {
     try {

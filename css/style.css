@@ -186,10 +186,10 @@ small{color:var(--text-muted)}
 /* Persistent Spotify player (stays across internal navigation) */
 .ib-spotify-player{
   position: sticky;
-  top: calc(var(--ib-topbar-h, 0px) + 8px);
+  top: calc(var(--ib-topbar-h, 56px) + 16px);
   z-index: 70;
   width: min(420px, calc(100vw - 32px));
-  margin: 0 auto 0 auto;
+  margin: 12px auto 0 auto;
 }
 
 .ib-spotify-player__inner{
