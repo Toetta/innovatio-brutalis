@@ -4200,6 +4200,8 @@ if (!d.features) d.features = { sruEnabled: false };
     invLines.forEach((ln, idx)=>{
       const tr = document.createElement("tr");
 
+      const tdSum = document.createElement("td"); tdSum.className = "right";
+
       const tdDesc = document.createElement("td");
       const inpDesc = document.createElement("input");
       inpDesc.value = ln.desc || "";
@@ -4213,7 +4215,12 @@ if (!d.features) d.features = { sruEnabled: false };
       inpQty.value = ln.kind === "item" ? (ln.qty ?? "1") : "";
       inpQty.placeholder = ln.kind === "item" ? "1" : "–";
       inpQty.disabled = ln.kind !== "item";
-      inpQty.addEventListener("input", ()=>{ ln.qty = inpQty.value; updateInvoiceTotals(); renderInvoiceLines(); });
+      inpQty.addEventListener("input", ()=>{
+        ln.qty = inpQty.value;
+        updateInvoiceTotals();
+        const a = lineAmount(ln);
+        tdSum.textContent = ln.kind === "item" ? fmtSEK(a.gross) : "";
+      });
       tdQty.appendChild(inpQty);
 
       const tdPrice = document.createElement("td"); tdPrice.className = "right";
@@ -4222,7 +4229,12 @@ if (!d.features) d.features = { sruEnabled: false };
       inpPrice.value = ln.kind === "item" ? (ln.price ?? "") : "";
       inpPrice.placeholder = ln.kind === "item" ? "0" : "–";
       inpPrice.disabled = ln.kind !== "item";
-      inpPrice.addEventListener("input", ()=>{ ln.price = inpPrice.value; updateInvoiceTotals(); renderInvoiceLines(); });
+      inpPrice.addEventListener("input", ()=>{
+        ln.price = inpPrice.value;
+        updateInvoiceTotals();
+        const a = lineAmount(ln);
+        tdSum.textContent = ln.kind === "item" ? fmtSEK(a.gross) : "";
+      });
       tdPrice.appendChild(inpPrice);
 
       const tdVat = document.createElement("td"); tdVat.className = "right";
@@ -4231,12 +4243,18 @@ if (!d.features) d.features = { sruEnabled: false };
       inpVat.value = ln.kind === "item" ? (ln.vat ?? "25") : "";
       inpVat.placeholder = ln.kind === "item" ? "25" : "–";
       inpVat.disabled = ln.kind !== "item";
-      inpVat.addEventListener("input", ()=>{ ln.vat = inpVat.value; updateInvoiceTotals(); renderInvoiceLines(); });
+      inpVat.addEventListener("input", ()=>{
+        ln.vat = inpVat.value;
+        updateInvoiceTotals();
+        const a = lineAmount(ln);
+        tdSum.textContent = ln.kind === "item" ? fmtSEK(a.gross) : "";
+      });
       tdVat.appendChild(inpVat);
 
-      const tdSum = document.createElement("td"); tdSum.className = "right";
-      const a = lineAmount(ln);
-      tdSum.textContent = ln.kind === "item" ? fmtSEK(a.gross) : "";
+      {
+        const a = lineAmount(ln);
+        tdSum.textContent = ln.kind === "item" ? fmtSEK(a.gross) : "";
+      }
 
       const tdX = document.createElement("td");
       const bx = document.createElement("button");
@@ -5849,8 +5867,10 @@ if (!d.features) d.features = { sruEnabled: false };
       inpD.disabled = voucherEditorReadOnly;
       inpD.addEventListener("input", () => {
         ln.debit = inpD.value;
-        if (parseMoney(ln.debit) !== 0) ln.credit = "";
-        renderLines();
+        if (parseMoney(ln.debit) !== 0) {
+          ln.credit = "";
+          try { inpC.value = ""; } catch (_) {}
+        }
         updateBalanceBadge();
       });
       tdD.appendChild(inpD);
@@ -5864,8 +5884,10 @@ if (!d.features) d.features = { sruEnabled: false };
       inpC.disabled = voucherEditorReadOnly;
       inpC.addEventListener("input", () => {
         ln.credit = inpC.value;
-        if (parseMoney(ln.credit) !== 0) ln.debit = "";
-        renderLines();
+        if (parseMoney(ln.credit) !== 0) {
+          ln.debit = "";
+          try { inpD.value = ""; } catch (_) {}
+        }
         updateBalanceBadge();
       });
       tdC.appendChild(inpC);
