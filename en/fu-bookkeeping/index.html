@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+
+  <!-- Google tag (gtag.js) -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-LGJK9XKDZB');
+  </script>
+
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>FU-Bookkeeping | Innovatio Brutalis</title>
+  <meta name="description" content="FU-Bookkeeping — offline-first bookkeeping without subscriptions. Demo/debug build to show workflow, export (SIE) and structure.">
+
+  <link rel="canonical" href="https://www.innovatio-brutalis.se/en/fu-bookkeeping/">
+
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" href="/logo-square-48x48.png" sizes="48x48">
+  <link rel="apple-touch-icon" href="/logo-square-180x180.png" sizes="180x180">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#262425">
+
+  <!-- hreflang -->
+  <link rel="alternate" href="https://www.innovatio-brutalis.se/fu-bookkeeping/" hreflang="sv-se">
+  <link rel="alternate" href="https://www.innovatio-brutalis.se/en/fu-bookkeeping/" hreflang="en">
+  <link rel="alternate" href="https://www.innovatio-brutalis.se/en/fu-bookkeeping/" hreflang="x-default">
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Innovatio Brutalis">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:title" content="FU-Bookkeeping | Innovatio Brutalis">
+  <meta property="og:description" content="Offline-first bookkeeping without subscriptions — demo/debug build to show workflow, export and structure.">
+  <meta property="og:url" content="https://www.innovatio-brutalis.se/en/fu-bookkeeping/">
+  <meta property="og:image" content="https://www.innovatio-brutalis.se/assets/og-image.jpg">
+
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+  <div class="container">
+
+    <!-- GLOBAL NAVIGATION (injected by site.js) -->
+    <div id="site-topbar"></div>
+    <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
+
+    <section class="hero" style="text-align:left;">
+      <div class="brand-hero">
+        <picture>
+          <source srcset="/assets/logo.webp" type="image/webp">
+          <img src="/assets/logo.png" alt="Innovatio Brutalis logo">
+        </picture>
+      </div>
+      <h1>FU-Bookkeeping</h1>
+      <p class="tagline">
+        Bookkeeping without subscriptions, without cloud, without hassle — all data stays local on your machine.
+      </p>
+      <div class="cta-row" style="justify-content:flex-start;">
+        <a class="btn" href="/assets/fu-bookkeeping.html?lang=en" data-popup="1240,820" title="Requires Google Chrome">Open (requires Google Chrome)</a>
+        <a class="btn small secondary" href="/en/coding/">Back to AI + CODING</a>
+      </div>
+    </section>
+
+    <section class="grid">
+      <article class="card" data-card-id="fu-bookkeeping-about">
+        <h2>About</h2>
+        <p style="margin-top:0; color: var(--text-muted);">
+          FU-Bookkeeping is a demo/debug (work-in-progress) to show the approach and collect feedback. Not intended for real bookkeeping.
+        </p>
+
+        <ul>
+          <li><strong>Offline-first:</strong> data is stored locally</li>
+          <li><strong>Export:</strong> SIE4 + backup.json</li>
+          <li><strong>Focus:</strong> vouchers, chart of accounts (BAS-ish), invoices</li>
+        </ul>
+
+        <hr class="sep">
+
+        <h2>Start</h2>
+        <p style="margin-top:0; color: var(--text-muted);">Opens in a popup window (Chrome) for more reliable local storage behaviour.</p>
+        <div class="cta-row" style="justify-content:flex-start;">
+          <a class="btn small secondary" href="/assets/fu-bookkeeping.html?lang=en" data-popup="1240,820" title="Requires Google Chrome">Open FU-Bookkeeping</a>
+        </div>
+      </article>
+
+      <aside class="card" data-card-id="fu-bookkeeping-preview">
+        <h2>Preview</h2>
+        <p style="margin-top:0; color: var(--text-muted);">Screenshot from the demo/debug build.</p>
+        <a href="/assets/fu-bookkeeping-preview.jpg" target="_blank" rel="noopener" aria-label="Open FU-Bookkeeping preview">
+          <img src="/assets/fu-bookkeeping-preview.jpg" alt="FU-Bookkeeping preview" loading="lazy" decoding="async" style="width:100%; border-radius: var(--radius); border: 1px solid rgba(184,115,51,.22);">
+        </a>
+      </aside>
+    </section>
+
+    <footer>
+      <div>Innovatio Brutalis™ — Trademark registration pending with PRV (Sweden).</div>
+      <div style="margin-top:6px">© <span id="y"></span> Innovatio Brutalis</div>
+    </footer>
+
+  </div>
+</body>
+</html>

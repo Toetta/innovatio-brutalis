@@ -29,11 +29,18 @@
   <url>
     <loc>https://www.innovatio-brutalis.se/coding/</loc>
   </url>
+
+  <url>
+    <loc>https://www.innovatio-brutalis.se/fu-bookkeeping/</loc>
+  </url>
     <url><loc>https://www.innovatio-brutalis.se/en/engineering/</loc>
   </url>
     <url><loc>https://www.innovatio-brutalis.se/en/automotive/</loc>
   </url>
     <url><loc>https://www.innovatio-brutalis.se/en/coding/</loc>
+  </url>
+
+    <url><loc>https://www.innovatio-brutalis.se/en/fu-bookkeeping/</loc>
   </url>
 
 
