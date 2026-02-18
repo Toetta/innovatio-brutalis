@@ -8436,8 +8436,8 @@ try { if (vDate) vDate.value = todayISO(); } catch (e){ console.error(e); }
 try { if (typeof newVoucher === "function") newVoucher(); } catch (e){ console.error(e); }
 
 // Voucher wiring
-try { if (typeof wireVoucherEvents === "function") wireVoucherEvents(); }
-try { if (typeof wireYearCarryEvents === "function") wireYearCarryEvents(); } catch (e){ console.error(e); } catch (e){ console.error(e); }
+try { if (typeof wireVoucherEvents === "function") wireVoucherEvents(); } catch (e){ console.error(e); }
+try { if (typeof wireYearCarryEvents === "function") wireYearCarryEvents(); } catch (e){ console.error(e); }
 try { if (typeof renderVouchers === "function") renderVouchers(); } catch (e){ console.error(e); }
 
 // Accounts wiring
