@@ -1,0 +1,74 @@
+name: Spotify update tracks.json
+
+on:
+  schedule:
+    # Daily. The output is deterministic only if your playlist contents are stable.
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - ".github/workflows/spotify-update-tracks-json.yml"
+      - "tools/spotify-export-library-tracks-json.mjs"
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check Spotify config (no secrets printed)
+        env:
+          SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID || secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          SPOTIFY_LIBRARY_PLAYLIST_ID: ${{ vars.SPOTIFY_LIBRARY_PLAYLIST_ID || secrets.SPOTIFY_LIBRARY_PLAYLIST_ID }}
+        run: |
+          missing=0
+          for k in SPOTIFY_CLIENT_ID SPOTIFY_REFRESH_TOKEN SPOTIFY_LIBRARY_PLAYLIST_ID; do
+            if [ -n "${!k}" ]; then
+              echo "$k: OK"
+            else
+              echo "$k: MISSING"
+              missing=1
+            fi
+          done
+          # SPOTIFY_CLIENT_SECRET is optional (depends on Spotify app type)
+          if [ -n "${SPOTIFY_CLIENT_SECRET}" ]; then echo "SPOTIFY_CLIENT_SECRET: OK (optional)"; else echo "SPOTIFY_CLIENT_SECRET: (not set, optional)"; fi
+          if [ "$missing" -ne 0 ]; then
+            echo "One or more required values are missing. Add them under: Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+      - name: Export full track list
+        env:
+          SPOTIFY_CLIENT_ID: ${{ vars.SPOTIFY_CLIENT_ID || secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          SPOTIFY_LIBRARY_PLAYLIST_ID: ${{ vars.SPOTIFY_LIBRARY_PLAYLIST_ID || secrets.SPOTIFY_LIBRARY_PLAYLIST_ID }}
+          # Optional:
+          # SPOTIFY_MARKET: SE
+        run: node tools/spotify-export-library-tracks-json.mjs
+
+      - name: Commit updated JSON (if changed)
+        run: |
+          if git diff --quiet -- assets/spotify-tracks.json; then
+            echo "No changes in assets/spotify-tracks.json"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/spotify-tracks.json
+          git commit -m "Update assets/spotify-tracks.json"
+          git push

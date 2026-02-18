@@ -218,6 +218,37 @@ Legacy option (static JSON) — keep using this if you don’t want any automati
       "spotify:track:<id>"
    ]
 }
+
+## Keep `assets/spotify-tracks.json` updated automatically (recommended for a big library)
+
+For a public website, the most reliable way to use a large library (e.g. 560 tracks)
+without any client-side OAuth is to generate `/assets/spotify-tracks.json` in CI.
+
+This repo includes:
+
+- Export script: `tools/spotify-export-library-tracks-json.mjs`
+- Workflow: `.github/workflows/spotify-update-tracks-json.yml`
+
+### Setup
+
+1. Create a refresh token (one-time, locally):
+    - Add Redirect URI in Spotify Dashboard:
+       - `http://127.0.0.1:8888/callback`
+    - Run:
+       - `SPOTIFY_CLIENT_ID=... node tools/spotify-get-refresh-token.mjs`
+
+2. Add GitHub repo secrets/vars (Settings → Secrets and variables → Actions):
+    - Secrets (sensitive):
+       - `SPOTIFY_REFRESH_TOKEN`
+       - (Optional) `SPOTIFY_CLIENT_SECRET`
+    - Variables (non-sensitive):
+       - `SPOTIFY_CLIENT_ID`
+       - `SPOTIFY_LIBRARY_PLAYLIST_ID`
+
+3. Run once:
+    - Actions → “Spotify update tracks.json” → Run workflow
+
+After that, the workflow updates `assets/spotify-tracks.json` automatically.
 ```
 
 ### How to generate the track list
