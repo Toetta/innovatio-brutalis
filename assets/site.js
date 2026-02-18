@@ -164,6 +164,8 @@
       const topbarMount = document.getElementById("site-topbar");
       if (!topbarMount) return null;
 
+      const player = document.getElementById("ib-spotify-player");
+
       let main = document.getElementById("ib-main");
       if (!main) {
         main = document.createElement("div");
@@ -174,6 +176,7 @@
         const nodes = Array.from(container.childNodes);
         for (const n of nodes) {
           if (n === topbarMount) continue;
+          if (player && n === player) continue;
           main.appendChild(n);
         }
         container.appendChild(main);
@@ -183,8 +186,21 @@
       if (container.firstChild !== topbarMount) {
         container.insertBefore(topbarMount, container.firstChild);
       }
-      if (topbarMount.nextSibling !== main) {
-        container.insertBefore(main, topbarMount.nextSibling);
+
+      // IMPORTANT: don't force #ib-main directly under the topbar.
+      // If the Spotify player exists, it should live between topbar and main to avoid
+      // being moved around on every PJAX navigation (which can reset iframe playback).
+      if (player && player.parentNode === container) {
+        if (topbarMount.nextSibling !== player) {
+          container.insertBefore(player, topbarMount.nextSibling);
+        }
+        if (player.nextSibling !== main) {
+          container.insertBefore(main, player.nextSibling);
+        }
+      } else {
+        if (topbarMount.nextSibling !== main) {
+          container.insertBefore(main, topbarMount.nextSibling);
+        }
       }
 
       return { container, topbarMount, main };
@@ -814,14 +830,75 @@
       const curContainer = document.querySelector(".container");
       if (!newContainer || !curContainer) throw new Error("Missing .container");
 
-      // Only swap the main content region so the topbar + Spotify player remain persistent.
       const curMain = document.getElementById("ib-main");
-      if (curMain) {
-        curMain.innerHTML = newContainer.innerHTML;
-      } else {
-        curContainer.innerHTML = newContainer.innerHTML;
+      if (!curMain) {
+        // Shouldn't happen on main pages, but keep a safe fallback.
+        throw new Error("Missing #ib-main");
       }
-      document.title = doc.title || document.title;
+
+      // Swap ONLY the page content.
+      // Do NOT copy #site-topbar, nor the deferred scripts that would otherwise be duplicated.
+      const isSkippableNode = (n) => {
+        try {
+          if (!n) return true;
+          if (n.nodeType === Node.ELEMENT_NODE) {
+            const el = /** @type {HTMLElement} */ (n);
+            if (el.id === "site-topbar") return true;
+            if (el.id === "ib-spotify-player") return true;
+            if (el.tagName === "SCRIPT") {
+              const src = String(el.getAttribute("src") || "").toLowerCase();
+              if (src.includes("/assets/site.js") || src.includes("/assets/site-deeplinks.js")) return true;
+            }
+          }
+          return false;
+        } catch (_) {
+          return false;
+        }
+      };
+
+      // Clear current main content
+      try { curMain.innerHTML = ""; } catch (_) {}
+
+      // Import the destination page's content nodes into #ib-main
+      const nodes = Array.from(newContainer.childNodes || []).filter((n) => !isSkippableNode(n));
+      for (const n of nodes) {
+        try {
+          curMain.appendChild(document.importNode(n, true));
+        } catch (_) {
+          // ignore
+        }
+      }
+
+      // Keep a couple of head-level details in sync.
+      try { document.title = doc.title || document.title; } catch (_) {}
+      try {
+        const lang = String(doc.documentElement?.getAttribute?.("lang") || "").trim();
+        if (lang) document.documentElement.setAttribute("lang", lang);
+      } catch (_) {}
+
+      const syncMeta = (name) => {
+        try {
+          const src = doc.querySelector(`meta[name="${name}"]`);
+          const content = src ? (src.getAttribute("content") || "") : null;
+          const cur = document.querySelector(`meta[name="${name}"]`);
+          if (content !== null) {
+            if (cur) cur.setAttribute("content", content);
+            else {
+              const m = document.createElement("meta");
+              m.setAttribute("name", name);
+              m.setAttribute("content", content);
+              document.head.appendChild(m);
+            }
+          } else {
+            if (cur) cur.remove();
+          }
+        } catch (_) {}
+      };
+
+      syncMeta("ib-topbar-cta-label");
+      syncMeta("ib-topbar-cta-href");
+      syncMeta("ib-spotify-default");
+      syncMeta("ib-nav-section");
 
       refreshTopbar();
       ensureMainRegion();
