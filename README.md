@@ -249,6 +249,12 @@ This repo includes:
     - Actions → “Spotify update tracks.json” → Run workflow
 
 After that, the workflow updates `assets/spotify-tracks.json` automatically.
+
+If the workflow fails with `Spotify API 403`:
+
+- Re-generate the refresh token using the Spotify account that owns (or can read) the library playlist.
+- Ensure scopes include `playlist-read-private` and `playlist-read-collaborative` when generating the refresh token.
+- Double-check `SPOTIFY_LIBRARY_PLAYLIST_ID` is the playlist ID (not a track ID).
 ```
 
 ### How to generate the track list

@@ -46,6 +46,10 @@ async function fetchJson(url, token) {
   const r = await fetch(url, {
     headers: {
       Authorization: `Bearer ${token}`,
+      Accept: "application/json",
+      // Some environments/WAFs are picky; mimic a normal browser UA.
+      "User-Agent":
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     },
   });
   const t = await r.text().catch(() => "");
@@ -53,6 +57,10 @@ async function fetchJson(url, token) {
     throw new Error(`Spotify API ${r.status} ${r.statusText} for ${url}: ${t.slice(0, 800)}`);
   }
   return t ? JSON.parse(t) : null;
+}
+
+async function sleep(ms) {
+  await new Promise((r) => setTimeout(r, ms));
 }
 
 async function getAccessToken({ clientId, refreshToken }) {
@@ -84,26 +92,48 @@ async function getAccessToken({ clientId, refreshToken }) {
 async function getPlaylistTrackUrls({ playlistId, token, market }) {
   const urls = [];
 
-  let url = new URL(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`);
-  url.searchParams.set("limit", "100");
-  if (market) url.searchParams.set("market", market);
-
-  // Request only what we need to keep responses smaller.
-  url.searchParams.set(
-    "fields",
-    [
-      "items(track(uri,id,type,is_local,external_urls(spotify)))",
-      "next",
-      "total",
-    ].join(",")
-  );
-
+  const limit = 100;
+  let offset = 0;
   let expectedTotal = null;
-  while (url) {
-    const j = await fetchJson(url.toString(), token);
+
+  while (true) {
+    const url = new URL(`https://api.spotify.com/v1/playlists/${playlistId}/tracks`);
+    url.searchParams.set("limit", String(limit));
+    url.searchParams.set("offset", String(offset));
+    if (market) url.searchParams.set("market", market);
+
+    // IMPORTANT: Do NOT follow Spotify's `next` URL blindly.
+    // In some environments (including CI) we can observe 403s on the `next` URL even
+    // when the first page succeeds. Explicit paging tends to be more reliable.
+
+    let j;
+    let lastErr;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        j = await fetchJson(url.toString(), token);
+        lastErr = null;
+        break;
+      } catch (e) {
+        lastErr = e;
+        const msg = String(e?.message || e);
+        const isForbidden = msg.includes(" Spotify API 403 ") || msg.includes("403 Forbidden");
+        if (!isForbidden || attempt === 3) break;
+        // Small backoff in case Spotify/WAF temporarily rejects rapid paging.
+        await sleep(600 * attempt);
+      }
+    }
+    if (lastErr) {
+      throw new Error(
+        `Failed to fetch playlist tracks page (offset=${offset}, limit=${limit}). ${String(
+          lastErr?.message || lastErr
+        )}`
+      );
+    }
+
     if (typeof j?.total === "number") expectedTotal = j.total;
 
-    for (const it of j?.items || []) {
+    const items = Array.isArray(j?.items) ? j.items : [];
+    for (const it of items) {
       const tr = it?.track;
       if (!tr) continue;
       if (tr.is_local) continue;
@@ -127,7 +157,9 @@ async function getPlaylistTrackUrls({ playlistId, token, market }) {
       }
     }
 
-    url = j?.next ? new URL(j.next) : null;
+    offset += items.length;
+    if (items.length < limit) break;
+    if (typeof expectedTotal === "number" && offset >= expectedTotal) break;
   }
 
   return {
