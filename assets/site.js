@@ -259,6 +259,13 @@
 
   refreshTopbar();
   ensureMainRegion();
+  try {
+    // Enables the "scroll only under topbar/player" layout mode in CSS.
+    // Kept behind a class so no-JS fallback still scrolls normally.
+    if (document.getElementById("ib-main")) {
+      document.documentElement.classList.add("ib-fixed-ui");
+    }
+  } catch (_) {}
   updateTopbarHeightVar();
   updatePlayerHeightVar();
 
@@ -1156,6 +1163,8 @@
       if (replace) history.replaceState({}, "", u.toString());
       else history.pushState({}, "", u.toString());
 
+      const scrollRoot = document.getElementById("ib-main") || document.scrollingElement || document.documentElement;
+
       if (u.hash) {
         const id = u.hash.slice(1);
         const el = id ? document.getElementById(id) : null;
@@ -1163,7 +1172,8 @@
           try { el.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (_) { el.scrollIntoView(true); }
         }
       } else {
-        try { window.scrollTo({ top: 0, behavior: "auto" }); } catch (_) { window.scrollTo(0, 0); }
+        try { scrollRoot.scrollTop = 0; } catch (_) {}
+        try { window.scrollTo({ top: 0, behavior: "auto" }); } catch (_) { try { window.scrollTo(0, 0); } catch (_) {} }
       }
     };
 

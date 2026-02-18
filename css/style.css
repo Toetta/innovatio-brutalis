@@ -51,9 +51,34 @@ small{color:var(--text-muted)}
   padding-top: calc(var(--ib-topbar-h, 56px) + 16px + var(--ib-player-h, 0px) + 24px);
 }
 
+/* When enabled by JS, make #ib-main the only scroll container below the fixed UI.
+   This guarantees no content can scroll behind the topbar/player area. */
+html.ib-fixed-ui body{
+  overflow: hidden;
+}
+
+html.ib-fixed-ui #ib-main{
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: calc(var(--ib-topbar-h, 56px) + 16px + var(--ib-player-h, 0px) + 24px);
+  bottom: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  width: 100%;
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 28px 20px;
+  padding-top: 18px;
+}
+
 /* Anchor jumps should land below the fixed UI */
 *[id]{
   scroll-margin-top: calc(var(--ib-topbar-h, 56px) + 16px + var(--ib-player-h, 0px) + 24px);
+}
+
+html.ib-fixed-ui *[id]{
+  scroll-margin-top: 16px;
 }
 
 /* Topbar */
