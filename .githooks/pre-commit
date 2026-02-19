@@ -1,0 +1,9 @@
+#!/bin/sh
+# Auto-bump FU bookkeeping visible version on every commit.
+# Requires: node
+
+set -e
+
+node tools/stamp-fu-version.mjs
+
+git add assets/fu-bookkeeping.html
