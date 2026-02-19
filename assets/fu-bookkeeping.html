@@ -265,12 +265,13 @@
     <div class="row header-row">
       <h1 id="companyName">FU-BOOKKEEPING</h1>
       <div class="field" style="gap:4px; min-width: 180px;">
+        <select class="pill" id="companySelect" aria-label="Företag"></select>
 <select class="pill" id="yearPillSelect" aria-label="Räkenskapsår"></select>
       </div>
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
-      <span class="pill" id="revPill">v0.1.4</span>
+      <span class="pill" id="revPill">v0.2.1</span>
     </div>
   </div>
 </header>
@@ -1414,10 +1415,10 @@
         </div>
 
         <div class="card">
-          <h2>Fil-synk (Drive-mapp, valfritt)</h2>
+          <h2>Företag (JSON-datafil)</h2>
           <div class="row" style="gap:10px; flex-wrap:wrap;">
-            <button class="btn" id="btnConnectFile">Välj befintlig datafil</button>
-            <button class="btn secondary" id="btnCreateFile">Skapa ny datafil</button>
+            <button class="btn" id="btnConnectFile">Koppla befintligt företag (JSON)</button>
+            <button class="btn secondary" id="btnCreateFile">+ Skapa företag</button>
             <button class="btn secondary" id="btnLoadFromFile" disabled>Läs in</button>
             <button class="btn secondary" id="btnSaveToFile" disabled>Spara nu</button>
             <button class="btn danger" id="btnDisconnectFile" disabled>Koppla från</button>
@@ -1432,14 +1433,14 @@
             <span id="fsStatus" class="status bad">Inte ansluten</span>
           </div>
           <p class="muted small" style="margin-top:10px;">
-            Detta använder File System Access API (Chrome/Edge) och fungerar i <b>secure context</b> (HTTPS eller localhost). Välj en fil i en Google Drive-synkad mapp så syncas den av Drive for desktop.
+            Kräver File System Access API (Chrome/Edge) och <b>secure context</b> (HTTPS eller localhost). Varje företag använder en egen JSON-datafil.
           </p>
         </div>
 
         <div class="card">
           <h2>Backup (JSON)</h2>
           <div class="row" style="gap:10px; flex-wrap:wrap;">
-            <button class="btn secondary" id="btnChooseBackupDir" title="Välj mapp för autobackup">Välj backup-mapp…</button>
+            <button class="btn secondary" id="btnChooseBackupDir" title="Välj mapp för autobackup">Byt backup-mapp…</button>
             <label class="pill" style="display:inline-flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #2a2e37; border-radius:999px; user-select:none;">
               <input type="checkbox" id="chkAutoBackup" checked style="margin:0;" />
               Autobackup (max 1/dag)
@@ -1670,8 +1671,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
-  const APP_SEMVER = "0.1.4";  // user-facing revision
-  const APP_GIT_REV = "b66128f";      // injected by tools/stamp-fu-version.mjs (optional)
+  const APP_SEMVER = "0.2.1";  // user-facing revision
+  const APP_GIT_REV = "a17870d";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -2151,7 +2152,7 @@
   }
 
 // --- Auto-backup (JSON) to user-chosen folder (max 1 file/day) ---
-const AUTO_BACKUP_LAST_DAY_KEY = "FU_AUTOBACKUP_LAST_DAY_V1";
+const OLD_AUTO_BACKUP_LAST_DAY_KEY = "FU_AUTOBACKUP_LAST_DAY_V1"; // legacy single-company key (migration/fallback)
 const AUTO_BACKUP_ENABLED_KEY  = "FU_AUTOBACKUP_ENABLED_V1";
 let backupDirHandle = null;
 
@@ -2168,14 +2169,34 @@ function setAutoBackupEnabled(on){
   try { localStorage.setItem(AUTO_BACKUP_ENABLED_KEY, on ? "1" : "0"); } catch {}
 }
 function getLastBackupDay(){
-  try { return String(localStorage.getItem(AUTO_BACKUP_LAST_DAY_KEY) || "").trim(); } catch { return ""; }
+  try {
+    const activeId = CompanyManager.getActiveCompanyId();
+    const c = activeId ? CompanyManager.getCompanyMeta(activeId) : null;
+    if (c && c.lastBackupDate) return String(c.lastBackupDate || "").trim();
+  } catch {}
+  // Fallback: old global key (pre-migration)
+  try { return String(localStorage.getItem(OLD_AUTO_BACKUP_LAST_DAY_KEY) || "").trim(); } catch { return ""; }
 }
 function setLastBackupDay(day){
-  try { localStorage.setItem(AUTO_BACKUP_LAST_DAY_KEY, String(day||"")); } catch {}
+  const d = String(day || "").trim();
+  try {
+    if (CompanyManager.hasActiveCompany()){
+      CompanyManager.updateActiveCompanyMeta({ lastBackupDate: d || null });
+      return;
+    }
+  } catch {}
+  // Fallback: old global key
+  try { localStorage.setItem(OLD_AUTO_BACKUP_LAST_DAY_KEY, d); } catch {}
 }
 function backupFileNameForDay(day){
   const d = String(day || todayISO() || "").trim() || new Date().toISOString().slice(0,10);
-  return `${d}_fu-bookkeeping_backup.json`;
+  let name = "fu-bookkeeping";
+  try {
+    const activeId = CompanyManager.getActiveCompanyId();
+    const c = activeId ? CompanyManager.getCompanyMeta(activeId) : null;
+    name = safeFilename((c && c.name) ? c.name : (state && state.company && state.company.name) ? state.company.name : name);
+  } catch {}
+  return `${d}_${name}_backup.json`;
 }
 function backupApiSupported(){
   return !!(window.showDirectoryPicker && window.FileSystemFileHandle && window.FileSystemDirectoryHandle);
@@ -2207,6 +2228,7 @@ async function maybeDailyAutoBackup(trigger){
   try {
     if (!backupApiSupported()) return;
     if (!autoBackupEnabled()) return;
+    if (!CompanyManager.hasActiveCompany()) return;
     if (!backupDirHandle) return;
 
     const today = todayISO();
@@ -2232,11 +2254,14 @@ async function chooseBackupFolder(){
     showToast("Autobackup kräver Chrome/Edge + HTTPS (File System Access API).", 6500);
     return;
   }
+  if (!CompanyManager.hasActiveCompany()){
+    showToast("Välj/koppla ett företag först.", 4500);
+    return;
+  }
   try{
     const h = await window.showDirectoryPicker({ mode: "readwrite" });
     if (!h) return;
-    backupDirHandle = h;
-    await idbSet("backupDirHandle", backupDirHandle);
+    await CompanyManager.setActiveBackupDirHandle(h);
 
     const ok = await backupEnsurePermission(true); // user click → allow prompt
     if (!ok){
@@ -2265,15 +2290,20 @@ function updateBackupUI(){
     const last = getLastBackupDay();
     const has = !!backupDirHandle;
     const supported = backupApiSupported();
+    const hasCompany = CompanyManager.hasActiveCompany();
 
     if (btn){
-      btn.textContent = has ? "Byt backup-mapp…" : "Välj backup-mapp…";
+      btn.textContent = has ? "Byt backup-mapp…" : "Byt backup-mapp…";
+      btn.disabled = !hasCompany;
     }
 
     // Header indicator: green only when folder selected AND at least one backup written
     if (pill){
       if (!supported){
         pill.textContent = "Backup: stöds ej";
+        setPillState(pill, "bad");
+      } else if (!hasCompany){
+        pill.textContent = "Backup: inget företag";
         setPillState(pill, "bad");
       } else if (!has){
         pill.textContent = "Backup: ej vald";
@@ -2290,6 +2320,8 @@ function updateBackupUI(){
     if (el){
       if (!backupApiSupported()){
         el.textContent = "Autobackup stöds ej i denna webbläsare.";
+      } else if (!hasCompany){
+        el.textContent = "Inget aktivt företag.";
       } else if (!has){
         el.textContent = "Ingen backup-mapp vald.";
       } else {
@@ -3048,6 +3080,377 @@ cur = {
     });
   }
 
+
+  // --- Company Registry (multi-company; metadata in localStorage, handles in separate IndexedDB) ---
+  const COMPANY_REGISTRY_KEY = "fu_company_registry_v1";
+  const COMPANY_REGISTRY_MIGRATED_FLAG = "fu_company_registry_migrated_v1";
+  const HANDLES_DB = "fu_handles_db";
+  const HANDLES_STORE = "handles";
+
+  function nowISO(){
+    return new Date().toISOString();
+  }
+
+  function companyEmptyRegistry(){
+    return { version: 1, activeCompanyId: null, companies: {} };
+  }
+
+  function companyLoadRegistry(){
+    try {
+      const raw = localStorage.getItem(COMPANY_REGISTRY_KEY);
+      if (!raw) return null;
+      const r = JSON.parse(raw);
+      if (!r || typeof r !== "object") return null;
+      if (r.version !== 1) return null;
+      if (!r.companies || typeof r.companies !== "object") r.companies = {};
+      if (r.activeCompanyId != null) r.activeCompanyId = String(r.activeCompanyId || "").trim() || null;
+
+      // normalize company metas
+      for (const [id, c] of Object.entries(r.companies)){
+        if (!c || typeof c !== "object"){
+          delete r.companies[id];
+          continue;
+        }
+        c.id = String(c.id || id);
+        c.name = String(c.name || "").trim() || "(namnlöst företag)";
+        c.orgnr = String(c.orgnr || "").trim();
+        c.createdAtISO = String(c.createdAtISO || "").trim() || nowISO();
+        c.lastOpenedISO = String(c.lastOpenedISO || "").trim();
+        c.lastBackupDate = c.lastBackupDate ? String(c.lastBackupDate) : null;
+        c.colorTag = c.colorTag ? String(c.colorTag) : null;
+        // Handles are stored in IndexedDB; keep only metadata here.
+      }
+      if (r.activeCompanyId && !r.companies[r.activeCompanyId]) r.activeCompanyId = null;
+      return r;
+    } catch {
+      return null;
+    }
+  }
+
+  function companySaveRegistry(reg){
+    try {
+      localStorage.setItem(COMPANY_REGISTRY_KEY, JSON.stringify(reg));
+      return true;
+    } catch (e){
+      console.error(e);
+      return false;
+    }
+  }
+
+  function handlesDbOpen(){
+    return new Promise((resolve, reject)=>{
+      const req = indexedDB.open(HANDLES_DB, 1);
+      req.onupgradeneeded = ()=>{
+        const db = req.result;
+        if (!db.objectStoreNames.contains(HANDLES_STORE)) db.createObjectStore(HANDLES_STORE);
+      };
+      req.onsuccess = ()=> resolve(req.result);
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+
+  async function idbGetHandle(key){
+    const db = await handlesDbOpen();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(HANDLES_STORE, "readonly");
+      const st = tx.objectStore(HANDLES_STORE);
+      const req = st.get(key);
+      req.onsuccess = ()=> resolve(req.result);
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+
+  async function idbSetHandle(key, handle){
+    const db = await handlesDbOpen();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(HANDLES_STORE, "readwrite");
+      const st = tx.objectStore(HANDLES_STORE);
+      const req = st.put(handle, key);
+      req.onsuccess = ()=> resolve(true);
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+
+  async function idbDelHandle(key){
+    const db = await handlesDbOpen();
+    return new Promise((resolve, reject)=>{
+      const tx = db.transaction(HANDLES_STORE, "readwrite");
+      const st = tx.objectStore(HANDLES_STORE);
+      const req = st.delete(key);
+      req.onsuccess = ()=> resolve(true);
+      req.onerror = ()=> reject(req.error);
+    });
+  }
+
+  function companyHandleKey(companyId, kind){
+    return `${companyId}:${kind}`;
+  }
+
+  function companyNewId(prefix="c_"){
+    try {
+      return prefix + crypto.randomUUID();
+    } catch {
+      return prefix + String(Date.now()) + "_" + Math.random().toString(16).slice(2);
+    }
+  }
+
+  const CompanyManager = (()=>{
+    let registry = null;
+
+    function getRegistry(){
+      if (!registry) registry = companyLoadRegistry() || companyEmptyRegistry();
+      return registry;
+    }
+
+    function saveRegistry(){
+      const r = getRegistry();
+      return companySaveRegistry(r);
+    }
+
+    function getActiveCompanyId(){
+      const r = getRegistry();
+      return r.activeCompanyId || null;
+    }
+
+    function getCompanyMeta(companyId){
+      const r = getRegistry();
+      const id = String(companyId || "").trim();
+      if (!id) return null;
+      return r.companies && r.companies[id] ? r.companies[id] : null;
+    }
+
+    function listCompanies(){
+      const r = getRegistry();
+      return Object.values(r.companies || {});
+    }
+
+    function hasActiveCompany(){
+      return !!getActiveCompanyId();
+    }
+
+    function activeCompanyDisplayName(){
+      const c = getCompanyMeta(getActiveCompanyId());
+      return c ? (c.name || "") : "";
+    }
+
+    function updateCompanySelectUI(){
+      const sel = document.getElementById("companySelect");
+      if (!sel) return;
+      const r = getRegistry();
+      const active = r.activeCompanyId || "";
+
+      const companies = Object.values(r.companies || {})
+        .slice()
+        .sort((a,b)=> String(a.name||"").localeCompare(String(b.name||""), "sv"));
+
+      const prevVal = sel.value;
+      sel.innerHTML = "";
+
+      const opt0 = document.createElement("option");
+      opt0.value = "";
+      opt0.textContent = companies.length ? "— Välj företag —" : "— Inga företag kopplade —";
+      sel.appendChild(opt0);
+
+      companies.forEach(c=>{
+        const opt = document.createElement("option");
+        opt.value = c.id;
+        opt.textContent = c.name || c.id;
+        sel.appendChild(opt);
+      });
+
+      sel.value = active || "";
+    }
+
+    async function setActiveCompany(companyId, opts = {}){
+      const r = getRegistry();
+      const id = String(companyId || "").trim() || null;
+      if (id && !r.companies[id]) throw new Error("Okänt företag");
+
+      r.activeCompanyId = id;
+      if (id){
+        r.companies[id].lastOpenedISO = nowISO();
+      }
+      saveRegistry();
+
+      // Update header immediately to reduce risk of posting to wrong company
+      try {
+        const h1 = document.getElementById("companyName");
+        if (h1){
+          if (!id) h1.textContent = "FU-BOOKKEEPING";
+          else h1.textContent = (r.companies[id] && r.companies[id].name) ? r.companies[id].name : "FU-BOOKKEEPING";
+        }
+      } catch {}
+
+      // Load handles into global vars used by existing code.
+      if (!id){
+        fsHandle = null;
+        backupDirHandle = null;
+        fsLastError = null;
+        fsLastSavedAt = null;
+        updateCompanySelectUI();
+        try { updateFsUI(); } catch {}
+        try { updateBackupUI(); } catch {}
+        return;
+      }
+
+      const dataH = await idbGetHandle(companyHandleKey(id, "data"));
+      const backupH = await idbGetHandle(companyHandleKey(id, "backup"));
+      fsHandle = dataH || null;
+      backupDirHandle = backupH || null;
+      fsLastError = null;
+      fsLastSavedAt = null;
+
+      updateCompanySelectUI();
+      try { updateFsUI(); } catch {}
+      try { updateBackupUI(); } catch {}
+
+      if (opts.autoLoad){
+        try { await opts.autoLoad(); } catch (e){ console.error(e); }
+      }
+    }
+
+    async function upsertCompany(meta, handles){
+      const r = getRegistry();
+      const id = String(meta.id || "").trim() || companyNewId();
+      const createdAt = String(meta.createdAtISO || "").trim() || nowISO();
+      r.companies[id] = {
+        id,
+        name: String(meta.name || "").trim() || "(namnlöst företag)",
+        orgnr: String(meta.orgnr || "").trim(),
+        createdAtISO: createdAt,
+        lastOpenedISO: String(meta.lastOpenedISO || "").trim(),
+        lastBackupDate: meta.lastBackupDate ? String(meta.lastBackupDate) : null,
+        colorTag: meta.colorTag ? String(meta.colorTag) : null,
+      };
+      saveRegistry();
+
+      if (handles && handles.dataFileHandle) await idbSetHandle(companyHandleKey(id, "data"), handles.dataFileHandle);
+      if (handles && ("backupDirHandle" in handles)){
+        if (handles.backupDirHandle) await idbSetHandle(companyHandleKey(id, "backup"), handles.backupDirHandle);
+        else await idbDelHandle(companyHandleKey(id, "backup"));
+      }
+      return id;
+    }
+
+    async function setActiveBackupDirHandle(dirHandle){
+      const id = getActiveCompanyId();
+      if (!id) throw new Error("Inget aktivt företag");
+      backupDirHandle = dirHandle || null;
+      if (backupDirHandle) await idbSetHandle(companyHandleKey(id, "backup"), backupDirHandle);
+      else await idbDelHandle(companyHandleKey(id, "backup"));
+      saveRegistry();
+      try { updateBackupUI(); } catch {}
+    }
+
+    function updateActiveCompanyMeta(patch){
+      const id = getActiveCompanyId();
+      if (!id) return false;
+      const r = getRegistry();
+      const c = r.companies[id];
+      if (!c) return false;
+      Object.assign(c, patch || {});
+      return saveRegistry();
+    }
+
+    async function migrateFromSingleCompanyIfNeeded(){
+      const existing = companyLoadRegistry();
+      if (existing) return existing;
+
+      // Detect old single-company handles in legacy KV store.
+      let oldData = null;
+      let oldBackup = null;
+      try { oldData = await idbGet("dataFileHandle"); } catch {}
+      try { oldBackup = await idbGet("backupDirHandle"); } catch {}
+
+      if (!oldData && !oldBackup) return null;
+
+      const r = companyEmptyRegistry();
+      const id = "c_migrated";
+      const nameFromState = (state && state.company && state.company.name) ? String(state.company.name).trim() : "";
+      const orgnrFromState = (state && state.company && state.company.orgnr) ? String(state.company.orgnr).trim() : "";
+
+      // Use old global autobackup last day if present
+      let lastBackupDate = null;
+      try {
+        const v = String(localStorage.getItem("FU_AUTOBACKUP_LAST_DAY_V1") || "").trim();
+        if (v) lastBackupDate = v;
+      } catch {}
+
+      r.companies[id] = {
+        id,
+        name: nameFromState || "Företag 1",
+        orgnr: orgnrFromState,
+        createdAtISO: nowISO(),
+        lastOpenedISO: nowISO(),
+        lastBackupDate,
+        colorTag: null,
+      };
+      r.activeCompanyId = id;
+
+      companySaveRegistry(r);
+
+      try { if (oldData) await idbSetHandle(companyHandleKey(id, "data"), oldData); } catch (e){ console.error(e); }
+      try { if (oldBackup) await idbSetHandle(companyHandleKey(id, "backup"), oldBackup); } catch (e){ console.error(e); }
+
+      // Do NOT delete old keys yet (safe-by-default). We'll mark migration complete after we have loaded once.
+      return r;
+    }
+
+    async function init(){
+      registry = await migrateFromSingleCompanyIfNeeded() || companyLoadRegistry() || companyEmptyRegistry();
+      updateCompanySelectUI();
+
+      const active = registry.activeCompanyId || null;
+      if (!active){
+        fsHandle = null;
+        backupDirHandle = null;
+        fsLastError = null;
+        fsLastSavedAt = null;
+        try { updateFsUI(); } catch {}
+        try { updateBackupUI(); } catch {}
+        return;
+      }
+
+      // Header indicator
+      try {
+        const h1 = document.getElementById("companyName");
+        if (h1){
+          const c = registry.companies && registry.companies[active] ? registry.companies[active] : null;
+          if (c && c.name) h1.textContent = c.name;
+        }
+      } catch {}
+
+      // Load handles for active company.
+      try {
+        fsHandle = await idbGetHandle(companyHandleKey(active, "data"));
+      } catch { fsHandle = null; }
+      try {
+        backupDirHandle = await idbGetHandle(companyHandleKey(active, "backup"));
+      } catch { backupDirHandle = null; }
+
+      fsLastError = null;
+      fsLastSavedAt = null;
+
+      try { updateFsUI(); } catch {}
+      try { updateBackupUI(); } catch {}
+    }
+
+    return {
+      init,
+      getRegistry,
+      listCompanies,
+      getActiveCompanyId,
+      getCompanyMeta,
+      hasActiveCompany,
+      activeCompanyDisplayName,
+      updateCompanySelectUI,
+      setActiveCompany,
+      upsertCompany,
+      setActiveBackupDirHandle,
+      updateActiveCompanyMeta,
+    };
+  })();
+
   function defaultData(){
     const now = new Date();
     const y = now.getFullYear();
@@ -3193,15 +3596,8 @@ if (!d.features) d.features = { sruEnabled: false };
     // Reset in-memory state (UI kommer ändå att uppdateras av fil-inläsningen)
     try { state = defaultData(); } catch (e){ /* ignore */ }
 
-    // Rensa IndexedDB (underlag/ocr-cache + ev. gamla file-handles)
-    try {
-      await new Promise((resolve)=>{
-        const req = indexedDB.deleteDatabase(IDB_DB);
-        req.onsuccess = ()=> resolve(true);
-        req.onerror = ()=> resolve(false);
-        req.onblocked = ()=> resolve(false);
-      });
-    } catch (e){ /* ignore */ }
+    // OBS: I multi-company-läge ska vi INTE rensa IndexedDB här.
+    // Den kan innehålla bilagor/underlag samt handles för flera företag.
 
     // Spara ett rent state (om localStorage är aktivt) så UI inte visar gammal data innan fil laddas
     try { save(); } catch (e){ /* ignore */ }
@@ -3213,6 +3609,10 @@ if (!d.features) d.features = { sruEnabled: false };
 
   function fsApiSupported(){
     return !!(window.showOpenFilePicker && window.showSaveFilePicker && window.isSecureContext);
+  }
+
+  function getActiveCompanyHandles(){
+    return { dataFileHandle: fsHandle, backupDirHandle };
   }
 
   function setFsStatus(kind, text){
@@ -3227,7 +3627,12 @@ if (!d.features) d.features = { sruEnabled: false };
       "btnNewVoucher","btnAddLine","btnClearVoucher","btnSaveVoucher",
       "btnAddAccount",
       "btnAddYear","btnCarry",
-      "btnWipe"
+      "btnWipe",
+      "btnBankImportOpen","btnBankImportOpen2","btnBankInboxRefresh",
+      "btnBankImportRun","btnBankPostCreate","btnBankBulkConfirm",
+      "btnInvNew","btnInvSave","btnInvPickCustomer","btnInvAddItem","btnInvAddComment","btnInvClear","btnInvToVoucher",
+      "btnSupNew","btnSupSave","btnSiNew","btnSiSave","btnSiToVoucher","btnCustomerSave",
+      "btnImportSie","btnExportSie4"
     ];
     ids.forEach(id => {
       const el = document.getElementById(id);
@@ -3241,7 +3646,6 @@ if (!d.features) d.features = { sruEnabled: false };
       if (el) el.disabled = !!locked;
     });
 
-    if (locked) setFsStatus("bad", "Välj/Skapa datafil för att börja");
   }
 
   function updateFsUI(){
@@ -3250,11 +3654,16 @@ if (!d.features) d.features = { sruEnabled: false };
     // Header storage indicator (reacts to file connection)
     if (storagePill){
       const supported = fsApiSupported();
-      const connected = !!fsHandle;
+      const hasCompany = CompanyManager.hasActiveCompany();
+      const connected = hasCompany && !!fsHandle;
 
-      if (supported && connected){
+      if (!hasCompany){
+        storagePill.textContent = "Lagring: inget företag";
+        setPillState(storagePill, "bad");
+      } else if (supported && connected){
         const name = fsHandle && fsHandle.name ? fsHandle.name : "datafil";
-        storagePill.textContent = `Lagring: datafil (${name})`;
+        const cn = CompanyManager.activeCompanyDisplayName() || "Företag";
+        storagePill.textContent = `Lagring: ${cn} · datafil (${name})`;
         setPillState(storagePill, fsLastError ? "bad" : "ok");
       } else {
         storagePill.textContent = localStorageOk ? "Lagring: localStorage (offline)" : "Lagring: localStorage blockerad";
@@ -3276,22 +3685,29 @@ if (!d.features) d.features = { sruEnabled: false };
       fsRequireFile.disabled = false;
     }
 
-    const connected = !!fsHandle;
+    const hasCompany = CompanyManager.hasActiveCompany();
+    const connected = hasCompany && !!fsHandle;
     if (btnLoadFromFile) btnLoadFromFile.disabled = !connected;
     if (btnSaveToFile) btnSaveToFile.disabled = !connected;
-    if (btnDisconnectFile) btnDisconnectFile.disabled = !connected;
+    if (btnDisconnectFile) btnDisconnectFile.disabled = !hasCompany;
 
     const requireFile = !!(state.fileSync && state.fileSync.requireFile);
 
     if (!fsApiSupported()){
       setFsStatus("bad", requireFile ? "Kräver HTTPS/localhost + Chrome/Edge (fil krävs)" : "Kräver HTTPS/localhost + Chrome/Edge");
-      setEditingLocked(requireFile);
+      setEditingLocked(true);
+      return;
+    }
+
+    if (!hasCompany){
+      setFsStatus("bad", "Inget företag valt");
+      setEditingLocked(true);
       return;
     }
 
     if (!connected){
       setFsStatus("bad", requireFile ? "Inte ansluten · kräver datafil" : "Inte ansluten");
-      setEditingLocked(requireFile);
+      setEditingLocked(true);
       return;
     }
 
@@ -3366,14 +3782,44 @@ if (!d.features) d.features = { sruEnabled: false };
     save();
     try { updateBackupUI(); } catch (e){}
     try { await maybeDailyAutoBackup("fsLoadState"); } catch (e){}
+
+    // Mark migration complete after a successful load
+    try {
+      if (CompanyManager.getActiveCompanyId && CompanyManager.getActiveCompanyId() === "c_migrated"){
+        if (!localStorage.getItem(COMPANY_REGISTRY_MIGRATED_FLAG)){
+          localStorage.setItem(COMPANY_REGISTRY_MIGRATED_FLAG, "true");
+        }
+      }
+    } catch {}
+  }
+
+  async function maybeSilentAutosaveToFile(reason){
+    try {
+      if (!fsApiSupported()) return false;
+      if (!fsHandle) return false;
+      if (!state.fileSync || !state.fileSync.autosave) return false;
+      const ok = await fsEnsurePermission(false);
+      if (!ok) return false;
+      await fsWriteState();
+      console.info("[Company] silent autosave ok", reason || "");
+      return true;
+    } catch (e){
+      console.warn("[Company] silent autosave failed", reason || "", e);
+      return false;
+    }
   }
 
   async function fsDisconnect(){
+    // Best-effort silent autosave before disconnect (no prompts)
+    try { await maybeSilentAutosaveToFile("disconnect"); } catch {}
+
     fsHandle = null;
     fsLastError = null;
     fsLastSavedAt = null;
-    await idbDel("dataFileHandle");
+    backupDirHandle = null;
+    try { await CompanyManager.setActiveCompany(null); } catch {}
     updateFsUI();
+    try { updateBackupUI(); } catch {}
   }
 
   async function fsConnectExisting(){
@@ -3386,23 +3832,51 @@ if (!d.features) d.features = { sruEnabled: false };
       const handle = picked && picked[0] ? picked[0] : null;
       if (!handle) return;
 
-      await wipeLocalDataForNewDataFile();
+      // Create registry entry for this company (separate handle store)
+      let preName = "";
+      let preOrgnr = "";
+      let looksValid = true;
+      try {
+        const f = await handle.getFile();
+        const txt = await f.text();
+        const d = JSON.parse(txt);
+        looksValid = !!(d && typeof d === "object" && Array.isArray(d.fiscalYears) && d.accounts && typeof d.accounts === "object" && Array.isArray(d.vouchers));
+        preName = d && d.company && d.company.name ? String(d.company.name).trim() : "";
+        preOrgnr = d && d.company && d.company.orgnr ? String(d.company.orgnr).trim() : "";
+      } catch {}
 
-      fsHandle = handle;
-      await idbSet("dataFileHandle", fsHandle);
-      fsLastError = null;
-      fsLastSavedAt = null;
+      if (!looksValid){
+        showToast("Filen ser inte ut som FU-Bookkeeping-data (fel format).", 6500);
+        return;
+      }
 
-      // Ask permission now (user click), and auto-load immediately so state (inkl. företagsuppgifter) blir korrekt
-      const ok = await fsEnsurePermission(true);
-      if (ok){
-        try {
-          await fsLoadState();
-          showToast("Ansluten · laddade data från fil.", 3000);
-        } catch (err){
-          console.error(err);
-          showToast("Ansluten · men kunde inte läsa filen (tom/ogiltig).", 6500);
-        }
+      const name = await promptAsync("Företagsnamn", { defaultValue: preName || "Företag" , placeholder:"Innovatio AB" });
+      if (name == null) return;
+      const orgnr = await promptAsync("Org.nr (valfritt)", { defaultValue: preOrgnr || "", placeholder:"770314-3516" });
+      if (orgnr == null) return;
+
+      const newId = await CompanyManager.upsertCompany({
+        id: companyNewId(),
+        name: String(name||"").trim() || "Företag",
+        orgnr: String(orgnr||"").trim(),
+        createdAtISO: nowISO(),
+        lastOpenedISO: nowISO(),
+        lastBackupDate: null,
+        colorTag: null,
+      }, { dataFileHandle: handle, backupDirHandle: null });
+
+      await CompanyManager.setActiveCompany(newId);
+
+      // Clear local state to avoid mixing companies if load fails
+      try { await wipeLocalDataForNewDataFile(); } catch {}
+
+      // Ask permission now (user click), and auto-load immediately
+      try {
+        await fsLoadState();
+        showToast("Företag kopplat · laddade data från fil.", 3000);
+      } catch (err){
+        console.error(err);
+        showToast("Företag kopplat · men kunde inte läsa filen (tom/ogiltig).", 6500);
       }
 
       updateFsUI();
@@ -3417,29 +3891,59 @@ if (!d.features) d.features = { sruEnabled: false };
   async function fsCreateNew(){
     if (!fsApiSupported()) return showToast("Fil-synk kräver Chrome/Edge och secure context (HTTPS eller localhost).", 6500);
     try {
+      const name = await promptAsync("Företagsnamn", { placeholder:"Innovatio AB" });
+      if (name == null) return;
+      const orgnr = await promptAsync("Org.nr (valfritt)", { placeholder:"770314-3516" });
+      if (orgnr == null) return;
+
+      const slug = safeFilename(name);
+      const suggested = `${todayISO()}_${slug}_fu.json`;
+
       const handle = await window.showSaveFilePicker({
-        suggestedName: "bokforing.json",
+        suggestedName: suggested,
         types: [{ description: "Bokföringsdata (JSON)", accept: { "application/json": [".json"] } }]
       });
       if (!handle) return;
 
-      await wipeLocalDataForNewDataFile();
+      // Prepare fresh state for the new company
+      state = defaultData();
+      state.company = state.company || defaultData().company;
+      state.company.name = String(name||"").trim();
+      state.company.orgnr = String(orgnr||"").trim();
+      try { if (companyNameEl) companyNameEl.textContent = state.company.name || "FU-BOOKKEEPING"; } catch {}
+      save();
 
-      fsHandle = handle;
-      await idbSet("dataFileHandle", fsHandle);
-      fsLastError = null;
-      fsLastSavedAt = null;
-      updateFsUI();
+      const id = await CompanyManager.upsertCompany({
+        id: companyNewId(),
+        name: String(name||"").trim() || "Företag",
+        orgnr: String(orgnr||"").trim(),
+        createdAtISO: nowISO(),
+        lastOpenedISO: nowISO(),
+        lastBackupDate: null,
+        colorTag: null,
+      }, { dataFileHandle: handle, backupDirHandle: null });
+
+      await CompanyManager.setActiveCompany(id);
 
       // write initial
-      const ok = await fsEnsurePermission(true);
-      if (ok){
-        const writable = await fsHandle.createWritable();
-        await writable.write(JSON.stringify(state, null, 2));
-        await writable.close();
-        fsLastSavedAt = new Date().toLocaleString("sv-SE", { hour12:false });
-        updateFsUI();
+      try {
+        const ok = await fsEnsurePermission(true);
+        if (ok){
+          await fsWriteState();
+          showToast("Företag skapat · sparade första versionen.", 3000);
+        }
+      } catch (e){
+        console.error(e);
+        showToast("Företag skapat · men kunde inte skriva filen.", 6500);
       }
+
+      // Ask for backup folder (recommended)
+      try {
+        const yes = await confirmAsync("Vill du välja en backup-mapp för detta företag nu? (Rekommenderas)");
+        if (yes) await chooseBackupFolder();
+      } catch {}
+
+      updateFsUI();
     } catch (e){
       if (e && e.name === "AbortError") return;
       fsLastError = e;
@@ -3496,6 +4000,7 @@ if (!d.features) d.features = { sruEnabled: false };
   };
 
   const companyNameEl = document.getElementById("companyName");
+  const companySelect = document.getElementById("companySelect");
   const yearPillSelect = document.getElementById("yearPillSelect");
   const storagePill = document.getElementById("storagePill");
 
@@ -10548,6 +11053,40 @@ if (btnImportSie) btnImportSie.addEventListener("click", async (e)=>{
   }
 });
 
+// --- Company Registry wiring (multi-company) ---
+if (companySelect) companySelect.addEventListener("change", async ()=>{
+  try {
+    const targetId = String(companySelect.value || "").trim();
+    if (!targetId){
+      await fsDisconnect();
+      showToast("Inget företag valt.", 2500);
+      return;
+    }
+    if (CompanyManager.getActiveCompanyId && CompanyManager.getActiveCompanyId() === targetId) return;
+
+    await maybeSilentAutosaveToFile("switch-company");
+    await CompanyManager.setActiveCompany(targetId);
+
+    // Clear local state to avoid mixing companies if load fails
+    try { await wipeLocalDataForNewDataFile(); } catch {}
+
+    if (!fsHandle){
+      showToast("Företaget saknar kopplad datafil.", 4500);
+      return;
+    }
+
+    try {
+      await fsLoadState();
+      showToast("Bytte företag.", 2500);
+    } catch (e){
+      console.error(e);
+      showToast("Kunde inte ladda företagets datafil. Se konsolen.", 7000);
+    }
+  } catch (e){
+    console.error(e);
+  }
+});
+
 // --- File Sync wiring (UI moved to Settings) ---
 if (btnConnectFile) btnConnectFile.addEventListener("click", async (e)=>{ e.preventDefault(); await fsConnectExisting(); });
 if (btnCreateFile) btnCreateFile.addEventListener("click", async (e)=>{ e.preventDefault(); await fsCreateNew(); });
@@ -10571,10 +11110,19 @@ if (btnDisconnectFile) btnDisconnectFile.addEventListener("click", async (e)=>{ 
 if (fsAutosave) fsAutosave.addEventListener("change", ()=>{ state.fileSync = state.fileSync || { autosave:true, requireFile:false }; state.fileSync.autosave = !!fsAutosave.checked; save(); updateFsUI(); });
 if (fsRequireFile) fsRequireFile.addEventListener("change", ()=>{ state.fileSync = state.fileSync || { autosave:true, requireFile:false }; state.fileSync.requireFile = !!fsRequireFile.checked; save(); updateFsUI(); });
 
-// Restore file handle if previously connected + auto-reload on startup
-idbGet("dataFileHandle").then(async (h)=>{
-  if (h){
-    fsHandle = h;
+// Init company registry + restore active company handles (and attempt silent auto-load)
+(async ()=>{
+  try {
+    await CompanyManager.init();
+    CompanyManager.updateCompanySelectUI();
+  } catch (e){
+    console.error(e);
+  }
+
+  try { updateFsUI(); } catch (e){ /* ignore */ }
+  try { updateBackupUI(); } catch (e){ /* ignore */ }
+
+  if (CompanyManager.hasActiveCompany() && fsHandle){
     fsLastError = null;
     updateFsUI();
 
@@ -10584,38 +11132,34 @@ idbGet("dataFileHandle").then(async (h)=>{
       if (ok){
         await fsLoadState();
         showToast("Auto-laddade data från datafil.", 2500);
-        return;
-      }
-
-      // 2) Otherwise: load on first user interaction (prompts once)
-      const once = async ()=>{
-        document.removeEventListener("pointerdown", once, true);
-        try {
-          const ok2 = await fsEnsurePermission(true);
-          if (ok2){
-            await fsLoadState();
-            showToast("Laddade data från datafil.", 2500);
+      } else {
+        // 2) Otherwise: load on first user interaction (prompts once)
+        const once = async ()=>{
+          document.removeEventListener("pointerdown", once, true);
+          try {
+            const ok2 = await fsEnsurePermission(true);
+            if (ok2){
+              await fsLoadState();
+              showToast("Laddade data från datafil.", 2500);
+            }
+          } catch (err){
+            console.error(err);
           }
-        } catch (err){
-          console.error(err);
-        }
-        try { updateFsUI(); } catch (e){ /* ignore */ }
-      };
-      document.addEventListener("pointerdown", once, true);
+          try { updateFsUI(); } catch (e){ /* ignore */ }
+          try { updateBackupUI(); } catch (e){ /* ignore */ }
+        };
+        document.addEventListener("pointerdown", once, true);
+      }
     } catch (err){
       console.error(err);
     }
   }
-}).catch(()=>{});
 
-// Restore backup folder handle + attempt daily autobackup (silent)
-idbGet("backupDirHandle").then(async (h)=>{
-  if (h) backupDirHandle = h;
-  updateBackupUI();
-  await maybeDailyAutoBackup("startup");
-}).catch(()=>{ try { updateBackupUI(); } catch (e){} });
-
-try { updateFsUI(); } catch (e){ /* ignore */ }
+  // Attempt daily autobackup (silent) for active company
+  try {
+    await maybeDailyAutoBackup("startup");
+  } catch {}
+})();
 
 
   // --- Arkivering ---
