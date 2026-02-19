@@ -282,7 +282,7 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
-      <span class="pill" id="revPill">v0.2.3</span>
+      <span class="pill" id="revPill">v0.2.4</span>
     </div>
   </div>
 </header>
@@ -1682,8 +1682,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
-  const APP_SEMVER = "0.2.3";  // user-facing revision
-  const APP_GIT_REV = "0dc0a32";      // injected by tools/stamp-fu-version.mjs (optional)
+  const APP_SEMVER = "0.2.4";  // user-facing revision
+  const APP_GIT_REV = "faa3940";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -8040,7 +8040,7 @@ if (!d.features) d.features = { sruEnabled: false };
 
       const badge = isVoid ? '<span class="status">Makulerad</span>' : "";
       const openLabel = isVoid ? "Visa" : "Öppna";
-      const voidBtn = isVoid ? "" : '<button type="button" class="btn danger" data-act="void" data-id="' + escapeAttr(v.id) + '">Makulera</button>';
+      const voidBtn = "";
 
       div.innerHTML = `
         <div class="top">
@@ -8141,7 +8141,9 @@ if (!d.features) d.features = { sruEnabled: false };
         const id = b.dataset.id;
         if (!id) return;
         if (act === "open") viewVoucherToEditor(id);
-        if (act === "void") await voidVoucher(id);
+        if (act === "void"){
+          showToast("Makulering av verifikationer är avstängd. Skapa en rättelseverifikation i stället.", 6500);
+        }
         renderVouchers();
       });
     }
@@ -9501,42 +9503,6 @@ if (!d.features) d.features = { sruEnabled: false };
     renderLines();
     updateBalanceBadge();
   }
-
-    async function voidVoucher(id){
-    const v = state.vouchers.find(x=>x.id===id);
-    if (!v) return;
-    if (isVoidedVoucher(v)) return showToast("Verifikationen är redan makulerad.", 4500);
-    if (isLockedVoucher(v)) return showToast("Den här verifikationen ligger i låst period och kan inte makuleras. Skapa en rättelseverifikation i stället.", 6500);
-
-    const reason = await promptAsync("Makulera verifikationen? Ange orsak (valfritt).\nTips: Ctrl+Enter = OK.", {
-      placeholder: "t.ex. felaktig registrering",
-      okText: "Makulera",
-      cancelText: "Avbryt"
-    });
-    if (reason === null) return;
-
-    const before = summarizeVoucher(v);
-
-    v.status = "voided";
-    v.voidedAt = new Date().toISOString();
-    v.voidedBy = clampText((state.company?.defaultSign || "").trim(), 60);
-    v.voidReason = clampText(String(reason || "").trim(), 240);
-
-    appendAudit({
-      action: "voucher.void",
-      actor: v.voidedBy || undefined,
-      entityType: "voucher",
-      entityId: v.id,
-      yearId: v.yearId,
-      details: { before, after: summarizeVoucher(v), reason: v.voidReason, voidedAt: v.voidedAt }
-    });
-
-    save();
-    if (viewingVoucherId === id) newVoucher();
-    // Keep any previously generated report in sync
-    try { if (lastReportHtml) generateReport(); } catch (e){ console.error(e); }
-  }
-
 
   function createCorrectionVoucher(originalId){
     const orig = state.vouchers.find(x=>x.id===originalId);
