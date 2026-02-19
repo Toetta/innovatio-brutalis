@@ -1925,6 +1925,22 @@
     return out;
   }
 
+  function bankImportNormFpText(s){
+    return String(s || "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  function bankImportFingerprintKey(dateISO, amount, text, ref){
+    const d = String(dateISO || "").trim();
+    const a = Number(amount);
+    const t = bankImportNormFpText(text);
+    const r = bankImportNormFpText(ref);
+    if (!d || !Number.isFinite(a) || !t) return "";
+    const base = `${d}|${a.toFixed(2)}|${t}`;
+    return r ? `${base}|${r}` : base;
+  }
+
   function normalizeImportedState(d){
     const base = defaultData();
     const o = (d && typeof d === "object") ? d : base;
@@ -2071,10 +2087,49 @@
     if (!o.bankImport.batches || typeof o.bankImport.batches !== "object") o.bankImport.batches = {};
     if (!o.bankImport.items || typeof o.bankImport.items !== "object") o.bankImport.items = {};
     if (!o.bankImport.fingerprints || typeof o.bankImport.fingerprints !== "object") o.bankImport.fingerprints = {};
+    if (!Array.isArray(o.bankImport.rules)) o.bankImport.rules = [];
     if (!o.bankImport.settings || typeof o.bankImport.settings !== "object") o.bankImport.settings = { lastSource: "bank", defaultBankAccount: "", defaultTaxAccount: "" };
     if (!o.bankImport.settings.lastSource) o.bankImport.settings.lastSource = "bank";
     if (o.bankImport.settings.defaultBankAccount == null) o.bankImport.settings.defaultBankAccount = "";
     if (o.bankImport.settings.defaultTaxAccount == null) o.bankImport.settings.defaultTaxAccount = "";
+
+    // Field-name migration to spec (keep reading old names, but normalize in-memory)
+    try {
+      Object.values(o.bankImport.batches || {}).forEach((b)=>{
+        if (!b || typeof b !== "object") return;
+        if (!b.createdAtISO) b.createdAtISO = b.createdAt || "";
+        if (!b.filename) b.filename = b.fileName || b.file || "";
+        if (!b.accountBank) b.accountBank = b.bankAccount || "";
+        if (typeof b.rowCount !== "number" || !Number.isFinite(b.rowCount)){
+          const rc = Number(b.rowCount);
+          b.rowCount = Number.isFinite(rc) ? rc : (Number(b.importedCount) || 0);
+        }
+        if (!Array.isArray(b.warnings)) b.warnings = [];
+        if (b.fileHash == null) b.fileHash = "";
+        if (b.mapping == null || typeof b.mapping !== "object") b.mapping = {};
+        if (b.source == null) b.source = "";
+      });
+
+      Object.values(o.bankImport.items || {}).forEach((it)=>{
+        if (!it || typeof it !== "object") return;
+        if (!it.createdAtISO) it.createdAtISO = it.createdAt || "";
+        if (it.ref == null) it.ref = "";
+        if (it.raw == null) it.raw = null;
+      });
+    } catch {}
+
+    // Rebuild fingerprint index (prevents duplicates even if older versions used different keys)
+    try {
+      const fp = {};
+      Object.values(o.bankImport.items || {}).forEach((it)=>{
+        if (!it || typeof it !== "object") return;
+        const key = bankImportFingerprintKey(it.dateISO, it.amount, it.text, it.ref);
+        if (!key) return;
+        it.fingerprint = key;
+        if (!fp[key]) fp[key] = it.id;
+      });
+      o.bankImport.fingerprints = fp;
+    } catch {}
 
     return o;
   }
@@ -3009,6 +3064,7 @@ cur = {
         batches: {},
         items: {},
         fingerprints: {},
+        rules: [],
         settings: { lastSource: "bank", defaultBankAccount: "1930", defaultTaxAccount: "1630" }
       }
     };
@@ -4128,6 +4184,30 @@ if (!d.features) d.features = { sruEnabled: false };
       return m ? m[1] : "";
     }
 
+    function pad2(n){
+      return String(Number(n) || 0).padStart(2, "0");
+    }
+    function rand4(){
+      try {
+        const b = new Uint8Array(2);
+        crypto.getRandomValues(b);
+        const n = ((b[0] << 8) | b[1]) % (36*36*36*36);
+        return n.toString(36).toUpperCase().padStart(4, "0");
+      } catch {
+        return Math.random().toString(36).slice(2,6).toUpperCase().padEnd(4, "0");
+      }
+    }
+    function makeBatchId(){
+      const d = new Date();
+      const y = d.getFullYear();
+      const mo = pad2(d.getMonth()+1);
+      const da = pad2(d.getDate());
+      const hh = pad2(d.getHours());
+      const mm = pad2(d.getMinutes());
+      const ss = pad2(d.getSeconds());
+      return `bankimport_${y}${mo}${da}_${hh}${mm}${ss}_${rand4()}`;
+    }
+
     function loadScript(url){
       return new Promise((resolve, reject)=>{
         const s = document.createElement("script");
@@ -4140,23 +4220,35 @@ if (!d.features) d.features = { sruEnabled: false };
     }
     async function ensurePapa(){
       if (window.Papa) return true;
-      try {
-        await loadScript("https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js");
-        return !!window.Papa;
-      } catch (e){
-        console.error(e);
-        return false;
+      const urls = [
+        "https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js",
+        "https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js",
+      ];
+      for (const url of urls){
+        try {
+          await loadScript(url);
+          if (window.Papa) return true;
+        } catch (e){
+          console.error(e);
+        }
       }
+      return !!window.Papa;
     }
     async function ensureXlsx(){
       if (window.XLSX) return true;
-      try {
-        await loadScript("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
-        return !!window.XLSX;
-      } catch (e){
-        console.error(e);
-        return false;
+      const urls = [
+        "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+        "https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js",
+      ];
+      for (const url of urls){
+        try {
+          await loadScript(url);
+          if (window.XLSX) return true;
+        } catch (e){
+          console.error(e);
+        }
       }
+      return !!window.XLSX;
     }
 
     function getFieldsFromRows(rows){
@@ -4245,6 +4337,110 @@ if (!d.features) d.features = { sruEnabled: false };
       return neg ? -n : n;
     }
 
+    function colStats(rows, col){
+      let nonEmpty = 0;
+      let dateOk = 0;
+      let numOk = 0;
+      let totalLen = 0;
+      let maxLen = 0;
+      const uniq = new Set();
+      for (const r of (rows || [])){
+        if (!r || typeof r !== "object") continue;
+        const v = r[col];
+        if (v == null) continue;
+        const s = String(v).trim();
+        if (!s) continue;
+        nonEmpty++;
+        totalLen += s.length;
+        if (s.length > maxLen) maxLen = s.length;
+        uniq.add(bankImportNormFpText(s));
+        if (parseDateToISO(s)) dateOk++;
+        const n = parseNumberSE(s);
+        if (Number.isFinite(n)) numOk++;
+      }
+      return {
+        nonEmpty,
+        dateRate: nonEmpty ? (dateOk / nonEmpty) : 0,
+        numRate: nonEmpty ? (numOk / nonEmpty) : 0,
+        avgLen: nonEmpty ? (totalLen / nonEmpty) : 0,
+        maxLen,
+        uniqRate: nonEmpty ? (uniq.size / nonEmpty) : 0,
+      };
+    }
+
+    function detectMapping(rows, columns){
+      const cols = (columns || []).slice();
+      const stats = {};
+      cols.forEach(c=> stats[c] = colStats(rows, c));
+
+      const nameDate = pickField(cols, ["datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","valutadag","transactiondate"]);
+      const nameText = pickField(cols, ["text","beskrivning","förklaring","forklaring","memo","motpart","namn","description"]);
+      const nameAmount = pickField(cols, ["belopp","amount","summa","total","amountsek"]);
+      const nameRef = pickField(cols, ["referens","reference","ref","ocr","meddelande","message","ver","trans","id"]);
+      const nameDebit = pickField(cols, ["debet","debit","ut","withdrawal"]);
+      const nameCredit = pickField(cols, ["kredit","credit","in","deposit"]);
+
+      const scoreDate = (c)=>{
+        const st = stats[c] || {};
+        let s = (st.dateRate || 0);
+        if (c === nameDate) s += 0.18;
+        return s;
+      };
+      const scoreNum = (c)=>{
+        const st = stats[c] || {};
+        let s = (st.numRate || 0);
+        if (c === nameAmount) s += 0.18;
+        if (c === nameDebit || c === nameCredit) s += 0.1;
+        // penalize number columns that look like dates
+        s -= (st.dateRate || 0) * 0.35;
+        return s;
+      };
+
+      const date = cols.slice().sort((a,b)=> scoreDate(b) - scoreDate(a))[0] || "";
+
+      // debit/credit via name match if distinct
+      let debit = nameDebit || "";
+      let credit = nameCredit || "";
+      if (debit && credit && debit === credit){ debit = ""; credit = ""; }
+      if (debit && stats[debit] && stats[debit].numRate < 0.2) debit = "";
+      if (credit && stats[credit] && stats[credit].numRate < 0.2) credit = "";
+
+      let amount = "";
+      if (!(debit && credit)){
+        const excluded = new Set([date, debit, credit].filter(Boolean));
+        amount = cols
+          .filter(c=> !excluded.has(c))
+          .slice()
+          .sort((a,b)=> scoreNum(b) - scoreNum(a))[0] || "";
+      }
+
+      const excludedText = new Set([date, amount, debit, credit].filter(Boolean));
+      let text = cols
+        .filter(c=> !excludedText.has(c))
+        .slice()
+        .sort((a,b)=> (stats[b]?.avgLen || 0) - (stats[a]?.avgLen || 0))[0] || "";
+      if (nameText) text = nameText;
+
+      const excludedRef = new Set([date, amount, debit, credit, text].filter(Boolean));
+      let ref = "";
+      if (nameRef && !excludedRef.has(nameRef)) ref = nameRef;
+      if (!ref){
+        const candidates = cols.filter(c=> !excludedRef.has(c));
+        ref = candidates
+          .slice()
+          .sort((a,b)=>{
+            const sa = stats[a] || {};
+            const sb = stats[b] || {};
+            // want high uniqueness, short-ish strings
+            const qa = (sa.uniqRate || 0) - (Math.max(0, (sa.avgLen || 0) - 24) / 200);
+            const qb = (sb.uniqRate || 0) - (Math.max(0, (sb.avgLen || 0) - 24) / 200);
+            return qb - qa;
+          })[0] || "";
+      }
+
+      return { date, amount, text, ref, debit, credit };
+    }
+
     function normText(t){
       return String(t||"")
         .toLowerCase()
@@ -4252,19 +4448,153 @@ if (!d.features) d.features = { sruEnabled: false };
         .trim();
     }
 
-    function fnv1aHex(str){
-      let h = 0x811c9dc5;
-      const s = String(str||"");
-      for (let i=0;i<s.length;i++){
-        h ^= s.charCodeAt(i);
-        h = (h + ((h<<1) + (h<<4) + (h<<7) + (h<<8) + (h<<24))) >>> 0;
+    function fingerprintForRow(r){
+      try {
+        return bankImportFingerprintKey(r.dateISO, r.amount, r.text, r.ref);
+      } catch {
+        return "";
       }
-      return ("00000000" + h.toString(16)).slice(-8);
     }
 
-    function fingerprintForRow(r){
-      const key = [r.source, r.bankAccount, r.dateISO, round2(r.amount), normText(r.text), normText(r.ref)].join("|");
-      return fnv1aHex(key);
+    function normWhitespaceKeepCase(s){
+      return String(s || "").replace(/\s+/g, " ").trim();
+    }
+
+    function normalizeRows(rows, mapping, options){
+      const from = options && options.from ? String(options.from) : (options && options.dateFrom ? String(options.dateFrom) : "");
+      const to = options && options.to ? String(options.to) : (options && options.dateTo ? String(options.dateTo) : "");
+      const m = mapping || {};
+      const useDebCred = !!(m.debit && m.credit);
+
+      const drafts = [];
+      let invalidDate = 0;
+      let invalidAmount = 0;
+      let invalidText = 0;
+      let outOfRange = 0;
+      let zeroAmounts = 0;
+      const uniqueDates = new Set();
+      let maxTextLen = 0;
+      let totalTextLen = 0;
+
+      let considered = 0; // non-empty rows considered for validation rates
+      for (const r of (rows || [])){
+        if (!r || typeof r !== "object") continue;
+
+        const rawDate = m.date ? r[m.date] : "";
+        const rawText = m.text ? r[m.text] : "";
+        const rawRef = m.ref ? r[m.ref] : "";
+        const rawAmount = m.amount ? r[m.amount] : "";
+        const rawDebit = m.debit ? r[m.debit] : "";
+        const rawCredit = m.credit ? r[m.credit] : "";
+
+        const isEmptyRow = !String(rawDate ?? "").trim() && !String(rawText ?? "").trim() && !String(rawRef ?? "").trim() &&
+          (!useDebCred ? !String(rawAmount ?? "").trim() : (!String(rawDebit ?? "").trim() && !String(rawCredit ?? "").trim()));
+        if (isEmptyRow) continue;
+
+        considered++;
+
+        const dateISO = parseDateToISO(rawDate);
+        if (!dateISO) invalidDate++;
+
+        const text = normWhitespaceKeepCase(rawText);
+        if (!text) invalidText++;
+
+        let amount = NaN;
+        if (useDebCred){
+          const deb = parseNumberSE(rawDebit);
+          const cre = parseNumberSE(rawCredit);
+          const d = Number.isFinite(deb) ? deb : 0;
+          const c = Number.isFinite(cre) ? cre : 0;
+          amount = c - d;
+        } else {
+          amount = parseNumberSE(rawAmount);
+        }
+        amount = Math.round(amount * 100) / 100;
+
+        if (!Number.isFinite(amount)) invalidAmount++;
+
+        // Keep only fully valid rows
+        if (!dateISO || !text || !Number.isFinite(amount)) continue;
+        if (from && dateISO < from) { outOfRange++; continue; }
+        if (to && dateISO > to) { outOfRange++; continue; }
+
+        const ref = normWhitespaceKeepCase(rawRef);
+        if (Math.abs(amount) < 0.00001) zeroAmounts++;
+        uniqueDates.add(dateISO);
+        maxTextLen = Math.max(maxTextLen, text.length);
+        totalTextLen += text.length;
+
+        const fp = bankImportFingerprintKey(dateISO, amount, text, ref);
+        drafts.push({ dateISO, amount, text: clampText(text, 200), ref: clampText(ref, 120), raw: r, fingerprint: fp });
+      }
+
+      const kept = drafts.length;
+      const avgTextLen = kept ? (totalTextLen / kept) : 0;
+
+      let severity = "ok";
+      const warnings = [];
+
+      const invalidDateRate = considered ? (invalidDate / considered) : 1;
+      const invalidAmountRate = considered ? (invalidAmount / considered) : 1;
+
+      if (kept === 0) {
+        severity = "red";
+        warnings.push("Inga rader kunde tolkas med vald mappning.");
+      }
+      if (invalidDateRate > 0.20) {
+        severity = "red";
+        warnings.push("Mer än 20% rader saknar giltigt datum – kontrollera kolumnmappningen.");
+      }
+      if (invalidAmountRate > 0.20) {
+        severity = "red";
+        warnings.push("Mer än 20% rader saknar giltigt belopp – kontrollera kolumnmappningen.");
+      }
+      if (kept > 0 && zeroAmounts === kept) {
+        severity = "red";
+        warnings.push("Alla belopp blev 0 – sannolikt fel kolumn för belopp/debet/kredit.");
+      }
+
+      if (invalidDate > 0) warnings.push(`${invalidDate} rader saknar giltigt datum.`);
+      if (invalidAmount > 0) warnings.push(`${invalidAmount} rader saknar giltigt belopp.`);
+      if (invalidText > 0) warnings.push(`${invalidText} rader saknar text/beskrivning.`);
+      if (outOfRange > 0) warnings.push(`${outOfRange} rader filtrerades bort av datumintervall.`);
+
+      // Yellow warnings
+      if (severity !== "red"){
+        if (kept >= 10 && uniqueDates.size <= 2){
+          warnings.push("Ovanligt få unika datum – kan tyda på fel datumkolumn.");
+          severity = "yellow";
+        }
+        if (maxTextLen >= 170 || avgTextLen >= 80){
+          warnings.push("Ovanligt långa texter – kan tyda på att fel kolumn valts som Text.");
+          severity = "yellow";
+        }
+        try {
+          if (m.amount){
+            const stA = colStats(rows, m.amount);
+            if ((stA.dateRate || 0) > 0.45){
+              warnings.push("Belopp-kolumnen ser ut att innehålla datum – kontrollera mappningen.");
+              severity = "yellow";
+            }
+          }
+          if (m.date){
+            const stD = colStats(rows, m.date);
+            if ((stD.numRate || 0) > 0.80 && (stD.dateRate || 0) < 0.25){
+              warnings.push("Datum-kolumnen ser ut att innehålla tal – kontrollera mappningen.");
+              severity = "yellow";
+            }
+          }
+        } catch {}
+      }
+
+      if (!warnings.length) warnings.push("OK");
+
+      return {
+        drafts,
+        warnings,
+        stats: { total: (rows || []).length, considered, kept, invalidDate, invalidAmount, invalidText, outOfRange, uniqueDates: uniqueDates.size, avgTextLen, maxTextLen },
+        severity,
+      };
     }
 
     function setModalWarning(severity, lines){
@@ -4293,7 +4623,7 @@ if (!d.features) d.features = { sruEnabled: false };
     function listBatches(){
       const m = state.bankImport?.batches || {};
       const list = Object.values(m).filter(x=>x && typeof x === "object");
-      list.sort((a,b)=> String(b.createdAt||"").localeCompare(String(a.createdAt||""), "sv"));
+      list.sort((a,b)=> String(b.createdAtISO||b.createdAt||"").localeCompare(String(a.createdAtISO||a.createdAt||""), "sv"));
       return list;
     }
 
@@ -4308,7 +4638,7 @@ if (!d.features) d.features = { sruEnabled: false };
       let items = listItems();
       if (batchId) items = items.filter(x=> x.batchId === batchId);
       if (status) items = items.filter(x=> String(x.status||"") === status);
-      items.sort((a,b)=> (String(b.dateISO||"") + String(b.createdAt||"")).localeCompare(String(a.dateISO||"")+String(a.createdAt||""), "sv"));
+      items.sort((a,b)=> (String(b.dateISO||"") + String(b.createdAtISO||b.createdAt||"")).localeCompare(String(a.dateISO||"")+String(a.createdAtISO||a.createdAt||""), "sv"));
       return items;
     }
 
@@ -4338,23 +4668,120 @@ if (!d.features) d.features = { sruEnabled: false };
       return { account: "", invoiceId: null, confidence: 0 };
     }
 
+    function detectCsvDelimiter(line){
+      const s = String(line || "");
+      const cSemi = (s.match(/;/g) || []).length;
+      const cComma = (s.match(/,/g) || []).length;
+      const cTab = (s.match(/\t/g) || []).length;
+      if (cTab > cSemi && cTab > cComma) return "\t";
+      if (cSemi >= cComma) return ";";
+      return ",";
+    }
+
+    function splitCsvLine(line, delim){
+      const out = [];
+      let cur = "";
+      let inQ = false;
+      const s = String(line || "");
+      for (let i=0;i<s.length;i++){
+        const ch = s[i];
+        if (inQ){
+          if (ch === '"'){
+            const next = s[i+1];
+            if (next === '"') { cur += '"'; i++; }
+            else inQ = false;
+          } else {
+            cur += ch;
+          }
+        } else {
+          if (ch === '"') inQ = true;
+          else if (ch === delim){ out.push(cur); cur = ""; }
+          else cur += ch;
+        }
+      }
+      out.push(cur);
+      return out.map(x=> String(x ?? "").trim());
+    }
+
+    function normalizeHeaderFields(fields){
+      const out = (fields||[]).map(x=> String(x ?? "").trim());
+      const hasAny = out.some(x=> !!x);
+      if (!hasAny){
+        return out.map((_,i)=> `Col${i+1}`);
+      }
+      return out.map((f,i)=> f ? f : `Col${i+1}`);
+    }
+
+    function simpleCsvToRows(text){
+      const lines = String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
+      const first = lines.find(l=> String(l).trim().length > 0) || "";
+      const delim = detectCsvDelimiter(first);
+      const headerRaw = splitCsvLine(first, delim);
+      const fields = normalizeHeaderFields(headerRaw);
+      const rows = [];
+      let started = false;
+      for (const ln of lines){
+        const t = String(ln || "");
+        if (!started){
+          if (t === first) started = true;
+          continue;
+        }
+        if (!t.trim()) continue;
+        const parts = splitCsvLine(t, delim);
+        const obj = {};
+        for (let i=0;i<fields.length;i++) obj[fields[i]] = parts[i] ?? "";
+        rows.push(obj);
+      }
+      return { rows, fields };
+    }
+
     async function parseCsvFile(file){
       const ok = await ensurePapa();
-      if (!ok) throw new Error("CSV-parser kunde inte laddas (PapaParse). Kontrollera internet eller lägg in bibliotek lokalt.");
-      return await new Promise((resolve, reject)=>{
-        try {
-          window.Papa.parse(file, {
-            header: true,
-            skipEmptyLines: true,
-            complete: (res)=>{
-              const rows = (res && res.data) ? res.data : [];
-              const fields = (res && res.meta && Array.isArray(res.meta.fields)) ? res.meta.fields : getFieldsFromRows(rows);
-              resolve({ rows, fields });
-            },
-            error: (err)=> reject(err)
-          });
-        } catch (e){ reject(e); }
-      });
+      if (ok){
+        return await new Promise((resolve, reject)=>{
+          try {
+            window.Papa.parse(file, {
+              header: true,
+              skipEmptyLines: true,
+              complete: (res)=>{
+                const rows = (res && res.data) ? res.data : [];
+                const fieldsRaw = (res && res.meta && Array.isArray(res.meta.fields)) ? res.meta.fields : getFieldsFromRows(rows);
+                const fields = normalizeHeaderFields(fieldsRaw);
+                // ensure all keys exist even if header blanks
+                const fixedRows = rows.map(r=>{
+                  const o = {};
+                  for (const f of fields) o[f] = (r && Object.prototype.hasOwnProperty.call(r, f)) ? r[f] : (r && r[f] ? r[f] : "");
+                  return Object.assign(o, r);
+                });
+                resolve({ rows: fixedRows, fields });
+              },
+              error: (err)=> reject(err)
+            });
+          } catch (e){ reject(e); }
+        });
+      }
+
+      // Fallback when PapaParse is blocked/unavailable
+      const text = await file.text();
+      return simpleCsvToRows(text);
+    }
+
+    async function parseTabularFile(file, opts){
+      const sheetName = opts && opts.sheetName ? String(opts.sheetName) : "";
+      const name = file && file.name ? file.name : "";
+      const ext = fileExt(name);
+      if (ext === "csv"){
+        const { rows, fields } = await parseCsvFile(file);
+        return { rows, columns: fields, sheetNames: [], sheetName: "" };
+      }
+      if (ext === "xlsx" || ext === "xls"){
+        const wb = await readWorkbook(file);
+        const sheetNames = (wb && Array.isArray(wb.SheetNames)) ? wb.SheetNames.slice() : [];
+        const chosen = sheetName || sheetNames[0] || "";
+        const { rows, fields, sheetName: used } = workbookSheetToRows(wb, chosen);
+        return { rows, columns: fields, sheetNames, sheetName: used || chosen, workbook: wb };
+      }
+      throw new Error("Okänt filformat. Välj .csv, .xlsx eller .xls.");
     }
 
     async function readWorkbook(file){
@@ -4374,15 +4801,16 @@ if (!d.features) d.features = { sruEnabled: false };
       return { rows, fields, sheetName: name };
     }
 
-    function hydrateMappingFields(fields){
+    function hydrateMappingFields(fields, autoMap){
       const f = (fields||[]).slice();
 
-      const guessDate = pickField(f, ["datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","valutadag","transactiondate"]);
-      const guessText = pickField(f, ["text","beskrivning","förklaring","forklaring","memo","motpart","namn","description"]);
-      const guessAmount = pickField(f, ["belopp","amount","summa","total","amountsek"]);
-      const guessRef = pickField(f, ["referens","reference","ref","ocr","meddelande","message"]);
-      const guessDebit = pickField(f, ["debet","debit","ut","withdrawal"]);
-      const guessCredit = pickField(f, ["kredit","credit","in","deposit"]);
+      const a = autoMap || {};
+      const guessDate = a.date || pickField(f, ["datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","valutadag","transactiondate"]);
+      const guessText = a.text || pickField(f, ["text","beskrivning","förklaring","forklaring","memo","motpart","namn","description"]);
+      const guessAmount = a.amount || pickField(f, ["belopp","amount","summa","total","amountsek"]);
+      const guessRef = a.ref || pickField(f, ["referens","reference","ref","ocr","meddelande","message"]);
+      const guessDebit = a.debit || pickField(f, ["debet","debit","ut","withdrawal"]);
+      const guessCredit = a.credit || pickField(f, ["kredit","credit","in","deposit"]);
 
       fillMappingSelect(ui.mapDate, f, guessDate, false);
       fillMappingSelect(ui.mapText, f, guessText, false);
@@ -4417,75 +4845,41 @@ if (!d.features) d.features = { sruEnabled: false };
       const from = ui.dateFrom ? ui.dateFrom.value : "";
       const to = ui.dateTo ? ui.dateTo.value : "";
       const rows = parsedFile.rows || [];
-
-      const rowsNorm = [];
-      let invalid = 0;
-      let outOfRange = 0;
-      for (const r of rows){
-        if (!r || typeof r !== "object") continue;
-        const dateISO = parseDateToISO(r[mapping.date]);
-        const text = String(r[mapping.text] ?? "").trim();
-        const ref = mapping.ref ? String(r[mapping.ref] ?? "").trim() : "";
-        let amount = NaN;
-        if (useDebCred){
-          const deb = parseNumberSE(r[mapping.debit]);
-          const cre = parseNumberSE(r[mapping.credit]);
-          const d = Number.isFinite(deb) ? deb : 0;
-          const c = Number.isFinite(cre) ? cre : 0;
-          amount = c - d;
-        } else {
-          amount = parseNumberSE(r[mapping.amount]);
-        }
-        amount = Math.round(amount * 100) / 100;
-
-        if (!dateISO || !text || !Number.isFinite(amount)) { invalid++; continue; }
-        if (from && dateISO < from) { outOfRange++; continue; }
-        if (to && dateISO > to) { outOfRange++; continue; }
-
+      const norm = normalizeRows(rows, mapping, { dateFrom: from, dateTo: to });
+      const rowsNorm = (norm.drafts || []).map(d=>{
         const base = {
           source: src,
           bankAccount: bankAcc,
-          dateISO,
-          amount,
-          text: clampText(text, 200),
-          ref: clampText(ref, 120),
+          dateISO: d.dateISO,
+          amount: d.amount,
+          text: d.text,
+          ref: d.ref,
+          raw: d.raw || null,
+          fingerprint: d.fingerprint,
         };
         const sug = suggestCounterAccount(base);
         base.suggestedAccount = sug.account && state.accounts?.[sug.account] ? sug.account : "";
         base.suggestedInvoiceId = sug.invoiceId || null;
         base.confidence = clamp01(sug.confidence);
         base.status = base.suggestedAccount ? "matched" : "unmatched";
-        base.fingerprint = fingerprintForRow(base);
-        rowsNorm.push(base);
-      }
-
-      // Severity rules:
-      // - red: too few rows OR lots of invalid rows
-      // - yellow: some invalid/out-of-range
-      const total = rows.length;
-      const kept = rowsNorm.length;
-      const invalidRate = total ? (invalid / total) : 1;
-      let severity = "ok";
-      const warnings = [];
-      if (kept === 0) { severity = "red"; warnings.push("Inga rader kunde tolkas med vald mappning."); }
-      if (invalid > 0) warnings.push(`${invalid} rader kunde inte tolkas (datum/belopp/text).`);
-      if (outOfRange > 0) warnings.push(`${outOfRange} rader filtrerades bort av datumintervall.`);
-      if (invalidRate > 0.25) { severity = "red"; warnings.push("Hög andel ogiltiga rader – kontrollera kolumnmappningen."); }
-      else if (invalid > 0 || outOfRange > 0) severity = "yellow";
+        return base;
+      });
 
       prepared = {
         source: src,
         bankAccount: bankAcc,
         fileName: parsedFile.fileName,
+        fileHash: parsedFile.fileHash || "",
         sheetName: parsedFile.sheetName || "",
         mapping,
         rowsNorm,
-        stats: { total, kept, invalid, outOfRange },
-        severity,
+        stats: norm.stats,
+        severity: norm.severity,
+        warnings: norm.warnings,
       };
 
       renderPreview(rowsNorm);
-      setModalWarning(severity, warnings.length ? warnings : ["OK"]);
+      setModalWarning(prepared.severity, (prepared.warnings && prepared.warnings.length) ? prepared.warnings : ["OK"]);
       updateModalButtons();
     }
 
@@ -4504,6 +4898,28 @@ if (!d.features) d.features = { sruEnabled: false };
       });
     }
 
+    function bufToHex(buf){
+      try {
+        const b = new Uint8Array(buf);
+        let s = "";
+        for (let i=0;i<b.length;i++) s += b[i].toString(16).padStart(2, "0");
+        return s;
+      } catch {
+        return "";
+      }
+    }
+    async function tryFileSha256Hex(file){
+      try {
+        if (!window.crypto || !crypto.subtle) return "";
+        if (file && typeof file.size === "number" && file.size > 40*1024*1024) return ""; // avoid huge files
+        const buf = await file.arrayBuffer();
+        const dig = await crypto.subtle.digest("SHA-256", buf);
+        return bufToHex(dig);
+      } catch {
+        return "";
+      }
+    }
+
     async function handleFileSelected(){
       const f = ui.file && ui.file.files ? ui.file.files[0] : null;
       if (!f) return;
@@ -4511,35 +4927,35 @@ if (!d.features) d.features = { sruEnabled: false };
       if (ui.fileName) ui.fileName.textContent = f.name;
       const ext = fileExt(f.name);
       try {
-        if (ext === "csv"){
-          const { rows, fields } = await parseCsvFile(f);
-          parsedFile = { fileName: f.name, ext, rows, fields, sheetName: "" };
-          if (ui.sheetBox) ui.sheetBox.hidden = true;
-          hydrateMappingFields(fields);
-          buildPrepared();
-          return;
+        const hash = await tryFileSha256Hex(f);
+        const res = await parseTabularFile(f, { sheetName: ui.sheet ? ui.sheet.value : "" });
+        const fields = res.columns || [];
+        const sheetNames = res.sheetNames || [];
+
+        if (ui.sheet){
+          ui.sheet.innerHTML = "";
+          sheetNames.forEach(n=>{
+            const o = document.createElement("option");
+            o.value = n;
+            o.textContent = n;
+            ui.sheet.appendChild(o);
+          });
         }
-        if (ext === "xlsx" || ext === "xls"){
-          const wb = await readWorkbook(f);
-          const names = (wb && wb.SheetNames) ? wb.SheetNames.slice() : [];
-          if (ui.sheet){
-            ui.sheet.innerHTML = "";
-            names.forEach(n=>{
-              const o = document.createElement("option");
-              o.value = n;
-              o.textContent = n;
-              ui.sheet.appendChild(o);
-            });
-          }
-          if (ui.sheetBox) ui.sheetBox.hidden = names.length <= 1;
-          const chosen = (ui.sheet && ui.sheet.value) ? ui.sheet.value : (names[0] || "");
-          const { rows, fields, sheetName } = workbookSheetToRows(wb, chosen);
-          parsedFile = { fileName: f.name, ext, workbook: wb, sheetName, rows, fields };
-          hydrateMappingFields(fields);
-          buildPrepared();
-          return;
-        }
-        setPreparedNull("Okänt filformat. Välj .csv, .xlsx eller .xls.");
+        if (ui.sheetBox) ui.sheetBox.hidden = !(ext === "xlsx" || ext === "xls") || sheetNames.length <= 1;
+
+        parsedFile = {
+          fileName: f.name,
+          ext,
+          fileHash: hash,
+          workbook: res.workbook || null,
+          sheetName: res.sheetName || "",
+          rows: res.rows || [],
+          fields,
+        };
+
+        const auto = detectMapping(parsedFile.rows, parsedFile.fields);
+        hydrateMappingFields(fields, auto);
+        buildPrepared();
       } catch (e){
         console.error(e);
         setPreparedNull(e && e.message ? e.message : "Kunde inte läsa filen.");
@@ -4554,7 +4970,8 @@ if (!d.features) d.features = { sruEnabled: false };
         parsedFile.rows = rows;
         parsedFile.fields = fields;
         parsedFile.sheetName = sheetName;
-        hydrateMappingFields(fields);
+        const auto = detectMapping(rows, fields);
+        hydrateMappingFields(fields, auto);
         buildPrepared();
       } catch (e){
         console.error(e);
@@ -4572,47 +4989,49 @@ if (!d.features) d.features = { sruEnabled: false };
       const batches = state.bankImport.batches || (state.bankImport.batches = {});
       const items = state.bankImport.items || (state.bankImport.items = {});
 
-      const batchId = crypto.randomUUID();
+      const batchId = makeBatchId();
       const now = new Date().toISOString();
       const batch = {
         id: batchId,
-        createdAt: now,
+        createdAtISO: now,
         source: src,
-        bankAccount: bankAcc,
-        fileName: prepared.fileName || "",
-        sheetName: prepared.sheetName || "",
+        filename: prepared.fileName || "",
+        fileHash: prepared.fileHash || "",
+        rowCount: rows.length,
+        accountBank: bankAcc,
         mapping: prepared.mapping || {},
-        importedCount: 0,
-        skippedDuplicates: 0,
+        warnings: prepared.warnings || [],
+        sheetName: prepared.sheetName || "",
       };
+
+      let importedCount = 0;
+      let skippedDuplicates = 0;
 
       for (const r of rows){
         const fp = r.fingerprint;
-        if (fp && fpMap[fp]){ batch.skippedDuplicates++; continue; }
+        if (fp && fpMap[fp]){ skippedDuplicates++; continue; }
         const id = crypto.randomUUID();
         const it = {
           id,
           batchId,
-          createdAt: now,
           source: src,
-          bankAccount: bankAcc,
+          createdAtISO: now,
           dateISO: r.dateISO,
           amount: Math.round((Number(r.amount)||0)*100)/100,
           text: clampText(r.text||"", 200),
-          ref: clampText(r.ref||"", 120),
+          ref: r.ref ? clampText(r.ref||"", 120) : "",
+          raw: r.raw || null,
           status: r.status || "unmatched",
           suggestedAccount: r.suggestedAccount || "",
           suggestedInvoiceId: r.suggestedInvoiceId || null,
           confidence: clamp01(r.confidence || 0),
           postedVoucherId: null,
-          postedAt: null,
           undoVoucherId: null,
-          undoneAt: null,
           fingerprint: fp || "",
         };
         items[id] = it;
         if (fp) fpMap[fp] = id;
-        batch.importedCount++;
+        importedCount++;
       }
       batches[batchId] = batch;
 
@@ -4628,11 +5047,11 @@ if (!d.features) d.features = { sruEnabled: false };
         entityType: "bankimport.batch",
         entityId: batchId,
         yearId: state.activeYearId,
-        details: { fileName: batch.fileName, sheetName: batch.sheetName, source: src, bankAccount: bankAcc, importedCount: batch.importedCount, skippedDuplicates: batch.skippedDuplicates }
+        details: { filename: batch.filename, sheetName: batch.sheetName, source: src, accountBank: bankAcc, rowCount: batch.rowCount, importedCount, skippedDuplicates, fileHash: batch.fileHash || "" }
       });
 
       save();
-      showToast(`Importerade ${batch.importedCount} rader. Dubbletter: ${batch.skippedDuplicates}.`, 5500);
+      showToast(`Importerade ${importedCount} rader. Dubbletter: ${skippedDuplicates}.`, 5500);
       closeModal();
       // switch to inbox tab
       try { activateTab("bank_inbox"); } catch {}
@@ -4644,6 +5063,7 @@ if (!d.features) d.features = { sruEnabled: false };
       if (!state.bankImport.batches || typeof state.bankImport.batches !== "object") state.bankImport.batches = {};
       if (!state.bankImport.items || typeof state.bankImport.items !== "object") state.bankImport.items = {};
       if (!state.bankImport.fingerprints || typeof state.bankImport.fingerprints !== "object") state.bankImport.fingerprints = {};
+      if (!Array.isArray(state.bankImport.rules)) state.bankImport.rules = [];
       if (!state.bankImport.settings || typeof state.bankImport.settings !== "object") state.bankImport.settings = { lastSource:"bank", defaultBankAccount:"", defaultTaxAccount:"" };
     }
 
@@ -4659,7 +5079,7 @@ if (!d.features) d.features = { sruEnabled: false };
       for (const b of batches){
         const o = document.createElement("option");
         o.value = b.id;
-        const label = `${(b.createdAt||"").slice(0,19).replace("T"," ")} · ${b.source || ""} · ${b.fileName || b.id}`;
+        const label = `${(b.createdAtISO||b.createdAt||"").slice(0,19).replace("T"," ")} · ${b.source || ""} · ${b.filename || b.fileName || b.id}`;
         o.textContent = label.slice(0, 120);
         ui.batchFilter.appendChild(o);
       }
@@ -4730,6 +5150,17 @@ if (!d.features) d.features = { sruEnabled: false };
       }
     }
 
+    function bankAccountForItem(item){
+      try {
+        const b = state.bankImport?.batches?.[item.batchId];
+        const acc = (b && (b.accountBank || b.bankAccount)) ? String(b.accountBank || b.bankAccount) : (item && item.bankAccount ? String(item.bankAccount) : "");
+        if (acc && state.accounts?.[acc]) return acc;
+      } catch {}
+      // Fallback: best-effort defaults
+      const guess = (item && item.source === "skattekonto") ? "1630" : "1930";
+      return guess;
+    }
+
     function buildVoucherLines(bankAccount, counterAccount, amount, text){
       const a = Math.round((Number(amount)||0)*100)/100;
       if (!Number.isFinite(a) || Math.abs(a) < 0.00001) return [];
@@ -4747,7 +5178,8 @@ if (!d.features) d.features = { sruEnabled: false };
       const sign = clampText((state.company?.defaultSign || "").trim());
       const regDate = todayISO();
       const text = clampText(item.text || "Bankrad", 200);
-      const lines = buildVoucherLines(item.bankAccount, counterAccount, item.amount, text);
+      const bankAcc = bankAccountForItem(item);
+      const lines = buildVoucherLines(bankAcc, counterAccount, item.amount, text);
       const sum = lines.reduce((s,l)=> s + (Number(l.amount)||0), 0);
       if (Math.abs(sum) > 0.00001) throw new Error("Verifikation ej i balans");
 
@@ -4774,7 +5206,7 @@ if (!d.features) d.features = { sruEnabled: false };
         entityType: "bankimport.item",
         entityId: item.id,
         yearId,
-        details: { date: v.date, voucherId: v.id, bankAccount: item.bankAccount, counterAccount, amount: item.amount }
+        details: { date: v.date, voucherId: v.id, accountBank: bankAcc, counterAccount, amount: item.amount }
       });
 
       return v;
@@ -4851,7 +5283,7 @@ if (!d.features) d.features = { sruEnabled: false };
         return;
       }
 
-      const ok = await confirmAsync(`Radera batchen?\n\n${batch.fileName || batch.id}\nRader: ${items.length}\n\nDetta påverkar inte bokföringen (inga verifikationer finns i batchen).`, {
+      const ok = await confirmAsync(`Radera batchen?\n\n${batch.filename || batch.fileName || batch.id}\nRader: ${items.length}\n\nDetta påverkar inte bokföringen (inga verifikationer finns i batchen).`, {
         okText: "Radera",
         cancelText: "Avbryt",
         danger: true
