@@ -282,7 +282,7 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
-      <span class="pill" id="revPill">v0.2.2</span>
+      <span class="pill" id="revPill">v0.2.3</span>
     </div>
   </div>
 </header>
@@ -1682,8 +1682,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
-  const APP_SEMVER = "0.2.2";  // user-facing revision
-  const APP_GIT_REV = "f7727a7";      // injected by tools/stamp-fu-version.mjs (optional)
+  const APP_SEMVER = "0.2.3";  // user-facing revision
+  const APP_GIT_REV = "0dc0a32";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -3558,7 +3558,8 @@ if (!d.features) d.features = { sruEnabled: false };
       return defaultData();
     }
   }
-  function save(){
+  function save(opts){
+    const doRenderAll = !opts || opts.renderAll !== false;
     const isQuotaError = (e) => {
       const name = e && e.name ? String(e.name) : "";
       const msg = e && e.message ? String(e.message) : "";
@@ -3594,7 +3595,9 @@ if (!d.features) d.features = { sruEnabled: false };
 
     if (persisted) localStorageOk = true;
 
-    try { renderAll(); } catch (e){ console.error(e); }
+    if (doRenderAll){
+      try { renderAll(); } catch (e){ console.error(e); }
+    }
     try { scheduleFileAutosave(); } catch (e){ console.error(e); }
     return persisted;
   }
@@ -7237,20 +7240,29 @@ if (!d.features) d.features = { sruEnabled: false };
       orgnr: (supRegOrgnr?.value || "").trim(),
       payout: (supRegPayout?.value || "").trim()
     };
-    const id = (supEditId?.value || "").trim() || crypto.randomUUID();
+    const id = (supEditId?.value || "").trim() || (crypto && crypto.randomUUID ? crypto.randomUUID() : (String(Date.now()) + "-" + Math.random().toString(16).slice(2)));
     state.suppliers = state.suppliers || {};
     state.suppliers[id] = s;
-    save();
+    save({ renderAll:false });
     renderSuppliers();
+    try { renderSiSupplierSelect(); } catch (e){}
     loadSupplierToEditor(id);
   }
 
   async function deleteSupplier(id){
     if (!(await confirmAsync("Ta bort leverantören?"))) return;
     delete state.suppliers[id];
-    save();
+    save({ renderAll:false });
     renderSuppliers();
+    try { renderSiSupplierSelect(); } catch (e){}
     resetSupplierEditor();
+  }
+
+  function wireSupplierRegistryEvents(){
+    if (btnSupNew) btnSupNew.addEventListener("click", (e)=>{ e.preventDefault(); resetSupplierEditor(); });
+    if (btnSupSave) btnSupSave.addEventListener("click", (e)=>{ e.preventDefault(); saveSupplierFromRegistry(); });
+    if (btnSupRefresh) btnSupRefresh.addEventListener("click", (e)=>{ e.preventDefault(); renderSuppliers(); try { renderSiSupplierSelect(); } catch (e){} });
+    if (supSearch) supSearch.addEventListener("input", ()=>{ try { renderSuppliers(); } catch (e){} });
   }
 
   function renderSuppliers(){
@@ -10975,6 +10987,8 @@ try { if (invDate) invDate.value = todayISO(); } catch (e){ console.error(e); }
 try { if (invDue) invDue.value = addDays(todayISO(), (state.company.payDays||30)); } catch (e){ console.error(e); }
 
 try { if (siYearSelect) siYearSelect.value = state.activeYearId; } catch (e){ console.error(e); }
+try { if (typeof wireSupplierRegistryEvents === "function") wireSupplierRegistryEvents(); } catch (e){ console.error(e); }
+try { if (typeof renderSuppliers === "function") renderSuppliers(); } catch (e){ console.error(e); }
 try { if (typeof wireSupplierInvoiceEvents === "function") wireSupplierInvoiceEvents(); } catch (e){ console.error(e); }
 try { if (typeof newSupplierInvoice === "function") newSupplierInvoice(); } catch (e){ console.error(e); }
 try { if (typeof renderSupplierInvoices === "function") renderSupplierInvoices(); } catch (e){ console.error(e); }
