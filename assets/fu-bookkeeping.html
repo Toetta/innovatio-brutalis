@@ -270,6 +270,7 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
+      <span class="pill" id="revPill">v0.1.0</span>
     </div>
   </div>
 </header>
@@ -1669,6 +1670,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
+  const APP_SEMVER = "0.1.0";  // user-facing revision
+  const APP_GIT_REV = "";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -1683,12 +1686,21 @@
   }
 
   const bootPill = document.getElementById("bootPill");
+  const revPill = document.getElementById("revPill");
   const setBoot = (text, kind) => {
     if (!bootPill) return;
     bootPill.textContent = text;
     if (kind) setPillState(bootPill, kind);
   };
+
+  function updateRevisionPill(){
+    if (!revPill) return;
+    const v = String(APP_SEMVER || "0.0.0");
+    const r = String(APP_GIT_REV || "").trim();
+    revPill.textContent = r ? (`v${v} · ${r}`) : (`v${v}`);
+  }
   setBoot("JS: OK", "ok");
+  updateRevisionPill();
   window.addEventListener("error", (ev) => {
     try {
       const msg = ev && ev.message ? String(ev.message) : "(okänt fel)";
