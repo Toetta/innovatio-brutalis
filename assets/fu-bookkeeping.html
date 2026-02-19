@@ -245,6 +245,11 @@
       padding:14px;
       box-shadow: 0 10px 30px rgba(0,0,0,.25);
     }
+    .modal.wide{
+      width:min(920px, calc(100vw - 24px));
+      max-height:calc(100vh - 24px);
+      overflow:auto;
+    }
     .modal .actions{ display:flex; justify-content:flex-end; gap:10px; margin-top:12px; flex-wrap:wrap; }
 
   </style>
@@ -1507,7 +1512,7 @@
 
 <!-- Bank import modal -->
 <div id="bankImportModal" class="modal-backdrop" hidden>
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bankImportTitle">
+  <div class="modal wide" role="dialog" aria-modal="true" aria-labelledby="bankImportTitle">
     <div class="row" style="justify-content:space-between; align-items:center; gap:10px;">
       <div id="bankImportTitle" style="font-weight:800;">Importera bank/skatteutdrag</div>
       <button type="button" class="btn secondary" id="btnBankImportClose">Stäng</button>
@@ -1553,7 +1558,7 @@
 
       <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
         <div style="font-weight:800; margin-bottom:8px;">Kolumnmappning</div>
-        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:10px;">
+        <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap:10px;">
           <div class="field">
             <label>Datum (krav)</label>
             <select id="biMapDate"></select>
