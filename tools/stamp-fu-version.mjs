@@ -1,8 +1,10 @@
 import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const here = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(here, "..");
 const target = path.join(repoRoot, "assets", "fu-bookkeeping.html");
 
 function readFileSafe(p){
@@ -15,7 +17,9 @@ function writeFileSafe(p, s){
 
 function getGitShort(){
   try {
-    const out = execSync("git rev-parse --short HEAD", { cwd: repoRoot, stdio: ["ignore", "pipe", "ignore"] })
+    const includeDirty = process.argv.includes("--dirty");
+    const cmd = includeDirty ? "git describe --tags --always --dirty" : "git describe --tags --always";
+    const out = execSync(cmd, { cwd: repoRoot, stdio: ["ignore", "pipe", "ignore"] })
       .toString("utf8")
       .trim();
     return out;
