@@ -269,6 +269,7 @@
       </div>
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
+      <span class="pill" id="backupPill">Backup: –</span>
     </div>
   </div>
 </header>
@@ -2192,13 +2193,33 @@ function updateBackupUI(){
     const el = document.getElementById("backupDirStatus");
     const chk = document.getElementById("chkAutoBackup");
     const btn = document.getElementById("btnChooseBackupDir");
+    const pill = document.getElementById("backupPill");
     if (chk) chk.checked = autoBackupEnabled();
     const last = getLastBackupDay();
     const has = !!backupDirHandle;
+    const supported = backupApiSupported();
 
     if (btn){
       btn.textContent = has ? "Byt backup-mapp…" : "Välj backup-mapp…";
     }
+
+    // Header indicator: green only when folder selected AND at least one backup written
+    if (pill){
+      if (!supported){
+        pill.textContent = "Backup: stöds ej";
+        setPillState(pill, "bad");
+      } else if (!has){
+        pill.textContent = "Backup: ej vald";
+        setPillState(pill, "");
+      } else if (last){
+        pill.textContent = `Backup: ${last}`;
+        setPillState(pill, "ok");
+      } else {
+        pill.textContent = "Backup: vald";
+        setPillState(pill, "");
+      }
+    }
+
     if (el){
       if (!backupApiSupported()){
         el.textContent = "Autobackup stöds ej i denna webbläsare.";
