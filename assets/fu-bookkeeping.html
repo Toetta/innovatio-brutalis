@@ -317,6 +317,8 @@
             <span>Data &amp; Arkiv</span><span class="chev">▸</span>
           </button>
           <div class="navFlyout" id="nav-data" role="menu">
+            <button type="button" class="tab" id="btnBankImportOpen">Import: Bank &amp; Skattekonto</button>
+            <button type="button" class="tab" data-tab="bank_inbox">Inkorg: Bankrader</button>
             <button type="button" class="tab" data-tab="export">Import/Export</button>
           </div>
         </div>
@@ -570,6 +572,77 @@
 
           <div id="reportOutput" class="card" style="padding:12px; border-radius:14px; background:rgba(11,18,32,.90);">
             <div class="muted small">Välj rapport + datumintervall och klicka <b>Generera</b>.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BANKIMPORT INKORG -->
+    <section id="tab-bank_inbox" hidden>
+      <div class="grid">
+        <div class="card">
+          <div class="row" style="justify-content:space-between; margin-bottom:10px; gap:10px; flex-wrap:wrap;">
+            <h2>Inkorg: Bankrader</h2>
+            <div class="row" style="gap:10px; flex-wrap:wrap;">
+              <button class="btn secondary" id="btnBankImportOpen2" type="button">Importera…</button>
+              <button class="btn secondary" id="btnBankInboxRefresh" type="button">Uppdatera</button>
+            </div>
+          </div>
+
+          <div class="row" style="gap:10px; flex-wrap:wrap; align-items:flex-end; margin-bottom:10px;">
+            <div class="field" style="min-width:280px; flex:1;">
+              <label>Batch</label>
+              <select id="biBatchFilter"></select>
+            </div>
+            <div class="field" style="min-width:220px;">
+              <label>Status</label>
+              <select id="biStatusFilter">
+                <option value="">Alla</option>
+                <option value="unmatched">unmatched</option>
+                <option value="matched">matched</option>
+                <option value="posted">posted</option>
+                <option value="duplicate">duplicate</option>
+                <option value="ignored">ignored</option>
+                <option value="error">error</option>
+              </select>
+            </div>
+            <div class="field" style="min-width:220px;">
+              <label>Bulk</label>
+              <div class="row" style="gap:10px; flex-wrap:wrap;">
+                <button class="btn" id="btnBiBulkPost" type="button">Skapa verifikationer för markerade</button>
+                <button class="btn danger" id="btnBiBulkDelete" type="button">Radera markerade rader</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:10px;">
+            <button class="btn secondary" id="btnBiDeleteBatch" type="button">Radera hela import-batchen</button>
+            <button class="btn secondary" id="btnBiUndoBatch" type="button">Ångra bokföring för batch</button>
+            <span id="biStats" class="muted small" style="margin-left:auto;"></span>
+          </div>
+
+          <div style="overflow:auto;">
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:34px;"><input type="checkbox" id="biSelectAll" aria-label="Markera alla" /></th>
+                  <th style="width:110px;">Datum</th>
+                  <th style="width:130px; text-align:right;">Belopp</th>
+                  <th>Text</th>
+                  <th style="width:120px;">Status</th>
+                  <th style="width:200px;">Batch</th>
+                  <th style="width:220px;">Föreslaget konto</th>
+                  <th style="width:160px;">Föreslagen faktura</th>
+                  <th style="width:110px; text-align:right;">Confidence</th>
+                  <th style="width:220px;"></th>
+                </tr>
+              </thead>
+              <tbody id="biTbody"></tbody>
+            </table>
+          </div>
+
+          <div class="muted small" style="margin-top:10px;">
+            Import skapar bara bankrader i inkorgen. Inga verifikationer skapas utan aktivt klick (radvis eller bulk med bekräftelse).
           </div>
         </div>
       </div>
@@ -1432,11 +1505,164 @@
   </div>
 </div>
 
+<!-- Bank import modal -->
+<div id="bankImportModal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bankImportTitle">
+    <div class="row" style="justify-content:space-between; align-items:center; gap:10px;">
+      <div id="bankImportTitle" style="font-weight:800;">Importera bank/skatteutdrag</div>
+      <button type="button" class="btn secondary" id="btnBankImportClose">Stäng</button>
+    </div>
+
+    <div class="grid" style="gap:10px; margin-top:10px;">
+      <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center;">
+        <label class="btn secondary" style="display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+          Välj fil (.csv/.xlsx/.xls)
+          <input id="biFile" type="file" accept=".csv,.xlsx,.xls" hidden />
+        </label>
+        <span id="biFileName" class="muted small" style="max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; display:inline-block;">Ingen fil vald</span>
+      </div>
+
+      <div class="row" style="gap:10px; flex-wrap:wrap;">
+        <div class="field" style="min-width:180px;">
+          <label>Källa</label>
+          <select id="biSource">
+            <option value="bank">Bank</option>
+            <option value="skattekonto">Skattekonto</option>
+          </select>
+        </div>
+        <div class="field" style="min-width:220px; flex:1;">
+          <label>Balans-konto</label>
+          <select id="biBankAccount"></select>
+        </div>
+      </div>
+
+      <div class="row" style="gap:10px; flex-wrap:wrap; align-items:flex-end;">
+        <div class="field" style="min-width:180px;">
+          <label>Datum från (valfritt)</label>
+          <input id="biDateFrom" type="date" />
+        </div>
+        <div class="field" style="min-width:180px;">
+          <label>Datum till (valfritt)</label>
+          <input id="biDateTo" type="date" />
+        </div>
+        <div class="field" style="min-width:220px;" id="biSheetBox" hidden>
+          <label>Sheet (Excel)</label>
+          <select id="biSheet"></select>
+        </div>
+      </div>
+
+      <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
+        <div style="font-weight:800; margin-bottom:8px;">Kolumnmappning</div>
+        <div class="grid" style="grid-template-columns: 1fr 1fr; gap:10px;">
+          <div class="field">
+            <label>Datum (krav)</label>
+            <select id="biMapDate"></select>
+          </div>
+          <div class="field">
+            <label>Belopp (krav)</label>
+            <select id="biMapAmount"></select>
+          </div>
+          <div class="field">
+            <label>Text/Beskrivning (krav)</label>
+            <select id="biMapText"></select>
+          </div>
+          <div class="field">
+            <label>Referens (valfri)</label>
+            <select id="biMapRef"></select>
+          </div>
+          <div class="field">
+            <label>Debet (valfri)</label>
+            <select id="biMapDebit"></select>
+          </div>
+          <div class="field">
+            <label>Kredit (valfri)</label>
+            <select id="biMapCredit"></select>
+          </div>
+        </div>
+        <div class="muted small" style="margin-top:8px;">Om Debet/Kredit används ignoreras Belopp-kolumnen (amount = kredit − debet).</div>
+      </div>
+
+      <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
+        <div style="font-weight:800; margin-bottom:8px;">Preview (20 rader)</div>
+        <div style="overflow:auto; max-height:260px;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:110px;">dateISO</th>
+                <th style="width:130px; text-align:right;">amount</th>
+                <th>text</th>
+                <th style="width:160px;">ref</th>
+              </tr>
+            </thead>
+            <tbody id="biPreviewTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
+        <div style="font-weight:800; margin-bottom:8px;">Validering</div>
+        <div id="biWarnings" class="muted small"></div>
+        <label id="biRiskBox" class="muted small" style="display:flex; gap:8px; align-items:center; margin-top:8px;" hidden>
+          <input id="biRiskOk" type="checkbox" />
+          Jag förstår riskerna och vill importera ändå
+        </label>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="button" class="btn secondary" id="btnBankImportReset">Återställ</button>
+      <button type="button" class="btn" id="btnBankImportRun" disabled>Importera 0 rader till inkorg</button>
+    </div>
+  </div>
+</div>
+
+<!-- Per-row posting modal -->
+<div id="bankPostModal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bankPostTitle">
+    <div class="row" style="justify-content:space-between; align-items:center; gap:10px;">
+      <div id="bankPostTitle" style="font-weight:800;">Kontera bankrad</div>
+      <button type="button" class="btn secondary" id="btnBankPostClose">Stäng</button>
+    </div>
+    <div id="bankPostMeta" class="muted small" style="margin-top:8px;"></div>
+    <div class="field" style="margin-top:10px;">
+      <label>Motkonto</label>
+      <select id="bankPostAccount"></select>
+    </div>
+    <label class="muted small" style="display:flex; gap:8px; align-items:center; margin-top:10px;">
+      <input id="bankPostReviewed" type="checkbox" />
+      Jag har granskat och vill skapa verifikation
+    </label>
+    <div class="actions">
+      <button type="button" class="btn secondary" id="btnBankPostIgnore">Markera som ej bokföringshändelse</button>
+      <button type="button" class="btn" id="btnBankPostCreate" disabled>Skapa verifikation</button>
+    </div>
+  </div>
+</div>
+
+<!-- Bulk posting confirmation modal -->
+<div id="bankBulkModal" class="modal-backdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="bankBulkTitle">
+    <div class="row" style="justify-content:space-between; align-items:center; gap:10px;">
+      <div id="bankBulkTitle" style="font-weight:800;">Skapa verifikationer (bulk)</div>
+      <button type="button" class="btn secondary" id="btnBankBulkClose">Stäng</button>
+    </div>
+    <div id="bankBulkSummary" class="muted small" style="margin-top:10px;"></div>
+    <label class="muted small" style="display:flex; gap:8px; align-items:center; margin-top:10px;">
+      <input id="bankBulkReviewed" type="checkbox" />
+      Jag har granskat
+    </label>
+    <div class="actions">
+      <button type="button" class="btn secondary" id="btnBankBulkCancel">Avbryt</button>
+      <button type="button" class="btn" id="btnBankBulkConfirm" disabled>Skapa verifikationer</button>
+    </div>
+  </div>
+</div>
+
 <script>
 (function(){
  
 
-  const APP_VERSION = "1.2.1"; // bump when adding new data fields
+  const APP_VERSION = "1.3.0"; // bump when adding new data fields
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -1833,6 +2059,17 @@
     if (typeof o.sru.enabled !== "boolean") o.sru.enabled = false;
     if (!o.sru.periodSuffix) o.sru.periodSuffix = "P4";
     if (!Array.isArray(o.sru.neMappings)) o.sru.neMappings = [];
+
+    // Bank import / inbox (staging only)
+    if (!o.bankImport || typeof o.bankImport !== "object") o.bankImport = base.bankImport;
+    if (!o.bankImport.batches || typeof o.bankImport.batches !== "object") o.bankImport.batches = {};
+    if (!o.bankImport.items || typeof o.bankImport.items !== "object") o.bankImport.items = {};
+    if (!o.bankImport.fingerprints || typeof o.bankImport.fingerprints !== "object") o.bankImport.fingerprints = {};
+    if (!o.bankImport.settings || typeof o.bankImport.settings !== "object") o.bankImport.settings = { lastSource: "bank", defaultBankAccount: "", defaultTaxAccount: "" };
+    if (!o.bankImport.settings.lastSource) o.bankImport.settings.lastSource = "bank";
+    if (o.bankImport.settings.defaultBankAccount == null) o.bankImport.settings.defaultBankAccount = "";
+    if (o.bankImport.settings.defaultTaxAccount == null) o.bankImport.settings.defaultTaxAccount = "";
+
     return o;
   }
   function exportBackupJson(){
@@ -2741,7 +2978,13 @@ cur = {
       compliance: { immutableVouchers: true },
       auditSeq: 0,
       auditLog: [],
-      sru: { enabled: false, periodSuffix: "P4", neMappings: [] }
+      sru: { enabled: false, periodSuffix: "P4", neMappings: [] },
+      bankImport: {
+        batches: {},
+        items: {},
+        fingerprints: {},
+        settings: { lastSource: "bank", defaultBankAccount: "1930", defaultTaxAccount: "1630" }
+      }
     };
   }
 
@@ -3148,6 +3391,7 @@ if (!d.features) d.features = { sruEnabled: false };
     vouchers: document.getElementById("tab-vouchers"),
     accounts: document.getElementById("tab-accounts"),
     reports: document.getElementById("tab-reports"),
+    bank_inbox: document.getElementById("tab-bank_inbox"),
     customers: document.getElementById("tab-customers"),
     suppliers: document.getElementById("tab-suppliers"),
     supplier_invoices: document.getElementById("tab-supplier_invoices"),
@@ -3514,6 +3758,7 @@ if (!d.features) d.features = { sruEnabled: false };
 
     // Lazy renders
     if (tabKey === "reports") safeUiCall(typeof renderReports === "function" ? renderReports : null);
+    if (tabKey === "bank_inbox") safeUiCall(typeof BankImportModule !== "undefined" && BankImportModule && typeof BankImportModule.renderInbox === "function" ? BankImportModule.renderInbox : null);
     if (tabKey === "accounts") safeUiCall(typeof renderAccounts === "function" ? renderAccounts : null);
     if (tabKey === "invoices") safeUiCall(typeof renderInvoices === "function" ? renderInvoices : null);
     if (tabKey === "customers") safeUiCall(typeof renderCustomers === "function" ? renderCustomers : null);
@@ -3649,6 +3894,1232 @@ if (!d.features) d.features = { sruEnabled: false };
       return false;
     }
   }
+
+  // --- Bank import / skattekonto import (staging inbox) ---
+  // Safety goals:
+  // - Import NEVER creates vouchers automatically (only stages inbox rows)
+  // - Posting requires explicit user action (row-by-row or bulk with checkbox)
+  // - Duplicate protection via fingerprint (idempotent re-import)
+  // - Undo uses contra vouchers (append-only)
+  const BankImportModule = (function(){
+    const el = (id)=> document.getElementById(id);
+
+    const ui = {
+      // open buttons
+      btnOpen1: el("btnBankImportOpen"),
+      btnOpen2: el("btnBankImportOpen2"),
+
+      // inbox
+      btnRefresh: el("btnBankInboxRefresh"),
+      batchFilter: el("biBatchFilter"),
+      statusFilter: el("biStatusFilter"),
+      selectAll: el("biSelectAll"),
+      tbody: el("biTbody"),
+      stats: el("biStats"),
+      btnBulkPost: el("btnBiBulkPost"),
+      btnBulkDelete: el("btnBiBulkDelete"),
+      btnDeleteBatch: el("btnBiDeleteBatch"),
+      btnUndoBatch: el("btnBiUndoBatch"),
+
+      // import modal
+      modal: el("bankImportModal"),
+      btnClose: el("btnBankImportClose"),
+      btnReset: el("btnBankImportReset"),
+      file: el("biFile"),
+      fileName: el("biFileName"),
+      source: el("biSource"),
+      bankAccount: el("biBankAccount"),
+      dateFrom: el("biDateFrom"),
+      dateTo: el("biDateTo"),
+      sheetBox: el("biSheetBox"),
+      sheet: el("biSheet"),
+      mapDate: el("biMapDate"),
+      mapAmount: el("biMapAmount"),
+      mapText: el("biMapText"),
+      mapRef: el("biMapRef"),
+      mapDebit: el("biMapDebit"),
+      mapCredit: el("biMapCredit"),
+      previewTbody: el("biPreviewTbody"),
+      warnings: el("biWarnings"),
+      riskBox: el("biRiskBox"),
+      riskOk: el("biRiskOk"),
+      btnRun: el("btnBankImportRun"),
+
+      // per row post modal
+      postModal: el("bankPostModal"),
+      btnPostClose: el("btnBankPostClose"),
+      postMeta: el("bankPostMeta"),
+      postAccount: el("bankPostAccount"),
+      postReviewed: el("bankPostReviewed"),
+      btnPostCreate: el("btnBankPostCreate"),
+      btnPostIgnore: el("btnBankPostIgnore"),
+
+      // bulk post modal
+      bulkModal: el("bankBulkModal"),
+      btnBulkClose: el("btnBankBulkClose"),
+      btnBulkCancel: el("btnBankBulkCancel"),
+      bulkSummary: el("bankBulkSummary"),
+      bulkReviewed: el("bankBulkReviewed"),
+      btnBulkConfirm: el("btnBankBulkConfirm"),
+    };
+
+    const selectedIds = new Set();
+    let parsedFile = null; // { fileName, ext, workbook?, sheetName?, rows, fields }
+    let prepared = null;   // { source, bankAccount, fileName, sheetName, mapping, rowsNorm, stats, severity }
+    let openPostItemId = null;
+    let softSaveTimer = null;
+
+    function clamp01(x){
+      const n = Number(x);
+      if (!Number.isFinite(n)) return 0;
+      return Math.max(0, Math.min(1, n));
+    }
+
+    function softSave(){
+      if (softSaveTimer) clearTimeout(softSaveTimer);
+      softSaveTimer = setTimeout(()=>{
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        } catch (e){
+          console.error(e);
+          showToast("Kunde inte spara (localStorage).", 6000);
+        }
+        try { if (typeof scheduleFileAutosave === "function") scheduleFileAutosave(); } catch {}
+      }, 250);
+    }
+
+    function openModal(){
+      if (!ui.modal) return;
+      resetModal(false);
+      // defaults
+      try {
+        const s = state.bankImport?.settings || {};
+        if (ui.source) ui.source.value = s.lastSource || "bank";
+      } catch {}
+      fillBankAccountSelect();
+      updateModalButtons();
+      ui.modal.hidden = false;
+    }
+    function closeModal(){
+      if (!ui.modal) return;
+      ui.modal.hidden = true;
+    }
+    function openPostModal(itemId){
+      openPostItemId = itemId;
+      const item = getItem(itemId);
+      if (!item || !ui.postModal) return;
+      fillAccountSelect(ui.postAccount, { includeEmpty: true, emptyLabel: "Välj motkonto…" });
+      if (ui.postAccount){
+        ui.postAccount.value = (item.suggestedAccount && state.accounts?.[item.suggestedAccount]) ? item.suggestedAccount : "";
+      }
+      if (ui.postReviewed) ui.postReviewed.checked = false;
+      if (ui.btnPostCreate) ui.btnPostCreate.disabled = true;
+      if (ui.postMeta){
+        const a = Number(item.amount)||0;
+        ui.postMeta.textContent = `${item.dateISO} · ${fmtSEK(a)} · ${(item.text||"").slice(0,120)}`;
+      }
+      ui.postModal.hidden = false;
+    }
+    function closePostModal(){
+      if (!ui.postModal) return;
+      ui.postModal.hidden = true;
+      openPostItemId = null;
+    }
+
+    function openBulkModal(summaryHtml){
+      if (!ui.bulkModal) return;
+      if (ui.bulkSummary) ui.bulkSummary.innerHTML = summaryHtml || "";
+      if (ui.bulkReviewed) ui.bulkReviewed.checked = false;
+      if (ui.btnBulkConfirm) ui.btnBulkConfirm.disabled = true;
+      ui.bulkModal.hidden = false;
+    }
+    function closeBulkModal(){
+      if (!ui.bulkModal) return;
+      ui.bulkModal.hidden = true;
+    }
+
+    function resetModal(keepFile){
+      prepared = null;
+      if (!keepFile){
+        parsedFile = null;
+        if (ui.file) ui.file.value = "";
+        if (ui.fileName) ui.fileName.textContent = "Ingen fil vald";
+      }
+      if (ui.sheetBox) ui.sheetBox.hidden = true;
+      if (ui.sheet) ui.sheet.innerHTML = "";
+      [ui.mapDate, ui.mapAmount, ui.mapText, ui.mapRef, ui.mapDebit, ui.mapCredit].filter(Boolean).forEach(s=>{
+        s.innerHTML = "";
+      });
+      if (ui.previewTbody) ui.previewTbody.innerHTML = "";
+      if (ui.warnings) ui.warnings.innerHTML = "";
+      if (ui.riskBox) ui.riskBox.hidden = true;
+      if (ui.riskOk) ui.riskOk.checked = false;
+      updateModalButtons();
+    }
+
+    function fillAccountSelect(select, opts){
+      if (!select) return;
+      const includeEmpty = !!opts?.includeEmpty;
+      const emptyLabel = opts?.emptyLabel || "–";
+
+      const accs = Object.keys(state.accounts || {}).slice().sort((a,b)=> String(a).localeCompare(String(b), "sv"));
+      select.innerHTML = "";
+      if (includeEmpty){
+        const o = document.createElement("option");
+        o.value = "";
+        o.textContent = emptyLabel;
+        select.appendChild(o);
+      }
+      for (const no of accs){
+        const o = document.createElement("option");
+        o.value = no;
+        o.textContent = accountLabel(no);
+        select.appendChild(o);
+      }
+    }
+
+    function fillBankAccountSelect(){
+      if (!ui.bankAccount) return;
+      fillAccountSelect(ui.bankAccount, { includeEmpty: true, emptyLabel: "Välj konto…" });
+      const src = ui.source ? ui.source.value : "bank";
+      const s = state.bankImport?.settings || {};
+      const preferred = src === "skattekonto" ? (s.defaultTaxAccount || "1630") : (s.defaultBankAccount || "1930");
+      if (preferred && state.accounts?.[preferred]) ui.bankAccount.value = preferred;
+      else if (src === "skattekonto" && state.accounts?.["1630"]) ui.bankAccount.value = "1630";
+      else if (src === "bank" && state.accounts?.["1930"]) ui.bankAccount.value = "1930";
+    }
+
+    function setPreparedNull(msg){
+      prepared = null;
+      if (ui.warnings) ui.warnings.innerHTML = msg ? `<div>${escapeHtml(String(msg))}</div>` : "";
+      if (ui.previewTbody) ui.previewTbody.innerHTML = "";
+      updateModalButtons();
+    }
+
+    function fileExt(name){
+      const t = String(name||"").toLowerCase();
+      const m = /\.([a-z0-9]+)$/.exec(t);
+      return m ? m[1] : "";
+    }
+
+    function loadScript(url){
+      return new Promise((resolve, reject)=>{
+        const s = document.createElement("script");
+        s.src = url;
+        s.async = true;
+        s.onload = ()=> resolve(true);
+        s.onerror = ()=> reject(new Error("Kunde inte ladda script: " + url));
+        document.head.appendChild(s);
+      });
+    }
+    async function ensurePapa(){
+      if (window.Papa) return true;
+      try {
+        await loadScript("https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js");
+        return !!window.Papa;
+      } catch (e){
+        console.error(e);
+        return false;
+      }
+    }
+    async function ensureXlsx(){
+      if (window.XLSX) return true;
+      try {
+        await loadScript("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js");
+        return !!window.XLSX;
+      } catch (e){
+        console.error(e);
+        return false;
+      }
+    }
+
+    function getFieldsFromRows(rows){
+      const set = new Set();
+      (rows||[]).forEach(r=>{
+        if (!r || typeof r !== "object") return;
+        Object.keys(r).forEach(k=> set.add(k));
+      });
+      return Array.from(set);
+    }
+
+    function pickField(fields, patterns){
+      const f = (fields||[]).map(x=> String(x||"").trim()).filter(Boolean);
+      const norm = (s)=> String(s||"").toLowerCase().replaceAll(" ", "").replaceAll("_", "");
+      const fNorm = f.map(x=> ({ raw:x, n:norm(x) }));
+      for (const p of patterns){
+        const pn = norm(p);
+        const exact = fNorm.find(x=> x.n === pn);
+        if (exact) return exact.raw;
+      }
+      for (const p of patterns){
+        const pn = norm(p);
+        const incl = fNorm.find(x=> x.n.includes(pn));
+        if (incl) return incl.raw;
+      }
+      return "";
+    }
+
+    function fillMappingSelect(select, fields, prefer, allowNone){
+      if (!select) return;
+      select.innerHTML = "";
+      const o0 = document.createElement("option");
+      o0.value = "";
+      o0.textContent = allowNone ? "(ingen)" : "Välj…";
+      select.appendChild(o0);
+      (fields||[]).forEach(f=>{
+        const o = document.createElement("option");
+        o.value = f;
+        o.textContent = f;
+        select.appendChild(o);
+      });
+      if (prefer && fields.includes(prefer)) select.value = prefer;
+    }
+
+    function parseDateToISO(v){
+      if (v == null) return "";
+      const s0 = String(v).trim();
+      if (!s0) return "";
+      // Excel sometimes yields "2024-01-31" already
+      if (/^\d{4}-\d{2}-\d{2}$/.test(s0)) return s0;
+      if (/^\d{8}$/.test(s0)) return `${s0.slice(0,4)}-${s0.slice(4,6)}-${s0.slice(6,8)}`;
+      const s = s0.replaceAll(".", "-").replaceAll("/", "-").replaceAll(" ", "");
+      // YYYY-MM-DD
+      let m = /^([12]\d{3})-?(\d{2})-?(\d{2})$/.exec(s);
+      if (m) return `${m[1]}-${m[2]}-${m[3]}`;
+      // DD-MM-YYYY
+      m = /^(\d{1,2})-(\d{1,2})-([12]\d{3})$/.exec(s);
+      if (m){
+        const dd = String(m[1]).padStart(2,"0");
+        const mm = String(m[2]).padStart(2,"0");
+        return `${m[3]}-${mm}-${dd}`;
+      }
+      return "";
+    }
+
+    function parseNumberSE(v){
+      if (v == null) return NaN;
+      if (typeof v === "number") return v;
+      let s = String(v).trim();
+      if (!s) return NaN;
+      s = s.replaceAll(" ", "");
+      // allow parentheses for negative
+      let neg = false;
+      if (s.startsWith("(") && s.endsWith(")")) { neg = true; s = s.slice(1,-1); }
+      s = s.replaceAll("kr", "").replaceAll("sek", "");
+      s = s.replaceAll("'", "");
+      // if both comma and dot exist, assume dot thousands, comma decimal (sv)
+      if (s.includes(",") && s.includes(".")){
+        s = s.replaceAll(".", "");
+        s = s.replace(",", ".");
+      } else if (s.includes(",") && !s.includes(".")){
+        s = s.replace(",", ".");
+      }
+      const n = Number(s);
+      if (!Number.isFinite(n)) return NaN;
+      return neg ? -n : n;
+    }
+
+    function normText(t){
+      return String(t||"")
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function fnv1aHex(str){
+      let h = 0x811c9dc5;
+      const s = String(str||"");
+      for (let i=0;i<s.length;i++){
+        h ^= s.charCodeAt(i);
+        h = (h + ((h<<1) + (h<<4) + (h<<7) + (h<<8) + (h<<24))) >>> 0;
+      }
+      return ("00000000" + h.toString(16)).slice(-8);
+    }
+
+    function fingerprintForRow(r){
+      const key = [r.source, r.bankAccount, r.dateISO, round2(r.amount), normText(r.text), normText(r.ref)].join("|");
+      return fnv1aHex(key);
+    }
+
+    function setModalWarning(severity, lines){
+      const sev = severity || "ok";
+      const items = (lines||[]).map(x=> `<div>${escapeHtml(x)}</div>`).join("");
+      if (ui.warnings) ui.warnings.innerHTML = items || "<div>OK</div>";
+      if (ui.riskBox) ui.riskBox.hidden = (sev !== "red");
+      updateModalButtons();
+    }
+
+    function updateModalButtons(){
+      const rows = prepared?.rowsNorm || [];
+      const count = rows.length;
+      if (ui.btnRun) ui.btnRun.textContent = `Importera ${count} rader till inkorg`;
+
+      const hasPrepared = !!prepared && count > 0;
+      const red = prepared?.severity === "red";
+      const riskOk = ui.riskOk ? ui.riskOk.checked : false;
+      if (ui.btnRun) ui.btnRun.disabled = !hasPrepared || (red && !riskOk);
+    }
+
+    function getItem(id){
+      return (state.bankImport && state.bankImport.items) ? state.bankImport.items[id] : null;
+    }
+
+    function listBatches(){
+      const m = state.bankImport?.batches || {};
+      const list = Object.values(m).filter(x=>x && typeof x === "object");
+      list.sort((a,b)=> String(b.createdAt||"").localeCompare(String(a.createdAt||""), "sv"));
+      return list;
+    }
+
+    function listItems(){
+      const m = state.bankImport?.items || {};
+      return Object.values(m).filter(x=>x && typeof x === "object");
+    }
+
+    function visibleItems(){
+      const batchId = ui.batchFilter ? ui.batchFilter.value : "";
+      const status = ui.statusFilter ? ui.statusFilter.value : "";
+      let items = listItems();
+      if (batchId) items = items.filter(x=> x.batchId === batchId);
+      if (status) items = items.filter(x=> String(x.status||"") === status);
+      items.sort((a,b)=> (String(b.dateISO||"") + String(b.createdAt||"")).localeCompare(String(a.dateISO||"")+String(a.createdAt||""), "sv"));
+      return items;
+    }
+
+    function suggestCounterAccount(normRow){
+      const t = normText(normRow.text);
+      // Strong-ish supplier invoice match (outgoing payments)
+      try {
+        const si = (state.supplierInvoices||[]).find(x=>{
+          if (!x) return false;
+          const ocr = String(x.ocr||"").trim();
+          const invNo = String(x.invoiceNo||"").trim();
+          if (!ocr && !invNo) return false;
+          const hasRef = (ocr && t.includes(normText(ocr))) || (invNo && t.includes(normText(invNo)));
+          if (!hasRef) return false;
+          const gross = Number(x.gross)||0;
+          return Math.abs(Math.abs(Number(normRow.amount)||0) - Math.abs(gross)) < 0.01;
+        });
+        if (si){
+          return { account: si.liabAccount || "2440", invoiceId: si.id, confidence: 0.9 };
+        }
+      } catch {}
+
+      // Simple heuristics
+      if (/skatteverket|skattekonto|f-skatt|moms/.test(t)) return { account: "1630", invoiceId: null, confidence: 0.35 };
+      if (/swish/.test(t)) return { account: "3041", invoiceId: null, confidence: 0.25 };
+      if (/kort|card|visa|mastercard/.test(t)) return { account: "6570", invoiceId: null, confidence: 0.2 };
+      return { account: "", invoiceId: null, confidence: 0 };
+    }
+
+    async function parseCsvFile(file){
+      const ok = await ensurePapa();
+      if (!ok) throw new Error("CSV-parser kunde inte laddas (PapaParse). Kontrollera internet eller lägg in bibliotek lokalt.");
+      return await new Promise((resolve, reject)=>{
+        try {
+          window.Papa.parse(file, {
+            header: true,
+            skipEmptyLines: true,
+            complete: (res)=>{
+              const rows = (res && res.data) ? res.data : [];
+              const fields = (res && res.meta && Array.isArray(res.meta.fields)) ? res.meta.fields : getFieldsFromRows(rows);
+              resolve({ rows, fields });
+            },
+            error: (err)=> reject(err)
+          });
+        } catch (e){ reject(e); }
+      });
+    }
+
+    async function readWorkbook(file){
+      const ok = await ensureXlsx();
+      if (!ok) throw new Error("Excel-parser kunde inte laddas (SheetJS/xlsx). Kontrollera internet eller lägg in bibliotek lokalt.");
+      const buf = await file.arrayBuffer();
+      const wb = window.XLSX.read(buf, { type: "array" });
+      return wb;
+    }
+
+    function workbookSheetToRows(wb, sheetName){
+      const name = sheetName || (wb && wb.SheetNames ? wb.SheetNames[0] : "");
+      const ws = wb && wb.Sheets ? wb.Sheets[name] : null;
+      if (!ws) return { rows: [], fields: [] };
+      const rows = window.XLSX.utils.sheet_to_json(ws, { defval: "", raw: false });
+      const fields = getFieldsFromRows(rows);
+      return { rows, fields, sheetName: name };
+    }
+
+    function hydrateMappingFields(fields){
+      const f = (fields||[]).slice();
+
+      const guessDate = pickField(f, ["datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","valutadag","transactiondate"]);
+      const guessText = pickField(f, ["text","beskrivning","förklaring","forklaring","memo","motpart","namn","description"]);
+      const guessAmount = pickField(f, ["belopp","amount","summa","total","amountsek"]);
+      const guessRef = pickField(f, ["referens","reference","ref","ocr","meddelande","message"]);
+      const guessDebit = pickField(f, ["debet","debit","ut","withdrawal"]);
+      const guessCredit = pickField(f, ["kredit","credit","in","deposit"]);
+
+      fillMappingSelect(ui.mapDate, f, guessDate, false);
+      fillMappingSelect(ui.mapText, f, guessText, false);
+      fillMappingSelect(ui.mapAmount, f, guessAmount, false);
+      fillMappingSelect(ui.mapRef, f, guessRef, true);
+      fillMappingSelect(ui.mapDebit, f, guessDebit, true);
+      fillMappingSelect(ui.mapCredit, f, guessCredit, true);
+    }
+
+    function readMapping(){
+      return {
+        date: ui.mapDate ? ui.mapDate.value : "",
+        text: ui.mapText ? ui.mapText.value : "",
+        amount: ui.mapAmount ? ui.mapAmount.value : "",
+        ref: ui.mapRef ? ui.mapRef.value : "",
+        debit: ui.mapDebit ? ui.mapDebit.value : "",
+        credit: ui.mapCredit ? ui.mapCredit.value : "",
+      };
+    }
+
+    function buildPrepared(){
+      if (!parsedFile) return setPreparedNull("Välj en fil.");
+      const src = ui.source ? ui.source.value : "bank";
+      const bankAcc = ui.bankAccount ? ui.bankAccount.value : "";
+      if (!bankAcc) return setPreparedNull("Välj balans-konto (t.ex. 1930 eller 1630).");
+
+      const mapping = readMapping();
+      if (!mapping.date || !mapping.text) return setPreparedNull("Mappa minst Datum och Text/Beskrivning.");
+      const useDebCred = !!(mapping.debit && mapping.credit);
+      if (!useDebCred && !mapping.amount) return setPreparedNull("Mappa Belopp eller både Debet och Kredit.");
+
+      const from = ui.dateFrom ? ui.dateFrom.value : "";
+      const to = ui.dateTo ? ui.dateTo.value : "";
+      const rows = parsedFile.rows || [];
+
+      const rowsNorm = [];
+      let invalid = 0;
+      let outOfRange = 0;
+      for (const r of rows){
+        if (!r || typeof r !== "object") continue;
+        const dateISO = parseDateToISO(r[mapping.date]);
+        const text = String(r[mapping.text] ?? "").trim();
+        const ref = mapping.ref ? String(r[mapping.ref] ?? "").trim() : "";
+        let amount = NaN;
+        if (useDebCred){
+          const deb = parseNumberSE(r[mapping.debit]);
+          const cre = parseNumberSE(r[mapping.credit]);
+          const d = Number.isFinite(deb) ? deb : 0;
+          const c = Number.isFinite(cre) ? cre : 0;
+          amount = c - d;
+        } else {
+          amount = parseNumberSE(r[mapping.amount]);
+        }
+        amount = Math.round(amount * 100) / 100;
+
+        if (!dateISO || !text || !Number.isFinite(amount)) { invalid++; continue; }
+        if (from && dateISO < from) { outOfRange++; continue; }
+        if (to && dateISO > to) { outOfRange++; continue; }
+
+        const base = {
+          source: src,
+          bankAccount: bankAcc,
+          dateISO,
+          amount,
+          text: clampText(text, 200),
+          ref: clampText(ref, 120),
+        };
+        const sug = suggestCounterAccount(base);
+        base.suggestedAccount = sug.account && state.accounts?.[sug.account] ? sug.account : "";
+        base.suggestedInvoiceId = sug.invoiceId || null;
+        base.confidence = clamp01(sug.confidence);
+        base.status = base.suggestedAccount ? "matched" : "unmatched";
+        base.fingerprint = fingerprintForRow(base);
+        rowsNorm.push(base);
+      }
+
+      // Severity rules:
+      // - red: too few rows OR lots of invalid rows
+      // - yellow: some invalid/out-of-range
+      const total = rows.length;
+      const kept = rowsNorm.length;
+      const invalidRate = total ? (invalid / total) : 1;
+      let severity = "ok";
+      const warnings = [];
+      if (kept === 0) { severity = "red"; warnings.push("Inga rader kunde tolkas med vald mappning."); }
+      if (invalid > 0) warnings.push(`${invalid} rader kunde inte tolkas (datum/belopp/text).`);
+      if (outOfRange > 0) warnings.push(`${outOfRange} rader filtrerades bort av datumintervall.`);
+      if (invalidRate > 0.25) { severity = "red"; warnings.push("Hög andel ogiltiga rader – kontrollera kolumnmappningen."); }
+      else if (invalid > 0 || outOfRange > 0) severity = "yellow";
+
+      prepared = {
+        source: src,
+        bankAccount: bankAcc,
+        fileName: parsedFile.fileName,
+        sheetName: parsedFile.sheetName || "",
+        mapping,
+        rowsNorm,
+        stats: { total, kept, invalid, outOfRange },
+        severity,
+      };
+
+      renderPreview(rowsNorm);
+      setModalWarning(severity, warnings.length ? warnings : ["OK"]);
+      updateModalButtons();
+    }
+
+    function renderPreview(rowsNorm){
+      if (!ui.previewTbody) return;
+      ui.previewTbody.innerHTML = "";
+      (rowsNorm||[]).slice(0,20).forEach(r=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${escapeHtml(r.dateISO)}</td>
+          <td style="text-align:right;">${escapeHtml(String(r.amount))}</td>
+          <td>${escapeHtml(r.text||"")}</td>
+          <td>${escapeHtml(r.ref||"")}</td>
+        `;
+        ui.previewTbody.appendChild(tr);
+      });
+    }
+
+    async function handleFileSelected(){
+      const f = ui.file && ui.file.files ? ui.file.files[0] : null;
+      if (!f) return;
+      resetModal(true);
+      if (ui.fileName) ui.fileName.textContent = f.name;
+      const ext = fileExt(f.name);
+      try {
+        if (ext === "csv"){
+          const { rows, fields } = await parseCsvFile(f);
+          parsedFile = { fileName: f.name, ext, rows, fields, sheetName: "" };
+          if (ui.sheetBox) ui.sheetBox.hidden = true;
+          hydrateMappingFields(fields);
+          buildPrepared();
+          return;
+        }
+        if (ext === "xlsx" || ext === "xls"){
+          const wb = await readWorkbook(f);
+          const names = (wb && wb.SheetNames) ? wb.SheetNames.slice() : [];
+          if (ui.sheet){
+            ui.sheet.innerHTML = "";
+            names.forEach(n=>{
+              const o = document.createElement("option");
+              o.value = n;
+              o.textContent = n;
+              ui.sheet.appendChild(o);
+            });
+          }
+          if (ui.sheetBox) ui.sheetBox.hidden = names.length <= 1;
+          const chosen = (ui.sheet && ui.sheet.value) ? ui.sheet.value : (names[0] || "");
+          const { rows, fields, sheetName } = workbookSheetToRows(wb, chosen);
+          parsedFile = { fileName: f.name, ext, workbook: wb, sheetName, rows, fields };
+          hydrateMappingFields(fields);
+          buildPrepared();
+          return;
+        }
+        setPreparedNull("Okänt filformat. Välj .csv, .xlsx eller .xls.");
+      } catch (e){
+        console.error(e);
+        setPreparedNull(e && e.message ? e.message : "Kunde inte läsa filen.");
+      }
+    }
+
+    function handleSheetChanged(){
+      if (!parsedFile || !parsedFile.workbook) return;
+      try {
+        const chosen = ui.sheet ? ui.sheet.value : "";
+        const { rows, fields, sheetName } = workbookSheetToRows(parsedFile.workbook, chosen);
+        parsedFile.rows = rows;
+        parsedFile.fields = fields;
+        parsedFile.sheetName = sheetName;
+        hydrateMappingFields(fields);
+        buildPrepared();
+      } catch (e){
+        console.error(e);
+        setPreparedNull("Kunde inte läsa sheet.");
+      }
+    }
+
+    async function importIntoInbox(){
+      if (!prepared) return;
+      const src = prepared.source;
+      const bankAcc = prepared.bankAccount;
+      const rows = prepared.rowsNorm || [];
+
+      const fpMap = state.bankImport.fingerprints || (state.bankImport.fingerprints = {});
+      const batches = state.bankImport.batches || (state.bankImport.batches = {});
+      const items = state.bankImport.items || (state.bankImport.items = {});
+
+      const batchId = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const batch = {
+        id: batchId,
+        createdAt: now,
+        source: src,
+        bankAccount: bankAcc,
+        fileName: prepared.fileName || "",
+        sheetName: prepared.sheetName || "",
+        mapping: prepared.mapping || {},
+        importedCount: 0,
+        skippedDuplicates: 0,
+      };
+
+      for (const r of rows){
+        const fp = r.fingerprint;
+        if (fp && fpMap[fp]){ batch.skippedDuplicates++; continue; }
+        const id = crypto.randomUUID();
+        const it = {
+          id,
+          batchId,
+          createdAt: now,
+          source: src,
+          bankAccount: bankAcc,
+          dateISO: r.dateISO,
+          amount: Math.round((Number(r.amount)||0)*100)/100,
+          text: clampText(r.text||"", 200),
+          ref: clampText(r.ref||"", 120),
+          status: r.status || "unmatched",
+          suggestedAccount: r.suggestedAccount || "",
+          suggestedInvoiceId: r.suggestedInvoiceId || null,
+          confidence: clamp01(r.confidence || 0),
+          postedVoucherId: null,
+          postedAt: null,
+          undoVoucherId: null,
+          undoneAt: null,
+          fingerprint: fp || "",
+        };
+        items[id] = it;
+        if (fp) fpMap[fp] = id;
+        batch.importedCount++;
+      }
+      batches[batchId] = batch;
+
+      // persist settings
+      try {
+        state.bankImport.settings.lastSource = src;
+        if (src === "skattekonto") state.bankImport.settings.defaultTaxAccount = bankAcc;
+        else state.bankImport.settings.defaultBankAccount = bankAcc;
+      } catch {}
+
+      appendAudit({
+        action: "bankimport.import",
+        entityType: "bankimport.batch",
+        entityId: batchId,
+        yearId: state.activeYearId,
+        details: { fileName: batch.fileName, sheetName: batch.sheetName, source: src, bankAccount: bankAcc, importedCount: batch.importedCount, skippedDuplicates: batch.skippedDuplicates }
+      });
+
+      save();
+      showToast(`Importerade ${batch.importedCount} rader. Dubbletter: ${batch.skippedDuplicates}.`, 5500);
+      closeModal();
+      // switch to inbox tab
+      try { activateTab("bank_inbox"); } catch {}
+      renderInbox();
+    }
+
+    function ensureBankImportState(){
+      if (!state.bankImport || typeof state.bankImport !== "object") state.bankImport = defaultData().bankImport;
+      if (!state.bankImport.batches || typeof state.bankImport.batches !== "object") state.bankImport.batches = {};
+      if (!state.bankImport.items || typeof state.bankImport.items !== "object") state.bankImport.items = {};
+      if (!state.bankImport.fingerprints || typeof state.bankImport.fingerprints !== "object") state.bankImport.fingerprints = {};
+      if (!state.bankImport.settings || typeof state.bankImport.settings !== "object") state.bankImport.settings = { lastSource:"bank", defaultBankAccount:"", defaultTaxAccount:"" };
+    }
+
+    function renderBatchFilter(){
+      if (!ui.batchFilter) return;
+      const old = ui.batchFilter.value || "";
+      const batches = listBatches();
+      ui.batchFilter.innerHTML = "";
+      const optAll = document.createElement("option");
+      optAll.value = "";
+      optAll.textContent = "Alla batchar";
+      ui.batchFilter.appendChild(optAll);
+      for (const b of batches){
+        const o = document.createElement("option");
+        o.value = b.id;
+        const label = `${(b.createdAt||"").slice(0,19).replace("T"," ")} · ${b.source || ""} · ${b.fileName || b.id}`;
+        o.textContent = label.slice(0, 120);
+        ui.batchFilter.appendChild(o);
+      }
+      if (old && Array.from(ui.batchFilter.options).some(x=>x.value===old)) ui.batchFilter.value = old;
+    }
+
+    function statusBadge(item){
+      const st = String(item.status||"");
+      if (st === "posted"){
+        if (item.undoVoucherId) return "posted (undo)";
+        return "posted";
+      }
+      return st || "unmatched";
+    }
+
+    function renderInbox(){
+      ensureBankImportState();
+      renderBatchFilter();
+      const items = visibleItems();
+      const total = listItems().length;
+      const matched = listItems().filter(x=>x.status==="matched").length;
+      const posted = listItems().filter(x=>x.status==="posted").length;
+      const sel = Array.from(selectedIds).filter(id=> !!getItem(id)).length;
+      if (ui.stats) ui.stats.textContent = `Visar ${items.length} · Totalt ${total} · matched ${matched} · posted ${posted} · markerade ${sel}`;
+
+      if (ui.selectAll) ui.selectAll.checked = (items.length > 0) && items.every(x=> selectedIds.has(x.id));
+      if (!ui.tbody) return;
+      ui.tbody.innerHTML = "";
+
+      for (const it of items){
+        const tr = document.createElement("tr");
+
+        const checked = selectedIds.has(it.id);
+        const acc = it.suggestedAccount ? accountLabel(it.suggestedAccount) : "";
+        const inv = it.suggestedInvoiceId ? "SI:" + String(it.suggestedInvoiceId).slice(0,8) : "";
+        const conf = Math.round(clamp01(it.confidence||0) * 100);
+        const st = statusBadge(it);
+
+        tr.innerHTML = `
+          <td><input type="checkbox" data-act="sel" data-id="${it.id}" ${checked ? "checked" : ""} /></td>
+          <td>${escapeHtml(it.dateISO||"")}</td>
+          <td style="text-align:right;">${escapeHtml(fmtSEK(Number(it.amount)||0))}</td>
+          <td title="${escapeHtml(it.text||"")}">${escapeHtml(String(it.text||"").slice(0, 120))}</td>
+          <td>${escapeHtml(st)}</td>
+          <td class="muted small" title="${escapeHtml(it.batchId||"")}">${escapeHtml(String(it.batchId||"").slice(0, 8))}</td>
+          <td>
+            <select data-act="acc" data-id="${it.id}" ${it.status==="posted" ? "disabled" : ""}></select>
+          </td>
+          <td class="muted small">${escapeHtml(inv)}</td>
+          <td style="text-align:right;">${conf}%</td>
+          <td>
+            <div class="row" style="gap:8px; flex-wrap:wrap;">
+              <button class="btn secondary" data-act="post" data-id="${it.id}" ${it.status==="posted" ? "disabled" : ""}>Kontera…</button>
+              <button class="btn secondary" data-act="undo" data-id="${it.id}" ${(!it.postedVoucherId || it.undoVoucherId) ? "disabled" : ""}>Ångra</button>
+              <button class="btn danger" data-act="del" data-id="${it.id}" ${(it.status==="posted") ? "disabled" : ""}>Radera</button>
+            </div>
+          </td>
+        `;
+
+        ui.tbody.appendChild(tr);
+
+        // populate account select
+        const selEl = tr.querySelector('select[data-act="acc"]');
+        if (selEl){
+          fillAccountSelect(selEl, { includeEmpty: true, emptyLabel: "(ingen)" });
+          selEl.value = it.suggestedAccount && state.accounts?.[it.suggestedAccount] ? it.suggestedAccount : "";
+        }
+      }
+    }
+
+    function buildVoucherLines(bankAccount, counterAccount, amount, text){
+      const a = Math.round((Number(amount)||0)*100)/100;
+      if (!Number.isFinite(a) || Math.abs(a) < 0.00001) return [];
+      return [
+        { account: String(bankAccount||"").trim(), text: clampText(text||"", 200), amount: a },
+        { account: String(counterAccount||"").trim(), text: clampText(text||"", 200), amount: -a },
+      ].filter(l=>l.account && Math.abs(l.amount)>0.00001);
+    }
+
+    function createVoucherFromItem(item, counterAccount){
+      const yearId = String(item.dateISO||"").slice(0,4) || state.activeYearId;
+      const date = item.dateISO || todayISO();
+      const series = "A";
+      const no = nextVerno(yearId, series);
+      const sign = clampText((state.company?.defaultSign || "").trim());
+      const regDate = todayISO();
+      const text = clampText(item.text || "Bankrad", 200);
+      const lines = buildVoucherLines(item.bankAccount, counterAccount, item.amount, text);
+      const sum = lines.reduce((s,l)=> s + (Number(l.amount)||0), 0);
+      if (Math.abs(sum) > 0.00001) throw new Error("Verifikation ej i balans");
+
+      const v = {
+        id: crypto.randomUUID(),
+        yearId,
+        series,
+        no,
+        date,
+        text,
+        regDate,
+        sign,
+        lines,
+        correctionOf: null,
+        status: "active"
+      };
+      if (isLockedVoucher(v)) throw new Error("Datum ligger i låst period. Ändra lås eller boka manuellt med annat datum.");
+
+      state.vouchers.push(v);
+      state.vouchers.sort((a,b)=> (a.yearId+b.series+a.no+a.date).localeCompare(b.yearId+a.series+b.no+b.date, "sv"));
+
+      appendAudit({
+        action: "bankimport.post",
+        entityType: "bankimport.item",
+        entityId: item.id,
+        yearId,
+        details: { date: v.date, voucherId: v.id, bankAccount: item.bankAccount, counterAccount, amount: item.amount }
+      });
+
+      return v;
+    }
+
+    function undoDateForYear(yearId){
+      const year = getYear(yearId);
+      let d = todayISO();
+      if (year && year.start && d < year.start) d = year.start;
+      if (year && year.end && d > year.end) d = year.end;
+      const until = lockUntilForYear(yearId);
+      if (until && d <= until) d = addDays(until, 1);
+      if (year && year.end && d > year.end) d = year.end;
+      return d;
+    }
+
+    function createContraVoucherForVoucher(origVoucherId, item){
+      const orig = state.vouchers.find(x=>x.id===origVoucherId);
+      if (!orig) throw new Error("Hittar inte originalverifikation.");
+      const yearId = orig.yearId;
+      const date = undoDateForYear(yearId);
+      const series = orig.series || "A";
+      const no = nextVerno(yearId, series);
+      const sign = clampText((state.company?.defaultSign || "").trim());
+      const regDate = todayISO();
+      const text = clampText(`Ångring: ${orig.text || (item?.text||"")}`.trim(), 200);
+      const lines = (orig.lines||[]).map(l=> ({ account: l.account, text: l.text || "", amount: Math.round(-(Number(l.amount)||0)*100)/100 })).filter(l=>l.account && Math.abs(l.amount)>0.00001);
+      const sum = lines.reduce((s,l)=> s + (Number(l.amount)||0), 0);
+      if (Math.abs(sum) > 0.00001) throw new Error("Kontra-verifikation ej i balans");
+      const v = {
+        id: crypto.randomUUID(),
+        yearId,
+        series,
+        no,
+        date,
+        text,
+        regDate,
+        sign,
+        lines,
+        correctionOf: orig.id,
+        status: "active"
+      };
+      if (isLockedVoucher(v)) throw new Error("Ångring hamnar i låst period. Justera lås eller datum.");
+      state.vouchers.push(v);
+      state.vouchers.sort((a,b)=> (a.yearId+b.series+a.no+a.date).localeCompare(b.yearId+a.series+b.no+b.date, "sv"));
+      return v;
+    }
+
+    function deleteItem(itemId){
+      const it = getItem(itemId);
+      if (!it) return;
+      if (it.status === "posted") return showToast("Kan inte radera bokförd rad. Ångra först.", 5500);
+      try {
+        // remove fingerprint mapping if it still points to this item
+        const fp = it.fingerprint;
+        if (fp && state.bankImport.fingerprints && state.bankImport.fingerprints[fp] === it.id) delete state.bankImport.fingerprints[fp];
+      } catch {}
+      delete state.bankImport.items[itemId];
+      selectedIds.delete(itemId);
+      save();
+      renderInbox();
+    }
+
+    async function deleteBatch(){
+      const batchId = ui.batchFilter ? ui.batchFilter.value : "";
+      if (!batchId) return showToast("Välj en batch i filtret först.", 4500);
+      const batch = state.bankImport?.batches?.[batchId];
+      if (!batch) return;
+
+      const items = listItems().filter(x=>x.batchId===batchId);
+      const posted = items.filter(x=>x.status==="posted" && x.postedVoucherId);
+      if (posted.length){
+        showToast("Batchen innehåller bokförda rader. Ångra bokföring för batch först.", 6500);
+        return;
+      }
+
+      const ok = await confirmAsync(`Radera batchen?\n\n${batch.fileName || batch.id}\nRader: ${items.length}\n\nDetta påverkar inte bokföringen (inga verifikationer finns i batchen).`, {
+        okText: "Radera",
+        cancelText: "Avbryt",
+        danger: true
+      });
+      if (!ok) return;
+
+      for (const it of items){
+        try {
+          const fp = it.fingerprint;
+          if (fp && state.bankImport.fingerprints && state.bankImport.fingerprints[fp] === it.id) delete state.bankImport.fingerprints[fp];
+        } catch {}
+        delete state.bankImport.items[it.id];
+        selectedIds.delete(it.id);
+      }
+      delete state.bankImport.batches[batchId];
+      save();
+      renderInbox();
+      showToast("Batch raderad.", 3000);
+    }
+
+    async function undoBatch(){
+      const batchId = ui.batchFilter ? ui.batchFilter.value : "";
+      if (!batchId) return showToast("Välj en batch i filtret först.", 4500);
+      const items = listItems().filter(x=>x.batchId===batchId);
+      const targets = items.filter(x=>x.status==="posted" && x.postedVoucherId && !x.undoVoucherId);
+      if (!targets.length) return showToast("Inga bokförda rader att ångra i batchen.", 4500);
+
+      const ok = await confirmAsync(`Ångra bokföring för batch?\n\nSkapar kontra-verifikationer (append-only).\nRader att ångra: ${targets.length}`, {
+        okText: "Ångra",
+        cancelText: "Avbryt",
+        danger: false
+      });
+      if (!ok) return;
+
+      let okCount = 0;
+      let failCount = 0;
+      for (const it of targets){
+        try {
+          const contra = createContraVoucherForVoucher(it.postedVoucherId, it);
+          it.undoVoucherId = contra.id;
+          it.undoneAt = new Date().toISOString();
+          appendAudit({
+            action: "bankimport.undo",
+            entityType: "bankimport.item",
+            entityId: it.id,
+            yearId: String(it.dateISO||"").slice(0,4) || state.activeYearId,
+            details: { postedVoucherId: it.postedVoucherId, contraVoucherId: contra.id }
+          });
+          okCount++;
+        } catch (e){
+          console.error(e);
+          failCount++;
+        }
+      }
+      save();
+      try { if (typeof renderVouchers === "function") renderVouchers(); } catch {}
+      try { if (lastReportHtml) generateReport(); } catch {}
+      renderInbox();
+      showToast(`Ångrade ${okCount}. Misslyckade: ${failCount}.`, 6000);
+    }
+
+    async function bulkDeleteSelected(){
+      const ids = Array.from(selectedIds);
+      if (!ids.length) return showToast("Inga rader markerade.", 3000);
+      const items = ids.map(getItem).filter(Boolean);
+      const posted = items.filter(x=>x.status==="posted");
+      if (posted.length) return showToast("Markerade innehåller bokförda rader. Ångra först.", 6500);
+      const ok = await confirmAsync(`Radera markerade rader?\n\nAntal: ${items.length}`, { okText:"Radera", cancelText:"Avbryt", danger:true });
+      if (!ok) return;
+      items.forEach(x=> deleteItem(x.id));
+      selectedIds.clear();
+      save();
+      renderInbox();
+    }
+
+    function bulkPostCandidates(){
+      const ids = Array.from(selectedIds);
+      const items = ids.map(getItem).filter(Boolean);
+      const candidates = items.filter(x=> x.status !== "posted" && x.suggestedAccount);
+      const blocked = items.filter(x=> x.status === "posted");
+      const needs = items.filter(x=> x.status !== "posted" && !x.suggestedAccount);
+      return { items, candidates, blocked, needs };
+    }
+
+    async function bulkPost(){
+      const { items, candidates, blocked, needs } = bulkPostCandidates();
+      if (!items.length) return showToast("Inga rader markerade.", 3000);
+      if (!candidates.length) return showToast("Inga markerade rader har föreslaget konto. Kontera radvis först.", 6000);
+
+      const totalSum = candidates.reduce((s,x)=> s + (Number(x.amount)||0), 0);
+      const summary = `
+        <div>Markerade: <b>${items.length}</b></div>
+        <div>Kommer bokföras: <b>${candidates.length}</b></div>
+        <div class="muted small">Saknar motkonto: ${needs.length} · Redan bokförda: ${blocked.length}</div>
+        <div style="margin-top:8px;">Netto (sum belopp): <b>${escapeHtml(fmtSEK(totalSum))}</b></div>
+        <div class="muted small" style="margin-top:8px;">Bulk skapar en verifikation per rad (inte en klumpsumma).</div>
+      `;
+      openBulkModal(summary);
+    }
+
+    function performBulkPost(){
+      const { candidates } = bulkPostCandidates();
+      if (!candidates.length) return;
+      let okCount = 0;
+      let failCount = 0;
+      for (const it of candidates){
+        try {
+          const v = createVoucherFromItem(it, it.suggestedAccount);
+          it.status = "posted";
+          it.postedVoucherId = v.id;
+          it.postedAt = new Date().toISOString();
+          okCount++;
+        } catch (e){
+          console.error(e);
+          failCount++;
+        }
+      }
+      save();
+      try { if (typeof renderVouchers === "function") renderVouchers(); } catch {}
+      try { if (lastReportHtml) generateReport(); } catch {}
+      renderInbox();
+      showToast(`Bokförde ${okCount}. Misslyckade: ${failCount}.`, 6000);
+    }
+
+    function onInboxClick(e){
+      const actEl = e.target && e.target.closest ? e.target.closest("[data-act]") : null;
+      if (!actEl) return;
+      const act = actEl.dataset.act;
+      const id = actEl.dataset.id;
+      if (!id) return;
+      if (act === "sel"){
+        const checked = !!actEl.checked;
+        if (checked) selectedIds.add(id);
+        else selectedIds.delete(id);
+        renderInbox();
+        return;
+      }
+      if (act === "post"){
+        openPostModal(id);
+        return;
+      }
+      if (act === "del"){
+        deleteItem(id);
+        return;
+      }
+      if (act === "undo"){
+        const it = getItem(id);
+        if (!it || !it.postedVoucherId || it.undoVoucherId) return;
+        confirmAsync("Ångra bokföring? Skapar kontra-verifikation (append-only).", { okText:"Ångra", cancelText:"Avbryt" })
+          .then(ok=>{
+            if (!ok) return;
+            try {
+              const contra = createContraVoucherForVoucher(it.postedVoucherId, it);
+              it.undoVoucherId = contra.id;
+              it.undoneAt = new Date().toISOString();
+              appendAudit({ action:"bankimport.undo", entityType:"bankimport.item", entityId: it.id, yearId: String(it.dateISO||"").slice(0,4) || state.activeYearId, details:{ postedVoucherId: it.postedVoucherId, contraVoucherId: contra.id } });
+              save();
+              try { if (typeof renderVouchers === "function") renderVouchers(); } catch {}
+              try { if (lastReportHtml) generateReport(); } catch {}
+              renderInbox();
+              showToast("Ångrat med kontra-verifikation.", 4500);
+            } catch (e){
+              console.error(e);
+              showToast(e && e.message ? e.message : "Ångring misslyckades.", 6500);
+            }
+          });
+        return;
+      }
+      if (act === "acc"){
+        const it = getItem(id);
+        if (!it) return;
+        const v = actEl.value || "";
+        it.suggestedAccount = (v && state.accounts?.[v]) ? v : "";
+        it.confidence = it.suggestedAccount ? 1 : 0;
+        if (it.status !== "posted") it.status = it.suggestedAccount ? "matched" : "unmatched";
+        softSave();
+        renderInbox();
+        return;
+      }
+    }
+
+    function onSelectAllChanged(){
+      const items = visibleItems();
+      const on = !!(ui.selectAll && ui.selectAll.checked);
+      items.forEach(it=>{
+        if (on) selectedIds.add(it.id);
+        else selectedIds.delete(it.id);
+      });
+      renderInbox();
+    }
+
+    function wire(){
+      if (ui.btnOpen1) ui.btnOpen1.addEventListener("click", (e)=>{ e.preventDefault(); openModal(); });
+      if (ui.btnOpen2) ui.btnOpen2.addEventListener("click", (e)=>{ e.preventDefault(); openModal(); });
+      if (ui.btnRefresh) ui.btnRefresh.addEventListener("click", (e)=>{ e.preventDefault(); renderInbox(); });
+
+      if (ui.btnClose) ui.btnClose.addEventListener("click", (e)=>{ e.preventDefault(); closeModal(); });
+      if (ui.btnReset) ui.btnReset.addEventListener("click", (e)=>{ e.preventDefault(); resetModal(false); });
+      if (ui.file) ui.file.addEventListener("change", ()=>{ handleFileSelected(); });
+      if (ui.source) ui.source.addEventListener("change", ()=>{ fillBankAccountSelect(); buildPrepared(); });
+      if (ui.bankAccount) ui.bankAccount.addEventListener("change", ()=>{ buildPrepared(); });
+      if (ui.dateFrom) ui.dateFrom.addEventListener("change", ()=>{ buildPrepared(); });
+      if (ui.dateTo) ui.dateTo.addEventListener("change", ()=>{ buildPrepared(); });
+      if (ui.sheet) ui.sheet.addEventListener("change", ()=>{ handleSheetChanged(); });
+      [ui.mapDate, ui.mapText, ui.mapAmount, ui.mapRef, ui.mapDebit, ui.mapCredit].filter(Boolean).forEach(s=>{
+        s.addEventListener("change", ()=> buildPrepared());
+      });
+      if (ui.riskOk) ui.riskOk.addEventListener("change", ()=> updateModalButtons());
+      if (ui.btnRun) ui.btnRun.addEventListener("click", (e)=>{ e.preventDefault(); importIntoInbox(); });
+
+      // inbox handlers
+      if (ui.batchFilter) ui.batchFilter.addEventListener("change", ()=> renderInbox());
+      if (ui.statusFilter) ui.statusFilter.addEventListener("change", ()=> renderInbox());
+      if (ui.selectAll) ui.selectAll.addEventListener("change", ()=> onSelectAllChanged());
+      if (ui.tbody) ui.tbody.addEventListener("change", (e)=>{
+        // account select and checkbox
+        const t = e.target;
+        if (!t) return;
+        if (t.matches('input[type="checkbox"][data-act="sel"]')) return onInboxClick({ target: t });
+        if (t.matches('select[data-act="acc"]')) return onInboxClick({ target: t });
+      });
+      if (ui.tbody) ui.tbody.addEventListener("click", (e)=> onInboxClick(e));
+
+      if (ui.btnBulkDelete) ui.btnBulkDelete.addEventListener("click", (e)=>{ e.preventDefault(); bulkDeleteSelected(); });
+      if (ui.btnDeleteBatch) ui.btnDeleteBatch.addEventListener("click", (e)=>{ e.preventDefault(); deleteBatch(); });
+      if (ui.btnUndoBatch) ui.btnUndoBatch.addEventListener("click", (e)=>{ e.preventDefault(); undoBatch(); });
+      if (ui.btnBulkPost) ui.btnBulkPost.addEventListener("click", (e)=>{ e.preventDefault(); bulkPost(); });
+
+      // per-row post modal
+      if (ui.btnPostClose) ui.btnPostClose.addEventListener("click", (e)=>{ e.preventDefault(); closePostModal(); });
+      if (ui.postAccount) ui.postAccount.addEventListener("change", ()=>{
+        const ok = !!(ui.postReviewed && ui.postReviewed.checked) && !!(ui.postAccount && ui.postAccount.value);
+        if (ui.btnPostCreate) ui.btnPostCreate.disabled = !ok;
+      });
+      if (ui.postReviewed) ui.postReviewed.addEventListener("change", ()=>{
+        const ok = !!(ui.postReviewed && ui.postReviewed.checked) && !!(ui.postAccount && ui.postAccount.value);
+        if (ui.btnPostCreate) ui.btnPostCreate.disabled = !ok;
+      });
+      if (ui.btnPostIgnore) ui.btnPostIgnore.addEventListener("click", (e)=>{
+        e.preventDefault();
+        const it = getItem(openPostItemId);
+        if (!it) return;
+        it.status = "ignored";
+        it.suggestedAccount = "";
+        it.confidence = 0;
+        save();
+        closePostModal();
+        renderInbox();
+        showToast("Markerad som ej bokföringshändelse.", 3500);
+      });
+      if (ui.btnPostCreate) ui.btnPostCreate.addEventListener("click", (e)=>{
+        e.preventDefault();
+        const it = getItem(openPostItemId);
+        if (!it) return;
+        const counter = ui.postAccount ? ui.postAccount.value : "";
+        if (!counter) return;
+        try {
+          const v = createVoucherFromItem(it, counter);
+          it.status = "posted";
+          it.postedVoucherId = v.id;
+          it.postedAt = new Date().toISOString();
+          save();
+          try { if (typeof renderVouchers === "function") renderVouchers(); } catch {}
+          try { if (lastReportHtml) generateReport(); } catch {}
+          closePostModal();
+          renderInbox();
+          showToast("Verifikation skapad.", 3500);
+        } catch (err){
+          console.error(err);
+          showToast(err && err.message ? err.message : "Kunde inte skapa verifikation.", 6500);
+        }
+      });
+
+      // bulk modal
+      if (ui.btnBulkClose) ui.btnBulkClose.addEventListener("click", (e)=>{ e.preventDefault(); closeBulkModal(); });
+      if (ui.btnBulkCancel) ui.btnBulkCancel.addEventListener("click", (e)=>{ e.preventDefault(); closeBulkModal(); });
+      if (ui.bulkReviewed) ui.bulkReviewed.addEventListener("change", ()=>{
+        if (ui.btnBulkConfirm) ui.btnBulkConfirm.disabled = !(ui.bulkReviewed && ui.bulkReviewed.checked);
+      });
+      if (ui.btnBulkConfirm) ui.btnBulkConfirm.addEventListener("click", (e)=>{
+        e.preventDefault();
+        if (!(ui.bulkReviewed && ui.bulkReviewed.checked)) return;
+        closeBulkModal();
+        performBulkPost();
+      });
+    }
+
+    wire();
+
+    return {
+      open: openModal,
+      renderInbox,
+    };
+  })();
 
   function normalizeStdAccountsMap(map){
     const out = {};
