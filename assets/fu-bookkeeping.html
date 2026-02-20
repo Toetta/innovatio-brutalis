@@ -282,7 +282,7 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
-      <span class="pill" id="revPill">v0.2.4</span>
+      <span class="pill" id="revPill">v0.2.5</span>
     </div>
   </div>
 </header>
@@ -1682,8 +1682,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
-  const APP_SEMVER = "0.2.4";  // user-facing revision
-  const APP_GIT_REV = "faa3940";      // injected by tools/stamp-fu-version.mjs (optional)
+  const APP_SEMVER = "0.2.5";  // user-facing revision
+  const APP_GIT_REV = "60de0ac";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -4581,6 +4581,17 @@ if (!d.features) d.features = { sruEnabled: false };
     let prepared = null;   // { source, bankAccount, fileName, sheetName, mapping, rowsNorm, stats, severity }
     let openPostItemId = null;
     let softSaveTimer = null;
+    let rebuildTimer = null;
+    let importing = false;
+
+    function scheduleBuildPrepared(delayMs){
+      if (rebuildTimer) clearTimeout(rebuildTimer);
+      const d = (typeof delayMs === "number" && Number.isFinite(delayMs)) ? Math.max(0, delayMs) : 80;
+      rebuildTimer = setTimeout(()=>{
+        rebuildTimer = null;
+        try { buildPrepared(); } catch (e){ console.error(e); }
+      }, d);
+    }
 
     function clamp01(x){
       const n = Number(x);
@@ -4901,8 +4912,10 @@ if (!d.features) d.features = { sruEnabled: false };
 
     function detectMapping(rows, columns){
       const cols = (columns || []).slice();
+      // Performance: auto-detection is heuristic; sample rows to avoid UI freezes on large imports.
+      const sampleRows = Array.isArray(rows) ? rows.slice(0, Math.min(rows.length, 2000)) : [];
       const stats = {};
-      cols.forEach(c=> stats[c] = colStats(rows, c));
+      cols.forEach(c=> stats[c] = colStats(sampleRows, c));
 
       const nameDate = pickField(cols, ["datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","valutadag","transactiondate"]);
       const nameText = pickField(cols, ["text","beskrivning","förklaring","forklaring","memo","motpart","namn","description"]);
@@ -5388,11 +5401,12 @@ if (!d.features) d.features = { sruEnabled: false };
           raw: d.raw || null,
           fingerprint: d.fingerprint,
         };
-        const sug = suggestCounterAccount(base);
-        base.suggestedAccount = sug.account && state.accounts?.[sug.account] ? sug.account : "";
-        base.suggestedInvoiceId = sug.invoiceId || null;
-        base.confidence = clamp01(sug.confidence);
-        base.status = base.suggestedAccount ? "matched" : "unmatched";
+        // Keep modal responsive: do not run expensive suggestion logic per row here.
+        // Suggestions are computed once during import into inbox instead.
+        base.suggestedAccount = "";
+        base.suggestedInvoiceId = null;
+        base.confidence = 0;
+        base.status = "unmatched";
         return base;
       });
 
@@ -5458,7 +5472,8 @@ if (!d.features) d.features = { sruEnabled: false };
       if (ui.fileName) ui.fileName.textContent = f.name;
       const ext = fileExt(f.name);
       try {
-        const hash = await tryFileSha256Hex(f);
+        // Hash is optional metadata; skip for larger files to avoid extra memory/CPU.
+        const hash = (f && typeof f.size === "number" && f.size > 8*1024*1024) ? "" : await tryFileSha256Hex(f);
         const res = await parseTabularFile(f, { sheetName: ui.sheet ? ui.sheet.value : "" });
         const fields = res.columns || [];
         const sheetNames = res.sheetNames || [];
@@ -5486,7 +5501,8 @@ if (!d.features) d.features = { sruEnabled: false };
 
         const auto = detectMapping(parsedFile.rows, parsedFile.fields);
         hydrateMappingFields(fields, auto);
-        buildPrepared();
+        // Yield so mapping UI paints before processing.
+        scheduleBuildPrepared(0);
       } catch (e){
         console.error(e);
         setPreparedNull(e && e.message ? e.message : "Kunde inte läsa filen.");
@@ -5503,7 +5519,7 @@ if (!d.features) d.features = { sruEnabled: false };
         parsedFile.sheetName = sheetName;
         const auto = detectMapping(rows, fields);
         hydrateMappingFields(fields, auto);
-        buildPrepared();
+        scheduleBuildPrepared(0);
       } catch (e){
         console.error(e);
         setPreparedNull("Kunde inte läsa sheet.");
@@ -5511,7 +5527,10 @@ if (!d.features) d.features = { sruEnabled: false };
     }
 
     async function importIntoInbox(){
+      if (importing) return;
       if (!prepared) return;
+      importing = true;
+      if (ui.btnRun) ui.btnRun.disabled = true;
       const src = prepared.source;
       const bankAcc = prepared.bankAccount;
       const rows = prepared.rowsNorm || [];
@@ -5538,33 +5557,50 @@ if (!d.features) d.features = { sruEnabled: false };
       let importedCount = 0;
       let skippedDuplicates = 0;
 
-      for (const r of rows){
-        const fp = r.fingerprint;
-        if (fp && fpMap[fp]){ skippedDuplicates++; continue; }
-        const id = crypto.randomUUID();
-        const it = {
-          id,
-          batchId,
-          source: src,
-          createdAtISO: now,
-          dateISO: r.dateISO,
-          amount: Math.round((Number(r.amount)||0)*100)/100,
-          text: clampText(r.text||"", 200),
-          ref: r.ref ? clampText(r.ref||"", 120) : "",
-          raw: r.raw || null,
-          status: r.status || "unmatched",
-          suggestedAccount: r.suggestedAccount || "",
-          suggestedInvoiceId: r.suggestedInvoiceId || null,
-          confidence: clamp01(r.confidence || 0),
-          postedVoucherId: null,
-          undoVoucherId: null,
-          fingerprint: fp || "",
-        };
-        items[id] = it;
-        if (fp) fpMap[fp] = id;
-        importedCount++;
-      }
-      batches[batchId] = batch;
+      try {
+        for (let i=0; i<rows.length; i++){
+          const r = rows[i];
+          const fp = r.fingerprint;
+          if (fp && fpMap[fp]){ skippedDuplicates++; continue; }
+
+        // Compute suggestions once per imported row (can be expensive on large batches).
+        // Yield occasionally to keep the UI responsive.
+        let suggestedAccount = "";
+        let suggestedInvoiceId = null;
+        let confidence = 0;
+        try {
+          const sug = suggestCounterAccount(r);
+          suggestedAccount = (sug && sug.account && state.accounts?.[sug.account]) ? String(sug.account) : "";
+          suggestedInvoiceId = (sug && sug.invoiceId) ? sug.invoiceId : null;
+          confidence = clamp01(sug && sug.confidence);
+        } catch {}
+
+          const id = crypto.randomUUID();
+          const it = {
+            id,
+            batchId,
+            source: src,
+            createdAtISO: now,
+            dateISO: r.dateISO,
+            amount: Math.round((Number(r.amount)||0)*100)/100,
+            text: clampText(r.text||"", 200),
+            ref: r.ref ? clampText(r.ref||"", 120) : "",
+            raw: r.raw || null,
+            status: suggestedAccount ? "matched" : "unmatched",
+            suggestedAccount,
+            suggestedInvoiceId,
+            confidence,
+            postedVoucherId: null,
+            undoVoucherId: null,
+            fingerprint: fp || "",
+          };
+          items[id] = it;
+          if (fp) fpMap[fp] = id;
+          importedCount++;
+
+          if (i % 200 === 0) await new Promise(r=> setTimeout(r, 0));
+        }
+        batches[batchId] = batch;
 
       // persist settings
       try {
@@ -5581,12 +5617,20 @@ if (!d.features) d.features = { sruEnabled: false };
         details: { filename: batch.filename, sheetName: batch.sheetName, source: src, accountBank: bankAcc, rowCount: batch.rowCount, importedCount, skippedDuplicates, fileHash: batch.fileHash || "" }
       });
 
-      save();
-      showToast(`Importerade ${importedCount} rader. Dubbletter: ${skippedDuplicates}.`, 5500);
-      closeModal();
-      // switch to inbox tab
-      try { activateTab("bank_inbox"); } catch {}
-      renderInbox();
+        save();
+        showToast(`Importerade ${importedCount} rader. Dubbletter: ${skippedDuplicates}.`, 5500);
+        closeModal();
+        // switch to inbox tab
+        try { activateTab("bank_inbox"); } catch {}
+        renderInbox();
+      } catch (e){
+        console.error(e);
+        showToast(e && e.message ? e.message : "Import misslyckades.", 6500);
+      } finally {
+        importing = false;
+        // If modal is still open (error paths), restore button state.
+        try { updateModalButtons(); } catch {}
+      }
     }
 
     function ensureBankImportState(){
@@ -6014,13 +6058,13 @@ if (!d.features) d.features = { sruEnabled: false };
       if (ui.btnClose) ui.btnClose.addEventListener("click", (e)=>{ e.preventDefault(); closeModal(); });
       if (ui.btnReset) ui.btnReset.addEventListener("click", (e)=>{ e.preventDefault(); resetModal(false); });
       if (ui.file) ui.file.addEventListener("change", ()=>{ handleFileSelected(); });
-      if (ui.source) ui.source.addEventListener("change", ()=>{ fillBankAccountSelect(); buildPrepared(); });
-      if (ui.bankAccount) ui.bankAccount.addEventListener("change", ()=>{ buildPrepared(); });
-      if (ui.dateFrom) ui.dateFrom.addEventListener("change", ()=>{ buildPrepared(); });
-      if (ui.dateTo) ui.dateTo.addEventListener("change", ()=>{ buildPrepared(); });
+      if (ui.source) ui.source.addEventListener("change", ()=>{ fillBankAccountSelect(); scheduleBuildPrepared(); });
+      if (ui.bankAccount) ui.bankAccount.addEventListener("change", ()=>{ scheduleBuildPrepared(); });
+      if (ui.dateFrom) ui.dateFrom.addEventListener("change", ()=>{ scheduleBuildPrepared(); });
+      if (ui.dateTo) ui.dateTo.addEventListener("change", ()=>{ scheduleBuildPrepared(); });
       if (ui.sheet) ui.sheet.addEventListener("change", ()=>{ handleSheetChanged(); });
       [ui.mapDate, ui.mapText, ui.mapAmount, ui.mapRef, ui.mapDebit, ui.mapCredit].filter(Boolean).forEach(s=>{
-        s.addEventListener("change", ()=> buildPrepared());
+        s.addEventListener("change", ()=> scheduleBuildPrepared());
       });
       if (ui.riskOk) ui.riskOk.addEventListener("change", ()=> updateModalButtons());
       if (ui.btnRun) ui.btnRun.addEventListener("click", (e)=>{ e.preventDefault(); importIntoInbox(); });
