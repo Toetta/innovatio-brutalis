@@ -290,7 +290,7 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
-      <span class="pill" id="revPill">v0.2.13</span>
+      <span class="pill" id="revPill">v0.2.14</span>
     </div>
   </div>
 </header>
@@ -1608,6 +1608,10 @@
           </div>
         </div>
         <div class="muted small" style="margin-top:8px;">Om Debet/Kredit används ignoreras Belopp-kolumnen (amount = kredit − debet).</div>
+        <label class="muted small" style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+          <input id="biFlipSign" type="checkbox" />
+          Vänd tecken på belopp
+        </label>
       </div>
 
       <div class="card" style="padding:10px; border-radius:14px; background:rgba(11,18,32,.90);">
@@ -1697,8 +1701,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
-  const APP_SEMVER = "0.2.13";  // user-facing revision
-  const APP_GIT_REV = "660df5e";      // injected by tools/stamp-fu-version.mjs (optional)
+  const APP_SEMVER = "0.2.14";  // user-facing revision
+  const APP_GIT_REV = "62b75b9";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -4567,6 +4571,7 @@ if (!d.features) d.features = { sruEnabled: false };
       mapRef: el("biMapRef"),
       mapDebit: el("biMapDebit"),
       mapCredit: el("biMapCredit"),
+      flipSign: el("biFlipSign"),
       previewTbody: el("biPreviewTbody"),
       warnings: el("biWarnings"),
       riskBox: el("biRiskBox"),
@@ -4690,6 +4695,7 @@ if (!d.features) d.features = { sruEnabled: false };
       [ui.mapDate, ui.mapAmount, ui.mapText, ui.mapRef, ui.mapDebit, ui.mapCredit].filter(Boolean).forEach(s=>{
         s.innerHTML = "";
       });
+      if (ui.flipSign) ui.flipSign.checked = false;
       if (ui.previewTbody) ui.previewTbody.innerHTML = "";
       if (ui.warnings) ui.warnings.innerHTML = "";
       if (ui.riskBox) ui.riskBox.hidden = true;
@@ -4950,7 +4956,7 @@ if (!d.features) d.features = { sruEnabled: false };
       cols.forEach(c=> stats[c] = colStats(sampleRows, c));
 
       const nameDate = pickField(cols, ["datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","valutadag","transactiondate"]);
-      const nameText = pickField(cols, ["text","beskrivning","förklaring","forklaring","memo","motpart","namn","description"]);
+      const nameText = pickField(cols, ["text","beskrivning","förklaring","forklaring","memo","motpart","namn","description","specifikation","kategori"]);
       const nameAmount = pickField(cols, ["belopp","amount","summa","total","amountsek"]);
       const nameRef = pickField(cols, ["referens","reference","ref","ocr","meddelande","message","ver","trans","id"]);
       const nameDebit = pickField(cols, ["debet","debit","ut","withdrawal"]);
@@ -5040,7 +5046,7 @@ if (!d.features) d.features = { sruEnabled: false };
       const from = options && options.from ? String(options.from) : (options && options.dateFrom ? String(options.dateFrom) : "");
       const to = options && options.to ? String(options.to) : (options && options.dateTo ? String(options.dateTo) : "");
       const m = mapping || {};
-      const useDebCred = !!(m.debit && m.credit);
+      const useDebCred = !!(m.debit && m.credit && !m.amount);
 
       const drafts = [];
       let invalidDate = 0;
@@ -5085,6 +5091,10 @@ if (!d.features) d.features = { sruEnabled: false };
         } else {
           amount = parseNumberSE(rawAmount);
         }
+        amount = Math.round(amount * 100) / 100;
+
+        // Optional: flip sign (useful for some exports where purchases are positive)
+        if (m.flipSign) amount = -amount;
         amount = Math.round(amount * 100) / 100;
 
         if (!Number.isFinite(amount)) invalidAmount++;
@@ -5483,7 +5493,7 @@ if (!d.features) d.features = { sruEnabled: false };
         // amounts
         "belopp","amount","summa","saldo","balance",
         // text / reference
-        "text","beskrivning","förklaring","forklaring","memo","motpart","namn","reference","referens","ref","ocr","meddelande","message",
+        "text","beskrivning","förklaring","forklaring","memo","motpart","namn","description","specifikation","kategori","reference","referens","ref","ocr","meddelande","message",
         // ids
         "verifikationsnummer","verifikationsnr","verifikationsnum","verification"
       ];
@@ -5567,7 +5577,7 @@ if (!d.features) d.features = { sruEnabled: false };
 
       const a = autoMap || {};
       const guessDate = a.date || pickField(f, ["datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","valutadag","transactiondate"]);
-      const guessText = a.text || pickField(f, ["text","beskrivning","förklaring","forklaring","memo","motpart","namn","description"]);
+      const guessText = a.text || pickField(f, ["text","beskrivning","förklaring","forklaring","memo","motpart","namn","description","specifikation","kategori"]);
       const guessAmount = a.amount || pickField(f, ["belopp","amount","summa","total","amountsek"]);
       const guessRef = a.ref || pickField(f, ["referens","reference","ref","ocr","meddelande","message"]);
       // Avoid overly generic tokens like "ut"/"in" which can false-match Swedish words
@@ -5591,6 +5601,7 @@ if (!d.features) d.features = { sruEnabled: false };
         ref: ui.mapRef ? ui.mapRef.value : "",
         debit: ui.mapDebit ? ui.mapDebit.value : "",
         credit: ui.mapCredit ? ui.mapCredit.value : "",
+        flipSign: !!(ui.flipSign && ui.flipSign.checked),
       };
     }
 
@@ -6288,6 +6299,7 @@ if (!d.features) d.features = { sruEnabled: false };
       [ui.mapDate, ui.mapText, ui.mapAmount, ui.mapRef, ui.mapDebit, ui.mapCredit].filter(Boolean).forEach(s=>{
         s.addEventListener("change", ()=> scheduleBuildPrepared());
       });
+      if (ui.flipSign) ui.flipSign.addEventListener("change", ()=> scheduleBuildPrepared(0));
       if (ui.riskOk) ui.riskOk.addEventListener("change", ()=> updateModalButtons());
       if (ui.btnRun) ui.btnRun.addEventListener("click", (e)=>{ e.preventDefault(); importIntoInbox(); });
 
