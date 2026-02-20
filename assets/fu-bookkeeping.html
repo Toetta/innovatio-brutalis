@@ -282,7 +282,7 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
-      <span class="pill" id="revPill">v0.2.6</span>
+      <span class="pill" id="revPill">v0.2.7</span>
     </div>
   </div>
 </header>
@@ -1682,8 +1682,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
-  const APP_SEMVER = "0.2.6";  // user-facing revision
-  const APP_GIT_REV = "651a123";      // injected by tools/stamp-fu-version.mjs (optional)
+  const APP_SEMVER = "0.2.7";  // user-facing revision
+  const APP_GIT_REV = "a09f287";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -5272,22 +5272,66 @@ if (!d.features) d.features = { sruEnabled: false };
 
     function simpleCsvToRows(text){
       const lines = String(text || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n");
-      const first = lines.find(l=> String(l).trim().length > 0) || "";
-      const delim = detectCsvDelimiter(first);
-      const headerRaw = splitCsvLine(first, delim);
-      const fields = normalizeHeaderFields(headerRaw);
-      const rows = [];
-      let started = false;
-      for (const ln of lines){
-        const t = String(ln || "");
-        if (!started){
-          if (t === first) started = true;
-          continue;
+
+      const headerKeywords = [
+        "datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","valutadag",
+        "belopp","amount","summa","text","beskrivning","förklaring","forklaring","memo",
+        "referens","reference","ocr","meddelande","message","saldo","verifikationsnummer"
+      ];
+      const hasKeyword = (s)=>{
+        const t = String(s||"").toLowerCase();
+        return headerKeywords.some(k=> t.includes(k));
+      };
+      const norm = (s)=> String(s ?? "").trim();
+      const scoreCandidate = (cells)=>{
+        const nonEmpty = (cells||[]).map(norm).filter(Boolean);
+        if (nonEmpty.length < 2) return -1;
+        let score = nonEmpty.length;
+        score += nonEmpty.filter(hasKeyword).length * 5;
+        if (nonEmpty.length >= 4) score += 2;
+        let numericish = 0;
+        let dateish = 0;
+        for (const c of nonEmpty){
+          if (/^[+-]?[0-9\s'.,()]+$/.test(c)) numericish++;
+          if (parseDateToISO(c)) dateish++;
         }
-        if (!t.trim()) continue;
-        const parts = splitCsvLine(t, delim);
+        score -= numericish * 0.6;
+        score -= dateish * 0.6;
+        return score;
+      };
+
+      // Pick best header row among first non-empty lines
+      let headerLineIdx = -1;
+      let headerDelim = ";";
+      let bestScore = -1;
+      const scan = Math.min(lines.length, 80);
+      for (let i=0; i<scan; i++){
+        const ln = String(lines[i] || "");
+        if (!ln.trim()) continue;
+        const d = detectCsvDelimiter(ln);
+        const cells = splitCsvLine(ln, d);
+        const s = scoreCandidate(cells);
+        if (s > bestScore){
+          bestScore = s;
+          headerLineIdx = i;
+          headerDelim = d;
+        }
+      }
+
+      if (headerLineIdx < 0) return { rows: [], fields: [] };
+
+      const headerRaw = splitCsvLine(String(lines[headerLineIdx] || ""), headerDelim);
+      const fields = normalizeHeaderFields(headerRaw);
+
+      const rows = [];
+      for (let i=headerLineIdx + 1; i<lines.length; i++){
+        const ln = String(lines[i] || "");
+        if (!ln.trim()) continue;
+        const parts = splitCsvLine(ln, headerDelim);
+        const isEmpty = parts.every(x=> !String(x||"").trim());
+        if (isEmpty) continue;
         const obj = {};
-        for (let i=0;i<fields.length;i++) obj[fields[i]] = parts[i] ?? "";
+        for (let c=0; c<fields.length; c++) obj[fields[c]] = parts[c] ?? "";
         rows.push(obj);
       }
       return { rows, fields };
@@ -5298,20 +5342,71 @@ if (!d.features) d.features = { sruEnabled: false };
       if (ok){
         return await new Promise((resolve, reject)=>{
           try {
+            // Parse as arrays first so we can auto-detect which row is the header
+            // (SEB exports often have metadata lines before the real header row).
             window.Papa.parse(file, {
-              header: true,
+              header: false,
               skipEmptyLines: true,
               complete: (res)=>{
-                const rows = (res && res.data) ? res.data : [];
-                const fieldsRaw = (res && res.meta && Array.isArray(res.meta.fields)) ? res.meta.fields : getFieldsFromRows(rows);
-                const fields = normalizeHeaderFields(fieldsRaw);
-                // ensure all keys exist even if header blanks
-                const fixedRows = rows.map(r=>{
-                  const o = {};
-                  for (const f of fields) o[f] = (r && Object.prototype.hasOwnProperty.call(r, f)) ? r[f] : (r && r[f] ? r[f] : "");
-                  return Object.assign(o, r);
-                });
-                resolve({ rows: fixedRows, fields });
+                try {
+                  const data = (res && Array.isArray(res.data)) ? res.data : [];
+                  const headerKeywords = [
+                    "datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","valutadag",
+                    "belopp","amount","summa","text","beskrivning","förklaring","forklaring","memo",
+                    "referens","reference","ocr","meddelande","message","saldo","verifikationsnummer"
+                  ];
+                  const hasKeyword = (s)=>{
+                    const t = String(s||"").toLowerCase();
+                    return headerKeywords.some(k=> t.includes(k));
+                  };
+                  const norm = (v)=> String(v ?? "").trim();
+                  const scoreRow = (row)=>{
+                    const cells = (Array.isArray(row) ? row : []).map(norm);
+                    const nonEmpty = cells.filter(Boolean);
+                    if (nonEmpty.length < 2) return -1;
+                    let score = nonEmpty.length;
+                    score += nonEmpty.filter(hasKeyword).length * 5;
+                    if (nonEmpty.length >= 4) score += 2;
+                    let numericish = 0;
+                    let dateish = 0;
+                    for (const c of nonEmpty){
+                      if (/^[+-]?[0-9\s'.,()]+$/.test(c)) numericish++;
+                      if (parseDateToISO(c)) dateish++;
+                    }
+                    score -= numericish * 0.6;
+                    score -= dateish * 0.6;
+                    return score;
+                  };
+
+                  let headerIdx = 0;
+                  let best = -1;
+                  const scan = Math.min(data.length, 80);
+                  for (let i=0; i<scan; i++){
+                    const s = scoreRow(data[i]);
+                    if (s > best){ best = s; headerIdx = i; }
+                  }
+
+                  const headerRaw = Array.isArray(data[headerIdx]) ? data[headerIdx].map(norm) : [];
+                  const fields = normalizeHeaderFields(headerRaw);
+
+                  const maxCols = Math.max(fields.length, ...data.slice(headerIdx+1, headerIdx+6).map(r=> Array.isArray(r) ? r.length : 0));
+                  const fieldsPadded = fields.concat(Array.from({length: Math.max(0, maxCols - fields.length)}, (_,i)=> `Col${fields.length + i + 1}`));
+
+                  const rows = [];
+                  for (let i=headerIdx+1; i<data.length; i++){
+                    const r = Array.isArray(data[i]) ? data[i] : [];
+                    const parts = r.slice(0, maxCols).map(v=> (v == null ? "" : String(v)));
+                    const isEmpty = parts.every(x=> !String(x||"").trim());
+                    if (isEmpty) continue;
+                    const obj = {};
+                    for (let c=0; c<fieldsPadded.length; c++) obj[fieldsPadded[c]] = parts[c] ?? "";
+                    rows.push(obj);
+                  }
+
+                  resolve({ rows, fields: fieldsPadded });
+                } catch (e){
+                  reject(e);
+                }
               },
               error: (err)=> reject(err)
             });
@@ -5364,12 +5459,15 @@ if (!d.features) d.features = { sruEnabled: false };
       if (!Array.isArray(aoa) || !aoa.length) return { rows: [], fields: [], sheetName: name };
 
       const normCell = (v)=> String(v ?? "").trim();
-      const maxCols = aoa.reduce((m, r)=> Math.max(m, Array.isArray(r) ? r.length : 0), 0) || 0;
-
       const headerKeywords = [
-        "datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","valutadag",
-        "belopp","amount","summa","text","beskrivning","förklaring","forklaring","memo",
-        "referens","reference","ocr","meddelande","message"
+        // dates
+        "datum","date","transaktionsdatum","bokforingsdag","bokföringsdag","bokforingsdatum","bokföringsdatum","valutadag","valutadatum",
+        // amounts
+        "belopp","amount","summa","saldo","balance",
+        // text / reference
+        "text","beskrivning","förklaring","forklaring","memo","motpart","namn","reference","referens","ref","ocr","meddelande","message",
+        // ids
+        "verifikationsnummer","verifikationsnr","verifikationsnum","verification"
       ];
       const hasKeyword = (s)=>{
         const t = String(s||"").toLowerCase();
@@ -5381,7 +5479,11 @@ if (!d.features) d.features = { sruEnabled: false };
         if (nonEmpty.length < 2) return -1;
         let score = nonEmpty.length;
         // Reward header-like keywords
-        score += nonEmpty.filter(hasKeyword).length * 5;
+        const kwHits = nonEmpty.filter(hasKeyword).length;
+        score += kwHits * 6;
+        // SEB metadata/title rows often contain these words; penalize them.
+        const joined = nonEmpty.join(" ").toLowerCase();
+        if (/(export|exporterad|internetbank|privatperson|konto\b|kontonr|kund\b|org\.?nr|\bseb\b)/.test(joined)) score -= 8;
         // Penalize a single very long "title" cell
         if (nonEmpty.length === 1 && nonEmpty[0].length > 30) score -= 8;
         // Penalize rows that look like pure data (many numeric/date-like values)
@@ -5393,25 +5495,44 @@ if (!d.features) d.features = { sruEnabled: false };
         }
         score -= numericish * 0.6;
         score -= dateish * 0.6;
+        // Prefer rows with at least two header-like keywords.
+        if (kwHits >= 2) score += 6;
         return score;
       };
 
       let headerRowIdx = 0;
       let bestScore = -1;
-      const scan = Math.min(aoa.length, 30);
+      const scan = Math.min(aoa.length, 80);
       for (let i=0; i<scan; i++){
         const s = scoreHeaderRow(aoa[i]);
         if (s > bestScore){ bestScore = s; headerRowIdx = i; }
       }
 
-      const headerRaw = (Array.isArray(aoa[headerRowIdx]) ? aoa[headerRowIdx] : []).slice(0, maxCols).map(normCell);
-      const headerPadded = headerRaw.concat(Array.from({length: Math.max(0, maxCols - headerRaw.length)}, ()=>""));
+      // Compute effective column count (avoid including far-right formatted empty columns)
+      const effectiveMaxCols = (()=>{
+        let max = 0;
+        const end = Math.min(aoa.length, headerRowIdx + 250);
+        for (let r=headerRowIdx; r<end; r++){
+          const row = Array.isArray(aoa[r]) ? aoa[r] : [];
+          let last = -1;
+          for (let c=row.length-1; c>=0; c--){
+            if (normCell(row[c])) { last = c; break; }
+          }
+          if (last >= 0) max = Math.max(max, last + 1);
+        }
+        // sanity cap
+        if (max <= 0) max = (Array.isArray(aoa[headerRowIdx]) ? aoa[headerRowIdx].length : 0);
+        return Math.min(Math.max(1, max), 80);
+      })();
+
+      const headerRaw = (Array.isArray(aoa[headerRowIdx]) ? aoa[headerRowIdx] : []).slice(0, effectiveMaxCols).map(normCell);
+      const headerPadded = headerRaw.concat(Array.from({length: Math.max(0, effectiveMaxCols - headerRaw.length)}, ()=>""));
       const fields = normalizeHeaderFields(headerPadded);
 
       const rows = [];
       for (let i=headerRowIdx + 1; i<aoa.length; i++){
         const r = Array.isArray(aoa[i]) ? aoa[i] : [];
-        const parts = r.slice(0, maxCols).map(v=> (v == null ? "" : String(v)));
+        const parts = r.slice(0, effectiveMaxCols).map(v=> (v == null ? "" : String(v)));
         const isEmpty = parts.every(x=> !String(x||"").trim());
         if (isEmpty) continue;
         const obj = {};
