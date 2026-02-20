@@ -290,7 +290,7 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
-      <span class="pill" id="revPill">v0.2.14</span>
+      <span class="pill" id="revPill">v0.2.15</span>
     </div>
   </div>
 </header>
@@ -980,11 +980,12 @@
 
     <!-- KUNDFAKTUROR -->
     <section id="tab-invoices" hidden>
-      <div class="grid two">
+      <div class="grid two" id="invGrid">
         <div class="card">
           <div class="row" style="justify-content:space-between; margin-bottom:10px;">
             <h2>Skapa kundfaktura</h2>
             <div class="row">
+              <button class="btn secondary" id="btnInvToggleList" type="button">Dölj lista</button>
               <button class="btn secondary" id="btnInvNew">Ny</button>
               <button class="btn" id="btnInvSave" disabled>Spara</button>
             </div>
@@ -1063,7 +1064,7 @@
           </div>
         </div>
 
-        <div class="card">
+        <div class="card" id="invListCard">
           <div class="row" style="justify-content:space-between; margin-bottom:10px;">
             <h2>Kundfakturor</h2>
             <div class="row">
@@ -1701,8 +1702,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
-  const APP_SEMVER = "0.2.14";  // user-facing revision
-  const APP_GIT_REV = "62b75b9";      // injected by tools/stamp-fu-version.mjs (optional)
+  const APP_SEMVER = "0.2.15";  // user-facing revision
+  const APP_GIT_REV = "2fb20f8";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -6752,6 +6753,8 @@ if (!d.features) d.features = { sruEnabled: false };
   }
 
   // --- Invoice helpers ---
+  const invGrid = document.getElementById("invGrid");
+  const invListCard = document.getElementById("invListCard");
   const invYearSelect = document.getElementById("invYearSelect");
   const invoiceList = document.getElementById("invoiceList");
   const invDate = document.getElementById("invDate");
@@ -6762,6 +6765,7 @@ if (!d.features) d.features = { sruEnabled: false };
   const invLinesTbody = document.getElementById("invLinesTbody");
   const invTotal = document.getElementById("invTotal");
   const invRounding = document.getElementById("invRounding");
+  const btnInvToggleList = document.getElementById("btnInvToggleList");
   const btnInvNew = document.getElementById("btnInvNew");
   const btnInvSave = document.getElementById("btnInvSave");
   const btnInvClear = document.getElementById("btnInvClear");
@@ -6771,6 +6775,17 @@ if (!d.features) d.features = { sruEnabled: false };
   const btnInvPrint = document.getElementById("btnInvPrint");
   const btnInvToVoucher = document.getElementById("btnInvToVoucher");
   const btnInvRefresh = document.getElementById("btnInvRefresh");
+
+  let invListCollapsed = false;
+  function setInvoiceListCollapsed(collapsed){
+    invListCollapsed = !!collapsed;
+    if (invListCard) invListCard.hidden = invListCollapsed;
+    if (invGrid){
+      if (invListCollapsed) invGrid.classList.remove("two");
+      else invGrid.classList.add("two");
+    }
+    if (btnInvToggleList) btnInvToggleList.textContent = invListCollapsed ? "Visa lista" : "Dölj lista";
+  }
 
   const customerDialog = document.getElementById("customerDialog");
   const btnCustomerClose = document.getElementById("btnCustomerClose");
@@ -8226,6 +8241,9 @@ if (!d.features) d.features = { sruEnabled: false };
 
 
   function wireInvoiceEvents(){
+    // Default: show list. User can collapse for more editor space.
+    setInvoiceListCollapsed(invListCollapsed);
+    if (btnInvToggleList) btnInvToggleList.addEventListener("click", ()=> setInvoiceListCollapsed(!invListCollapsed));
     if (btnInvNew) btnInvNew.addEventListener("click", newInvoice);
     if (btnInvClear) btnInvClear.addEventListener("click", async ()=>{ if (!(await confirmAsync("Rensa fakturan?"))) return; newInvoice(); });
     if (btnInvAddItem) btnInvAddItem.addEventListener("click", ()=>{ invLines.push({ kind: "item", desc: "", qty: "1", price: "", vat: "25" });
