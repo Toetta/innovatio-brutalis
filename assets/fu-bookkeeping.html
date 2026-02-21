@@ -290,7 +290,7 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
-      <span class="pill" id="revPill">v0.2.17</span>
+      <span class="pill" id="revPill">v0.2.18</span>
     </div>
   </div>
 </header>
@@ -1709,8 +1709,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
-  const APP_SEMVER = "0.2.17";  // user-facing revision
-  const APP_GIT_REV = "2ee17b7";      // injected by tools/stamp-fu-version.mjs (optional)
+  const APP_SEMVER = "0.2.18";  // user-facing revision
+  const APP_GIT_REV = "1c25cbd";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -5895,6 +5895,7 @@ if (!d.features) d.features = { sruEnabled: false };
     async function importIntoInbox(){
       if (importing) return;
       if (!prepared) return;
+      ensureBankImportState();
       importing = true;
       if (ui.btnRun) ui.btnRun.disabled = true;
       const src = prepared.source;
@@ -6204,6 +6205,7 @@ if (!d.features) d.features = { sruEnabled: false };
     }
 
     function deleteItem(itemId){
+      ensureBankImportState();
       const it = getItem(itemId);
       if (!it) return;
       if (it.status === "posted") return showToast("Kan inte radera bokförd rad. Ångra först.", 5500);
@@ -6219,6 +6221,7 @@ if (!d.features) d.features = { sruEnabled: false };
     }
 
     async function deleteBatch(){
+      ensureBankImportState();
       const batchId = ui.batchFilter ? ui.batchFilter.value : "";
       if (!batchId) return showToast("Välj en batch i filtret först.", 4500);
       const batch = state.bankImport?.batches?.[batchId];
@@ -6253,6 +6256,7 @@ if (!d.features) d.features = { sruEnabled: false };
     }
 
     async function undoBatch(){
+      ensureBankImportState();
       const batchId = ui.batchFilter ? ui.batchFilter.value : "";
       if (!batchId) return showToast("Välj en batch i filtret först.", 4500);
       const items = listItems().filter(x=>x.batchId===batchId);
