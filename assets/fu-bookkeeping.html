@@ -290,7 +290,7 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
-      <span class="pill" id="revPill">v0.2.18</span>
+      <span class="pill" id="revPill">v0.2.19</span>
     </div>
   </div>
 </header>
@@ -1709,8 +1709,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
-  const APP_SEMVER = "0.2.18";  // user-facing revision
-  const APP_GIT_REV = "1c25cbd";      // injected by tools/stamp-fu-version.mjs (optional)
+  const APP_SEMVER = "0.2.19";  // user-facing revision
+  const APP_GIT_REV = "86fcf6d";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -6458,7 +6458,13 @@ if (!d.features) d.features = { sruEnabled: false };
         if (t.matches('input[type="checkbox"][data-act="sel"]')) return onInboxClick({ target: t });
         if (t.matches('select[data-act="acc"]')) return onInboxClick({ target: t });
       });
-      if (ui.tbody) ui.tbody.addEventListener("click", (e)=> onInboxClick(e));
+      if (ui.tbody) ui.tbody.addEventListener("click", (e)=>{
+        const t = e.target;
+        // Avoid double-handling clicks on native controls; the change handler above
+        // will handle these and prevent re-render while the dropdown is open.
+        if (t && (t.closest('select[data-act="acc"]') || t.closest('input[type="checkbox"][data-act="sel"]'))) return;
+        onInboxClick(e);
+      });
 
       if (ui.btnBulkDelete) ui.btnBulkDelete.addEventListener("click", (e)=>{ e.preventDefault(); bulkDeleteSelected(); });
       if (ui.btnDeleteBatch) ui.btnDeleteBatch.addEventListener("click", (e)=>{ e.preventDefault(); deleteBatch(); });
