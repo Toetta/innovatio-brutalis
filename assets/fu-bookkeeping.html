@@ -290,7 +290,7 @@
       <span class="pill" id="bootPill">JS: laddar…</span>
       <span class="pill" id="storagePill">Lagring: localStorage (offline)</span>
       <span class="pill" id="backupPill">Backup: –</span>
-      <span class="pill" id="revPill">v0.2.16</span>
+      <span class="pill" id="revPill">v0.2.17</span>
     </div>
   </div>
 </header>
@@ -1709,8 +1709,8 @@
  
 
   const APP_VERSION = "1.3.0"; // bump when adding new data fields
-  const APP_SEMVER = "0.2.16";  // user-facing revision
-  const APP_GIT_REV = "e041cc6";      // injected by tools/stamp-fu-version.mjs (optional)
+  const APP_SEMVER = "0.2.17";  // user-facing revision
+  const APP_GIT_REV = "2ee17b7";      // injected by tools/stamp-fu-version.mjs (optional)
   const STORAGE_KEY = "FU_BOOKKEEPING_STATE";
 
   let localStorageOk = true;
@@ -3593,6 +3593,20 @@ if (!d.features) d.features = { sruEnabled: false };
       return name === "QuotaExceededError" || /quota/i.test(msg) || e?.code === 22 || e?.code === 1014;
     };
 
+    const pruneForStorage = () => {
+      // Keep this conservative: drop large/diagnostic fields first.
+      let changed = false;
+      try {
+        const bi = state?.bankImport;
+        const items = bi?.items || {};
+        Object.values(items).forEach((it)=>{
+          if (!it || typeof it !== "object") return;
+          if (it.raw != null){ it.raw = null; changed = true; }
+        });
+      } catch {}
+      return changed;
+    };
+
     let persisted = false;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -3613,10 +3627,38 @@ if (!d.features) d.features = { sruEnabled: false };
         } catch (e2){
           console.error(e2);
           state.company.logoDataUrl = prev;
-          showToast("Kunde inte spara data till webbläsarens lagring. Se konsolen för detaljer.", 8000);
+          // Try one more pass by pruning large optional fields (e.g. bankimport raw rows)
+          try {
+            if (pruneForStorage()){
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+              persisted = true;
+              showToast("Kunde inte spara p.g.a. lagringsutrymme. Rensade rådata från importerade bankrader för att få plats.", 9000);
+            } else {
+              showToast("Kunde inte spara data till webbläsarens lagring. Se konsolen för detaljer.", 8000);
+            }
+          } catch (e3){
+            console.error(e3);
+            showToast("Kunde inte spara data till webbläsarens lagring. Se konsolen för detaljer.", 8000);
+          }
         }
       } else {
-        showToast("Kunde inte spara data till webbläsarens lagring. Se konsolen för detaljer.", 8000);
+        // If quota is hit without a logo, bank import raw rows is a common culprit.
+        if (isQuotaError(e)){
+          try {
+            if (pruneForStorage()){
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+              persisted = true;
+              showToast("Kunde inte spara p.g.a. lagringsutrymme. Rensade rådata från importerade bankrader för att få plats.", 9000);
+            } else {
+              showToast("Kunde inte spara data till webbläsarens lagring. Se konsolen för detaljer.", 8000);
+            }
+          } catch (e2){
+            console.error(e2);
+            showToast("Kunde inte spara data till webbläsarens lagring. Se konsolen för detaljer.", 8000);
+          }
+        } else {
+          showToast("Kunde inte spara data till webbläsarens lagring. Se konsolen för detaljer.", 8000);
+        }
       }
     }
 
@@ -4469,7 +4511,7 @@ if (!d.features) d.features = { sruEnabled: false };
   // --- Accounts helpers ---
 
   function accountLabel(no){
-    const a = state.accounts[no];
+    const a = state.accounts ? state.accounts[no] : null;
     return a ? `${no} – ${a.name}` : `${no} – (okänt konto)`;
   }
 
@@ -4631,13 +4673,7 @@ if (!d.features) d.features = { sruEnabled: false };
     function softSave(){
       if (softSaveTimer) clearTimeout(softSaveTimer);
       softSaveTimer = setTimeout(()=>{
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        } catch (e){
-          console.error(e);
-          showToast("Kunde inte spara (localStorage).", 6000);
-        }
-        try { if (typeof scheduleFileAutosave === "function") scheduleFileAutosave(); } catch {}
+        try { save({ renderAll:false }); } catch (e){ console.error(e); showToast("Kunde inte spara (localStorage).", 6000); }
       }, 250);
     }
 
@@ -5916,7 +5952,8 @@ if (!d.features) d.features = { sruEnabled: false };
             vat: (()=>{ const v = Number(r.vat); return Number.isFinite(v) ? Math.round(v*100)/100 : null; })(),
             text: clampText(r.text||"", 200),
             ref: clampText(String(r.ref ?? "").trim(), 120),
-            raw: r.raw || null,
+            // Avoid storing the full raw row payload in state (can easily exceed localStorage quota).
+            raw: null,
             status: suggestedAccount ? "matched" : "unmatched",
             suggestedAccount,
             suggestedInvoiceId,
@@ -5948,7 +5985,10 @@ if (!d.features) d.features = { sruEnabled: false };
         details: { filename: batch.filename, sheetName: batch.sheetName, source: src, accountBank: bankAcc, rowCount: batch.rowCount, importedCount, skippedDuplicates, fileHash: batch.fileHash || "" }
       });
 
-        save();
+        const persisted = save({ renderAll:false });
+        if (!persisted){
+          showToast("Importerade till inkorg, men kunde inte spara till webbläsarens lagring. Prova att minska data (t.ex. logotyp), eller använd fil-synk/backup.", 10000);
+        }
         showToast(`Importerade ${importedCount} rader. Dubbletter: ${skippedDuplicates}.`, 5500);
         closeModal();
         // switch to inbox tab
