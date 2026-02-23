@@ -102,6 +102,13 @@ Kontrollpunkter:
 - Origin måste matcha exakt: `https://www.innovatio-brutalis.se`
   - Skillnad mellan `www` och icke-`www` räknas.
 
+2b) `window.opener` blockeras (COOP/COEP)
+- Om din sajt skickar security headers som `Cross-Origin-Opener-Policy: same-origin` kan popupen tappa åtkomst till `window.opener`, vilket gör att token aldrig kan postMessage:as tillbaka → login loop.
+- Så kollar du:
+  - DevTools → Network → klicka på dokument-requesten `admin/` → Headers → leta efter `Cross-Origin-Opener-Policy` och `Cross-Origin-Embedder-Policy`.
+  - DevTools → Console: om du ser fel som antyder att `window.opener` är `null` eller att cross-origin communication blockeras är detta en stark kandidat.
+- Fix (hosting/headers): se till att `/admin/*` inte sätter COOP/COEP som bryter popup-kommunikation (t.ex. använd `Cross-Origin-Opener-Policy: unsafe-none` för admin-ytan).
+
 3) Local Storage
 - DevTools → Application → Local Storage → `https://www.innovatio-brutalis.se`
 - Leta efter token/decap-nycklar.
