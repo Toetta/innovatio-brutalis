@@ -60,6 +60,14 @@ För varje viktig request:
 - Leta efter nycklar som innehåller `decap` eller `netlify` eller `token`
   - Om login lyckas ska någon form av token-state sparas här.
 
+Viktigt för Decap 3.x:
+- Decap sparar normalt användarsession i `localStorage`-nyckeln `decap-cms-user`.
+- Om du ser `authorization:github:success` i Console men `decap-cms-user` fortfarande är `null` efteråt:
+  1) Kolla Network efter anrop till `https://api.github.com/user` (eller andra `api.github.com`-anrop) direkt efter login.
+     - 200 → token funkar och då ska `decap-cms-user` normalt skrivas.
+     - 401/403 → token/scopes/behörighet problem → Decap kan då stanna kvar på login och inte spara session.
+  2) Testa i Incognito med extensions avstängda (extension-meddelanden i Console kan störa auth-flöden).
+
 Tips:
 - Om du råkar köra CMS på `https://innovatio-brutalis.se/admin/` (utan www) kan token hamna under den origin istället.
 
