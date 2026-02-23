@@ -20,6 +20,13 @@ Den här guiden är skriven för din setup:
   - Response ska vara YAML (inte HTML/404-sida)
 - Snabbtest i ny flik: https://www.innovatio-brutalis.se/admin/config.yml
 
+Obs om “(disk cache)” i Network:
+- Det betyder oftast bara att Chrome återanvänder en cachead respons lokalt.
+- För att tvinga en ny hämtning när du felsöker:
+  - Kryssa i “Disable cache” i Network-fliken (gäller när DevTools är öppet) och gör en hard reload.
+  - Högerklicka reload-knappen → “Empty cache and hard reload”.
+  - Eller öppna `config.yml` med en cache-buster: `https://www.innovatio-brutalis.se/admin/config.yml?ts=123`.
+
 3) Logga in
 - Klicka “Login with GitHub”
 - Godkänn i GitHub
