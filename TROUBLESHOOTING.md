@@ -110,6 +110,65 @@ Kontrollpunkter:
 - Origin måste matcha exakt: `https://www.innovatio-brutalis.se`
   - Skillnad mellan `www` och icke-`www` räknas.
 
+2a) Viktigt: Decap kräver en handshake-sekvens
+- Decap (3.x) accepterar normalt inte `authorization:github:success:...` direkt.
+- Den förväntar sig först ett meddelande från popup/callback:
+  - `authorizing:github`
+- När admin-sidan får det, svarar den tillbaka till popupen med samma sträng.
+- Först därefter skickar popup/callback:
+  - `authorization:github:success:{...}`
+
+Om du bara ser `authorization:github:success` (men aldrig `authorizing:github`) i Console, kommer Decap ofta att ignorera token → ingen `decap-cms-user` i localStorage → login loop.
+
+Snabb-check i Console (kör före “Login with GitHub”):
+
+```js
+window.addEventListener('message', (e) => {
+  if (e.origin !== 'https://innovatio-decap-oauth.m-arlemark.workers.dev') return;
+  console.log('oauth msg:', String(e.data || '').slice(0, 80));
+});
+console.log('oauth message logger ready');
+```
+
+Fix: uppdatera OAuth Worker callback-sidan så att den skickar `authorizing:github` först, väntar på echo från admin, och skickar sedan `authorization:github:success:...`.
+
+Minimal callback-HTML (principen; token måste injiceras av Workern efter code→token exchange):
+
+```html
+<!doctype html>
+<meta charset="utf-8" />
+<title>Decap OAuth Callback</title>
+<script>
+  (function () {
+    // 1) Workern måste stoppa in token här (server-side).
+    //    Ex: const payload = { token: accessToken, provider: 'github' };
+    const payload = window.__OAUTH_PAYLOAD__;
+
+    const provider = (payload && payload.provider) || 'github';
+    const opener = window.opener;
+    const targetOrigin = document.referrer ? new URL(document.referrer).origin : '*';
+
+    if (!opener) {
+      document.body.textContent = 'Missing window.opener (popup blocked/COOP).';
+      return;
+    }
+
+    const handshake = `authorizing:${provider}`;
+    const successPrefix = `authorization:${provider}:success:`;
+
+    // Step A: ask the opener to start the handshake.
+    opener.postMessage(handshake, targetOrigin);
+
+    // Step B: wait for the opener to echo the handshake, then send the token.
+    window.addEventListener('message', (e) => {
+      if (String(e.data) !== handshake) return;
+      opener.postMessage(successPrefix + JSON.stringify(payload), targetOrigin);
+      window.close();
+    });
+  })();
+</script>
+```
+
 2b) `window.opener` blockeras (COOP/COEP)
 - Om din sajt skickar security headers som `Cross-Origin-Opener-Policy: same-origin` kan popupen tappa åtkomst till `window.opener`, vilket gör att token aldrig kan postMessage:as tillbaka → login loop.
 - Så kollar du:
