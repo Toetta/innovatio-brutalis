@@ -11,8 +11,8 @@ local_backend: true
 media_folder: "assets/uploads"
 public_folder: "/assets/uploads"
 
-site_url: "https://www.innovatio-brutalis.se"
-display_url: "https://www.innovatio-brutalis.se"
+site_url: "https://innovatio-brutalis.se"
+display_url: "https://innovatio-brutalis.se"
 
 collections:
   - name: "store"
