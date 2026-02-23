@@ -4,20 +4,25 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Product – Innovatio Brutalis</title>
+  <link rel="stylesheet" href="/css/style.css" />
   <link rel="stylesheet" href="/shop/shop.css" />
+
+  <meta name="ib-spotify-default" content="https://open.spotify.com/playlist/7h1c4DGKumkFVXH2N8eMFu?si=270150315cd241b2">
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="/">Innovatio Brutalis</a>
-    <nav class="nav">
-      <a href="/shop/">Webshop</a>
-    </nav>
-  </header>
+  <div class="container">
 
-  <main class="wrap">
-    <a class="back" href="/shop/">← Back to shop</a>
-    <section id="productView" class="card"></section>
-  </main>
+    <!-- GLOBAL NAVIGATION (injectas av site.js) -->
+    <div id="site-topbar"></div>
+    <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
+
+    <main class="shop">
+      <a class="back" href="/shop/">← Back to shop</a>
+      <section id="productView" class="card"></section>
+    </main>
+
+  </div>
 
   <script src="/shop/shop.js"></script>
 </body>
