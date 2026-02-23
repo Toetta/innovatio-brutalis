@@ -1,0 +1,11 @@
+{
+  "categorySlugs": [
+    "nyheter",
+    "projekt",
+    "verkstad",
+    "cnc"
+  ],
+  "productSlugs": [
+    "testprodukt"
+  ]
+}

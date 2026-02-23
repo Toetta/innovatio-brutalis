@@ -281,7 +281,11 @@
     // Enables the "scroll only under topbar/player" layout mode in CSS.
     // Kept behind a class so no-JS fallback still scrolls normally.
     if (document.getElementById("ib-main")) {
-      document.documentElement.classList.add("ib-fixed-ui");
+      // NOTE: On /shop/ we keep the reserved top padding, but avoid the fixed scroll container.
+      // Native <select> dropdowns can otherwise get clipped inside an overflow container.
+      const pathLower = lower(window.location.pathname || "");
+      const isShop = pathLower.startsWith("/shop/");
+      if (!isShop) document.documentElement.classList.add("ib-fixed-ui");
     }
   } catch (_) {}
   updateTopbarHeightVar();
