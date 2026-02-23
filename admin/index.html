@@ -4,6 +4,12 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Innovatio Brutalis CMS</title>
+    <script>
+      // Keep a single canonical origin for OAuth + storage.
+      if (location.hostname === 'innovatio-brutalis.se') {
+        location.replace(`https://www.innovatio-brutalis.se${location.pathname}${location.search}${location.hash}`);
+      }
+    </script>
   </head>
   <body>
     <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
