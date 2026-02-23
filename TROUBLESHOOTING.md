@@ -121,6 +121,40 @@ Kontrollpunkter:
 - DevTools → Application → Local Storage → `https://www.innovatio-brutalis.se`
 - Leta efter token/decap-nycklar.
 
+5) Verifiera token utan att exponera den (snabbtest)
+- Om du ser `authorization:github:success` men `localStorage.getItem("decap-cms-user")` är `null`, kan du testa om token faktiskt fungerar mot GitHub API.
+- Klistra in detta i Console på admin-sidan innan du klickar “Login with GitHub”:
+
+```js
+window.addEventListener('message', async (e) => {
+  if (e.origin !== 'https://innovatio-decap-oauth.m-arlemark.workers.dev') return;
+  const data = String(e.data || '');
+  const prefix = 'authorization:github:success:';
+  if (!data.startsWith(prefix)) return;
+
+  const payload = JSON.parse(data.slice(prefix.length));
+  const token = payload.token;
+
+  const userResp = await fetch('https://api.github.com/user', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  console.log('GitHub /user status:', userResp.status);
+  console.log('X-OAuth-Scopes:', userResp.headers.get('x-oauth-scopes'));
+
+  const repoResp = await fetch('https://api.github.com/repos/Toetta/innovatio-brutalis', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const repoJson = await repoResp.json();
+  console.log('Repo status:', repoResp.status);
+  console.log('Repo permissions:', repoJson && repoJson.permissions);
+});
+console.log('token debug listener ready');
+```
+
+Tolkning:
+- `/user` = 200 → token är giltig.
+- `repoJson.permissions.push` måste vara `true` för att kunna skriva (spara/publisha) till repot.
+
 4) CORS
 - Om Worker/callback gör fetch eller skickar headers: säkerställ att Worker tillåter origin `https://www.innovatio-brutalis.se`.
 
