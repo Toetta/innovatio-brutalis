@@ -112,10 +112,10 @@ Kontrollpunkter:
 
 2a) Viktigt: Decap kräver en handshake-sekvens
 - Decap (3.x) accepterar normalt inte `authorization:github:success:...` direkt.
-- Den förväntar sig först ett meddelande från popup/callback:
+- Den förväntar sig först ett meddelande från popupen på din `base_url` (dvs din `/auth`-sida, innan den redirectar vidare till GitHub):
   - `authorizing:github`
 - När admin-sidan får det, svarar den tillbaka till popupen med samma sträng.
-- Först därefter skickar popup/callback:
+- Först därefter (senare, när `/callback` laddas på samma `base_url`) skickar popupen:
   - `authorization:github:success:{...}`
 
 Om du bara ser `authorization:github:success` (men aldrig `authorizing:github`) i Console, kommer Decap ofta att ignorera token → ingen `decap-cms-user` i localStorage → login loop.
@@ -130,21 +130,23 @@ window.addEventListener('message', (e) => {
 console.log('oauth message logger ready');
 ```
 
-Fix: uppdatera OAuth Worker callback-sidan så att den skickar `authorizing:github` först, väntar på echo från admin, och skickar sedan `authorization:github:success:...`.
+Fix: uppdatera OAuth Worker `/auth` så att den:
+1) renderar en liten HTML/JS-sida på din Worker-domän
+2) skickar `authorizing:github` till `window.opener`
+3) väntar på att opener echo:ar tillbaka `authorizing:github`
+4) *därefter* redirectar till GitHub authorize-URL.
 
-Minimal callback-HTML (principen; token måste injiceras av Workern efter code→token exchange):
+`/callback` ska sedan bara `postMessage`-a `authorization:github:success:{...}` (eller `...:error:{...}`) och stänga fönstret.
+
+Minimal `/auth`-HTML (principen; Workern stoppar in GitHub authorize-URL server-side):
 
 ```html
 <!doctype html>
 <meta charset="utf-8" />
-<title>Decap OAuth Callback</title>
+<title>Decap OAuth Auth</title>
 <script>
   (function () {
-    // 1) Workern måste stoppa in token här (server-side).
-    //    Ex: const payload = { token: accessToken, provider: 'github' };
-    const payload = window.__OAUTH_PAYLOAD__;
-
-    const provider = (payload && payload.provider) || 'github';
+    const provider = 'github';
     const opener = window.opener;
     const targetOrigin = document.referrer ? new URL(document.referrer).origin : '*';
 
@@ -154,16 +156,15 @@ Minimal callback-HTML (principen; token måste injiceras av Workern efter code�
     }
 
     const handshake = `authorizing:${provider}`;
-    const successPrefix = `authorization:${provider}:success:`;
-
-    // Step A: ask the opener to start the handshake.
+    // Step A: tell the opener we are ready.
     opener.postMessage(handshake, targetOrigin);
 
-    // Step B: wait for the opener to echo the handshake, then send the token.
+    // Step B: wait for opener echo, then navigate to GitHub.
     window.addEventListener('message', (e) => {
+      if (e.origin !== targetOrigin) return;
       if (String(e.data) !== handshake) return;
-      opener.postMessage(successPrefix + JSON.stringify(payload), targetOrigin);
-      window.close();
+      // Workern ska sätta window.location till GitHub authorize-URL här.
+      window.location.href = window.__GITHUB_AUTHORIZE_URL__;
     });
   })();
 </script>
