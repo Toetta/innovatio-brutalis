@@ -283,8 +283,19 @@
     if (document.getElementById("ib-main")) {
       // NOTE: On /shop/ we keep the reserved top padding, but avoid the fixed scroll container.
       // Native <select> dropdowns can otherwise get clipped inside an overflow container.
-      const pathLower = lower(window.location.pathname || "");
-      const isShop = pathLower.startsWith("/shop/");
+      const normalizedPath = (() => {
+        try {
+          // computeState().path normalizes directory-like paths to end with "/".
+          // This makes /shop and /shop/ behave the same.
+          return computeState().path || (window.location.pathname || "");
+        } catch (_) {
+          return window.location.pathname || "";
+        }
+      })();
+
+      const pathLower = lower(normalizedPath);
+      const shopPath = pathLower.replace(/^\/en\//, "/");
+      const isShop = shopPath === "/shop" || shopPath === "/shop/" || shopPath.startsWith("/shop/");
       if (!isShop) document.documentElement.classList.add("ib-fixed-ui");
     }
   } catch (_) {}
