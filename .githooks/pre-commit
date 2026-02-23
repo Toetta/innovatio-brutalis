@@ -4,6 +4,8 @@
 
 set -e
 
-node tools/stamp-fu-version.mjs
-
-git add assets/fu-bookkeeping.html
+# Only stamp if the local app is actually present (APP_SEMVER marker exists).
+if [ -f "assets/fu-bookkeeping.html" ] && grep -q "APP_SEMVER" "assets/fu-bookkeeping.html"; then
+	node tools/stamp-fu-version.mjs
+	git add assets/fu-bookkeeping.html
+fi

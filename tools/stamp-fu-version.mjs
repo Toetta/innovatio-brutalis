@@ -54,6 +54,13 @@ const setVersion = argValue("--set-version");
 const noBump = process.argv.includes("--no-bump");
 const noGit = process.argv.includes("--no-git");
 
+// If FU-Bookkeeping is hosted in another repo, this repo may only keep a redirect page.
+// In that case, we skip stamping instead of failing the commit.
+if (!fs.existsSync(target)) {
+  console.log(`Skip stamping: missing ${path.relative(repoRoot, target)}`);
+  process.exit(0);
+}
+
 let html = readFileSafe(target);
 
 const semverRe = /(const\s+APP_SEMVER\s*=\s*")([0-9]+\.[0-9]+\.[0-9]+)("\s*;)/;
@@ -61,8 +68,8 @@ const gitRe = /(const\s+APP_GIT_REV\s*=\s*")([^"\r\n]*)("\s*;)/;
 
 const m = semverRe.exec(html);
 if (!m) {
-  console.error("Could not find APP_SEMVER in", target);
-  process.exit(2);
+  console.log(`Skip stamping: no APP_SEMVER marker in ${path.relative(repoRoot, target)}`);
+  process.exit(0);
 }
 
 const currentSemver = m[2];
@@ -82,12 +89,7 @@ html = html.replace(semverRe, `$1${nextSemver}$3`);
 
 if (!noGit) {
   const sha = getGitShort();
-  if (gitRe.test(html)) {
-    html = html.replace(gitRe, `$1${sha}$3`);
-  } else {
-    console.error("Could not find APP_GIT_REV in", target);
-    process.exit(2);
-  }
+  if (gitRe.test(html)) html = html.replace(gitRe, `$1${sha}$3`);
 }
 
 // Keep the default header text roughly aligned (JS will set it on load anyway)
