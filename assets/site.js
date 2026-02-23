@@ -59,13 +59,30 @@
     } catch (_) {}
 
     // Where to switch language (paired pages)
-    const svUrl = pathname.startsWith("/assets/")
+    let svUrl = pathname.startsWith("/assets/")
       ? `${pathname}?lang=sv`
       : path.replace(/^\/en\//, "/");
 
-    const enUrl = pathname.startsWith("/assets/")
+    let enUrl = pathname.startsWith("/assets/")
       ? `${pathname}?lang=en`
       : (path.startsWith("/en/") ? path : "/en" + path);
+
+    // Some sections are shared between languages and don't exist under /en/.
+    // For those, switch language using the `?lang=` override.
+    try {
+      const pathLower = lower(path);
+      const shouldUseQueryLang = pathLower.startsWith("/shop/") || pathLower.startsWith("/articles/");
+      if (shouldUseQueryLang) {
+        const withLang = (lang) => {
+          const next = new URLSearchParams(window.location.search);
+          next.set("lang", lang);
+          const qs = next.toString();
+          return qs ? `${pathname}?${qs}` : pathname;
+        };
+        svUrl = withLang("sv");
+        enUrl = withLang("en");
+      }
+    } catch (_) {}
 
     return { pathname, path, isEN, root, section, svUrl, enUrl };
   };
@@ -82,7 +99,8 @@
       { key: "engineering", labelSV: "Engineering", labelEN: "Engineering", hrefSV: "/engineering/", hrefEN: "/en/engineering/" },
       { key: "fu-bookkeeping", labelSV: "FU-Bookkeeping", labelEN: "FU-Bookkeeping", hrefSV: "/fu-bookkeeping/", hrefEN: "/en/fu-bookkeeping/" },
       { key: "coding",      labelSV: "AI + CODING", labelEN: "AI + CODING", hrefSV: "/coding/",      hrefEN: "/en/coding/" },
-      { key: "automotive",  labelSV: "Automotive",  labelEN: "Automotive",  hrefSV: "/automotive/",  hrefEN: "/en/automotive/" }
+      { key: "automotive",  labelSV: "Automotive",  labelEN: "Automotive",  hrefSV: "/automotive/",  hrefEN: "/en/automotive/" },
+      { key: "shop",        labelSV: "Webshop",     labelEN: "Shop",        hrefSV: "/shop/",        hrefEN: "/shop/?lang=en" }
     ];
 
     let navLinks = navItems.map(item => {
