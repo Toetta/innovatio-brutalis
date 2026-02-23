@@ -1,6 +1,6 @@
 backend:
   name: github
-  repo: https://github.com/Toetta/innovatio-brutalis
+  repo: Toetta/innovatio-brutalis
   branch: main
   base_url: https://innovatio-decap-oauth.m-arlemark.workers.dev
   auth_endpoint: /auth
