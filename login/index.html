@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Login — Innovatio Brutalis</title>
+
+  <link rel="canonical" href="https://www.innovatio-brutalis.se/login/">
+  <link rel="stylesheet" href="/css/style.css">
+
+  <meta name="ib-topbar-cta-label" content="Kontakt">
+  <meta name="ib-topbar-cta-href" content="/#kontakt">
+
+  <!-- Turnstile site key should be provided via meta tag -->
+  <meta name="ib-turnstile-sitekey" content="0x4AAAAAAChDtETbf_hp3tmL">
+</head>
+<body>
+  <div class="container">
+    <div id="site-topbar"></div>
+    <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
+
+    <main>
+      <section class="card">
+        <h1>Logga in</h1>
+        <p>Vi använder magic link (ingen lösenordshantering).</p>
+
+        <label style="display:block; margin-top:14px">
+          E-post
+          <input id="email" type="email" autocomplete="email" placeholder="din@epost.se" style="width:100%; margin-top:8px">
+        </label>
+
+        <div style="margin-top:14px">
+          <div id="turnstile"></div>
+        </div>
+
+        <button id="send" class="btn" style="margin-top:14px">Skicka login-länk</button>
+        <div id="status" style="margin-top:12px; color: var(--text-muted)"></div>
+
+        <div id="dev" style="margin-top:10px"></div>
+      </section>
+    </main>
+
+    <script type="module">
+      import { apiPost } from '/assets/js/api.js';
+      import { ensureShell, renderFooter, setStatus } from '/assets/js/ui.js';
+
+      ensureShell({ activeSection: '' });
+      renderFooter();
+
+      const emailEl = document.getElementById('email');
+      const btn = document.getElementById('send');
+      const statusEl = document.getElementById('status');
+      const devEl = document.getElementById('dev');
+      const turnstileMount = document.getElementById('turnstile');
+
+      const siteKey = document.querySelector('meta[name="ib-turnstile-sitekey"]')?.getAttribute('content')?.trim();
+      let turnstileToken = '';
+
+      const mountTurnstile = () => {
+        if (!siteKey) {
+          setStatus(statusEl, 'Turnstile site key saknas (ib-turnstile-sitekey).', 'warn');
+          return;
+        }
+        if (!window.turnstile || !turnstileMount) return;
+        window.turnstile.render(turnstileMount, {
+          sitekey: siteKey,
+          callback: (t) => { turnstileToken = String(t || ''); },
+          'expired-callback': () => { turnstileToken = ''; },
+          'error-callback': () => { turnstileToken = ''; },
+        });
+      };
+
+      // Load Turnstile
+      const s = document.createElement('script');
+      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      s.async = true;
+      s.defer = true;
+      s.onload = mountTurnstile;
+      document.head.appendChild(s);
+
+      btn.addEventListener('click', async () => {
+        try {
+          btn.disabled = true;
+          setStatus(statusEl, 'Skickar…');
+          devEl.innerHTML = '';
+          const data = await apiPost('/api/auth/request-link', {
+            email: emailEl.value,
+            turnstileToken,
+          });
+          setStatus(statusEl, 'Kolla din e-post för en login-länk.');
+          if (data && data.debug_link) {
+            devEl.innerHTML = `<a href="${data.debug_link}">DEV: öppna login-länken</a>`;
+          }
+        } catch (err) {
+          // UI should remain generic.
+          setStatus(statusEl, 'Kolla din e-post för en login-länk.');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    </script>
+  </div>
+</body>
+</html>

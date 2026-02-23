@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Orders — Innovatio Brutalis</title>
+
+  <link rel="canonical" href="https://www.innovatio-brutalis.se/orders/">
+  <link rel="stylesheet" href="/css/style.css">
+
+  <meta name="ib-topbar-cta-label" content="Webshop">
+  <meta name="ib-topbar-cta-href" content="/shop/">
+</head>
+<body>
+  <div class="container">
+    <div id="site-topbar"></div>
+    <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
+
+    <main>
+      <section class="card">
+        <h1>Mina ordrar</h1>
+        <p style="color:var(--text-muted)">Senaste först.</p>
+        <div id="list" style="margin-top:12px"></div>
+      </section>
+
+      <section class="card" style="margin-top:18px">
+        <h2>Detaljer</h2>
+        <div id="detail" style="margin-top:12px; color:var(--text-muted)">Välj en order.</div>
+      </section>
+
+      <section class="card" style="margin-top:18px">
+        <a href="/account/" class="btn">Tillbaka till konto</a>
+      </section>
+    </main>
+
+    <script type="module">
+      import { apiGet } from '/assets/js/api.js';
+      import { ensureShell, renderFooter } from '/assets/js/ui.js';
+
+      ensureShell({ activeSection: '' });
+      renderFooter();
+
+      const listEl = document.getElementById('list');
+      const detailEl = document.getElementById('detail');
+
+      const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (ch) => ({
+        '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+      }[ch]));
+
+      const fmt = (amount, currency) => {
+        const n = Number(amount);
+        if (!Number.isFinite(n)) return '';
+        try { return new Intl.NumberFormat('sv-SE', { style:'currency', currency: currency || 'SEK' }).format(n); }
+        catch (_) { return `${n} ${currency||'SEK'}`; }
+      };
+
+      const load = async () => {
+        let data;
+        try {
+          data = await apiGet('/api/orders');
+        } catch (err) {
+          if (err && err.status === 401) {
+            window.location.href = '/login/';
+            return;
+          }
+          listEl.innerHTML = '<div style="color:var(--text-muted)">Kunde inte ladda ordrar.</div>';
+          return;
+        }
+
+        const orders = data.orders || [];
+        if (!orders.length) {
+          listEl.innerHTML = '<div style="color:var(--text-muted)">Inga ordrar ännu.</div>';
+          return;
+        }
+
+        listEl.innerHTML = orders.map(o => {
+          return `
+            <div class="card" style="margin-top:10px">
+              <div style="display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap">
+                <div>
+                  <div style="font-weight:800">${esc(o.order_number)}</div>
+                  <div style="color:var(--text-muted)">${esc(o.status)} · ${esc(o.placed_at)}</div>
+                </div>
+                <div style="text-align:right">
+                  <div style="font-weight:800">${esc(fmt(o.total_inc_vat, o.currency))}</div>
+                  <button class="btn" data-id="${esc(o.id)}" style="margin-top:6px">Visa</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        listEl.querySelectorAll('button[data-id]').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const id = btn.getAttribute('data-id');
+            detailEl.textContent = 'Laddar…';
+            try {
+              const d = await apiGet(`/api/orders/${encodeURIComponent(id)}`);
+              const o = d.order;
+              const lines = d.lines || [];
+              detailEl.innerHTML = `
+                <div><strong>Order:</strong> ${esc(o.order_number)}</div>
+                <div><strong>Status:</strong> ${esc(o.status)}</div>
+                <div><strong>Datum:</strong> ${esc(o.placed_at)}</div>
+                <div style="margin-top:10px"><strong>Rader</strong></div>
+                <div style="margin-top:6px">
+                  ${lines.map(l => `
+                    <div style="display:flex; justify-content:space-between; gap:10px">
+                      <div>${esc(l.title)} <span style="color:var(--text-muted)">x${esc(l.qty)}</span></div>
+                      <div>${esc(fmt(l.line_total_inc_vat, o.currency))}</div>
+                    </div>
+                  `).join('')}
+                </div>
+              `;
+            } catch (_) {
+              detailEl.textContent = 'Kunde inte ladda order.';
+            }
+          });
+        });
+      };
+
+      load();
+    </script>
+  </div>
+</body>
+</html>

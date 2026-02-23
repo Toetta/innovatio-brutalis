@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Account — Innovatio Brutalis</title>
+
+  <link rel="canonical" href="https://www.innovatio-brutalis.se/account/">
+  <link rel="stylesheet" href="/css/style.css">
+
+  <meta name="ib-topbar-cta-label" content="Webshop">
+  <meta name="ib-topbar-cta-href" content="/shop/">
+</head>
+<body>
+  <div class="container">
+    <div id="site-topbar"></div>
+    <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
+
+    <main>
+      <section class="card">
+        <h1>Mitt konto</h1>
+        <p id="who" style="color:var(--text-muted)"></p>
+
+        <div style="display:grid; grid-template-columns:1fr; gap:14px; margin-top:14px">
+          <label>
+            Namn
+            <input id="full_name" type="text" style="width:100%">
+          </label>
+          <label>
+            Telefon
+            <input id="phone" type="tel" style="width:100%">
+          </label>
+          <label>
+            Företag
+            <input id="company_name" type="text" style="width:100%">
+          </label>
+          <label>
+            Org.nr
+            <input id="orgnr" type="text" style="width:100%">
+          </label>
+          <label>
+            VAT ID
+            <input id="vat_id" type="text" style="width:100%">
+          </label>
+          <label style="display:flex; gap:10px; align-items:center">
+            <input id="marketing_opt_in" type="checkbox">
+            <span>Jag vill få uppdateringar via e-post</span>
+          </label>
+        </div>
+
+        <button id="save" class="btn" style="margin-top:14px">Spara profil</button>
+        <div id="status" style="margin-top:10px; color:var(--text-muted)"></div>
+      </section>
+
+      <section class="card" style="margin-top:18px">
+        <h2>Adresser</h2>
+
+        <div style="display:grid; grid-template-columns:1fr; gap:16px; margin-top:14px">
+          <div>
+            <h3>Faktura</h3>
+            <label>Adressrad 1<input id="b_line1" type="text" style="width:100%"></label>
+            <label>Adressrad 2<input id="b_line2" type="text" style="width:100%"></label>
+            <label>Postnr<input id="b_postal_code" type="text" style="width:100%"></label>
+            <label>Stad<input id="b_city" type="text" style="width:100%"></label>
+            <label>Region<input id="b_region" type="text" style="width:100%"></label>
+            <label>Land<input id="b_country" type="text" style="width:100%" value="SE"></label>
+          </div>
+          <div>
+            <h3>Leverans</h3>
+            <label>Adressrad 1<input id="s_line1" type="text" style="width:100%"></label>
+            <label>Adressrad 2<input id="s_line2" type="text" style="width:100%"></label>
+            <label>Postnr<input id="s_postal_code" type="text" style="width:100%"></label>
+            <label>Stad<input id="s_city" type="text" style="width:100%"></label>
+            <label>Region<input id="s_region" type="text" style="width:100%"></label>
+            <label>Land<input id="s_country" type="text" style="width:100%" value="SE"></label>
+          </div>
+        </div>
+
+        <button id="saveAddr" class="btn" style="margin-top:14px">Spara adresser</button>
+        <div id="status2" style="margin-top:10px; color:var(--text-muted)"></div>
+      </section>
+
+      <section class="card" style="margin-top:18px">
+        <h2>Session</h2>
+        <a href="/orders/" class="btn">Mina ordrar</a>
+        <button id="logout" class="btn" style="margin-left:10px">Logga ut</button>
+      </section>
+    </main>
+
+    <script type="module">
+      import { apiGet, apiPut, apiPost } from '/assets/js/api.js';
+      import { ensureShell, renderFooter, setStatus } from '/assets/js/ui.js';
+
+      ensureShell({ activeSection: '' });
+      renderFooter();
+
+      const who = document.getElementById('who');
+      const statusEl = document.getElementById('status');
+      const status2El = document.getElementById('status2');
+
+      const get = (id) => document.getElementById(id);
+
+      const fillAddr = (type, row) => {
+        if (!row) return;
+        const pre = type === 'billing' ? 'b_' : 's_';
+        get(pre+'line1').value = row.line1 || '';
+        get(pre+'line2').value = row.line2 || '';
+        get(pre+'postal_code').value = row.postal_code || '';
+        get(pre+'city').value = row.city || '';
+        get(pre+'region').value = row.region || '';
+        get(pre+'country').value = row.country || '';
+      };
+
+      const load = async () => {
+        try {
+          const me = await apiGet('/api/me');
+          const c = me.customer;
+          who.textContent = c.email;
+          get('full_name').value = c.full_name || '';
+          get('phone').value = c.phone || '';
+          get('company_name').value = c.company_name || '';
+          get('orgnr').value = c.orgnr || '';
+          get('vat_id').value = c.vat_id || '';
+          get('marketing_opt_in').checked = !!c.marketing_opt_in;
+
+          const billing = (me.addresses || []).find(a => a.type === 'billing');
+          const shipping = (me.addresses || []).find(a => a.type === 'shipping');
+          fillAddr('billing', billing);
+          fillAddr('shipping', shipping);
+        } catch (err) {
+          if (err && err.status === 401) {
+            window.location.href = '/login/';
+            return;
+          }
+          setStatus(statusEl, 'Kunde inte ladda konto.', 'error');
+        }
+      };
+
+      document.getElementById('save').addEventListener('click', async () => {
+        try {
+          setStatus(statusEl, 'Sparar…');
+          await apiPut('/api/me', {
+            full_name: get('full_name').value,
+            phone: get('phone').value,
+            company_name: get('company_name').value,
+            orgnr: get('orgnr').value,
+            vat_id: get('vat_id').value,
+            marketing_opt_in: get('marketing_opt_in').checked,
+          });
+          setStatus(statusEl, 'Sparat.');
+        } catch (_) {
+          setStatus(statusEl, 'Kunde inte spara.', 'error');
+        }
+      });
+
+      document.getElementById('saveAddr').addEventListener('click', async () => {
+        try {
+          setStatus(status2El, 'Sparar…');
+          await apiPut('/api/me-addresses', {
+            billing: {
+              line1: get('b_line1').value,
+              line2: get('b_line2').value,
+              postal_code: get('b_postal_code').value,
+              city: get('b_city').value,
+              region: get('b_region').value,
+              country: get('b_country').value,
+            },
+            shipping: {
+              line1: get('s_line1').value,
+              line2: get('s_line2').value,
+              postal_code: get('s_postal_code').value,
+              city: get('s_city').value,
+              region: get('s_region').value,
+              country: get('s_country').value,
+            }
+          });
+          setStatus(status2El, 'Sparat.');
+        } catch (_) {
+          setStatus(status2El, 'Kunde inte spara.', 'error');
+        }
+      });
+
+      document.getElementById('logout').addEventListener('click', async () => {
+        try {
+          await apiPost('/api/auth/logout', {});
+        } catch (_) {}
+        window.location.href = '/login/';
+      });
+
+      load();
+    </script>
+  </div>
+</body>
+</html>

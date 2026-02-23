@@ -1,0 +1,14 @@
+# Cloudflare Pages Functions dev vars
+
+DEV_MODE=true
+
+# Turnstile server secret (required in production)
+TURNSTILE_SECRET=
+
+# Email provider: resend | disabled
+EMAIL_PROVIDER=disabled
+EMAIL_FROM=Innovatio Brutalis <info@innovatio-brutalis.se>
+RESEND_API_KEY=
+
+# Export admin key (required for /api/export/*)
+EXPORT_ADMIN_KEY=
