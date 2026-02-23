@@ -1,0 +1,11 @@
+name = "innovatio-decap-oauth"
+main = "src/index.ts"
+compatibility_date = "2026-02-23"
+
+# Deploy secrets (do not commit values):
+# wrangler secret put GITHUB_CLIENT_ID
+# wrangler secret put GITHUB_CLIENT_SECRET
+
+# Optional: set a fixed allowed origin for the admin UI
+# [vars]
+# ALLOWED_ORIGIN = "https://www.innovatio-brutalis.se"

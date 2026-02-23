@@ -138,6 +138,15 @@ Fix: uppdatera OAuth Worker `/auth` så att den:
 
 `/callback` ska sedan bara `postMessage`-a `authorization:github:success:{...}` (eller `...:error:{...}`) och stänga fönstret.
 
+Det finns en färdig minimal Cloudflare Worker-implementation i repot:
+- `tools/decap-oauth-worker/`
+
+Deploy (kort):
+- `wrangler secret put GITHUB_CLIENT_ID`
+- `wrangler secret put GITHUB_CLIENT_SECRET`
+- (rekommenderas) sätt `ALLOWED_ORIGIN=https://www.innovatio-brutalis.se`
+- `wrangler deploy`
+
 Minimal `/auth`-HTML (principen; Workern stoppar in GitHub authorize-URL server-side):
 
 ```html
