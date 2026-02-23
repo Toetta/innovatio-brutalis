@@ -1,0 +1,6 @@
+{
+  "categories": [
+    { "name": "Frames", "slug": "frames", "sortOrder": 10, "isActive": true },
+    { "name": "Prints", "slug": "prints", "sortOrder": 20, "isActive": true }
+  ]
+}

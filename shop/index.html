@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Shop – Innovatio Brutalis</title>
+  <link rel="stylesheet" href="/shop/shop.css" />
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="/">Innovatio Brutalis</a>
+    <nav class="nav">
+      <a href="/shop/">Shop</a>
+      <a href="/admin/">Admin</a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <h1>Shop</h1>
+      <p>Products & drops from Innovatio Brutalis.</p>
+    </section>
+
+    <section class="controls card">
+      <label>
+        Category
+        <select id="categoryFilter"></select>
+      </label>
+      <label>
+        Search
+        <input id="searchInput" type="search" placeholder="Search products…" />
+      </label>
+    </section>
+
+    <section id="productGrid" class="grid"></section>
+  </main>
+
+  <script src="/shop/shop.js"></script>
+</body>
+</html>

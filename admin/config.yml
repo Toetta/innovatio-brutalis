@@ -1,0 +1,59 @@
+backend:
+  name: github
+  repo: YOUR_GITHUB_USER/YOUR_REPO
+  branch: main
+  base_url: https://YOUR-WORKER-SUBDOMAIN.workers.dev
+  auth_endpoint: /auth
+
+# För lokal testning (utan login) – valfritt
+local_backend: true
+
+media_folder: "assets/uploads"
+public_folder: "/assets/uploads"
+
+site_url: "https://www.innovatio-brutalis.se"
+display_url: "https://www.innovatio-brutalis.se"
+
+collections:
+  - name: "store"
+    label: "Webshop"
+    files:
+      - name: "categories"
+        label: "Categories"
+        file: "content/categories.json"
+        format: "json"
+        fields:
+          - label: "Categories"
+            name: "categories"
+            widget: "list"
+            fields:
+              - { label: "Name", name: "name", widget: "string" }
+              - { label: "Slug", name: "slug", widget: "string", hint: "e.g. frames, prints" }
+              - { label: "Sort Order", name: "sortOrder", widget: "number", default: 10 }
+              - { label: "Active", name: "isActive", widget: "boolean", default: true }
+
+      - name: "products"
+        label: "Products"
+        file: "content/products.json"
+        format: "json"
+        fields:
+          - label: "Products"
+            name: "products"
+            widget: "list"
+            fields:
+              - { label: "Title", name: "title", widget: "string" }
+              - { label: "Slug", name: "slug", widget: "string", hint: "unique, e.g. unbreakable-frames" }
+              - { label: "Category Slug", name: "categorySlug", widget: "string", hint: "must match category slug" }
+              - { label: "Price", name: "price", widget: "number" }
+              - { label: "Currency", name: "currency", widget: "select", options: ["SEK","EUR","USD"], default: "SEK" }
+              - { label: "VAT Rate (%)", name: "vatRate", widget: "number", default: 25 }
+              - { label: "Short Description", name: "excerpt", widget: "string", required: false }
+              - { label: "Description", name: "description", widget: "markdown", required: false }
+              - label: "Images"
+                name: "images"
+                widget: "list"
+                required: false
+                field: { label: "Image", name: "image", widget: "image" }
+              - { label: "Stock Qty", name: "stockQty", widget: "number", required: false }
+              - { label: "Active", name: "isActive", widget: "boolean", default: true }
+              - { label: "Tags", name: "tags", widget: "list", required: false }
