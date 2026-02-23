@@ -1,0 +1,9 @@
+{
+  "slug": "forsta-inlagget",
+  "title": "Första inlägget",
+  "date": "2026-02-23T12:05:00Z",
+  "category": "projekt",
+  "published": false,
+  "image": "",
+  "body": "En till placeholder. Sätt `published` till true när den ska synas.\n"
+}

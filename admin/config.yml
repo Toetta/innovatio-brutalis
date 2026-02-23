@@ -38,3 +38,19 @@ collections:
       - { label: "Kategori (slug)", name: "category", widget: "string" }
       - { label: "Publicerad", name: "published", widget: "boolean", default: true }
       - { label: "Bild", name: "image", widget: "image", required: false }
+
+  - name: "articles"
+    label: "Artiklar"
+    folder: "content/articles"
+    create: true
+    format: "json"
+    extension: "json"
+    slug: "{{slug}}"
+    fields:
+      - { label: "Slug", name: "slug", widget: "string" }
+      - { label: "Titel", name: "title", widget: "string" }
+      - { label: "Datum", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ssZ" }
+      - { label: "Kategori (slug)", name: "category", widget: "string", required: false }
+      - { label: "Publicerad", name: "published", widget: "boolean", default: true }
+      - { label: "Bild", name: "image", widget: "image", required: false }
+      - { label: "Text", name: "body", widget: "markdown", required: false }

@@ -1,0 +1,9 @@
+{
+  "slug": "valkommen",
+  "title": "Välkommen",
+  "date": "2026-02-23T12:00:00Z",
+  "category": "nyheter",
+  "published": true,
+  "image": "",
+  "body": "# Välkommen\n\nDet här är en placeholder-artikel skapad för att verifiera att Decap kan läsa och skriva JSON-filer i repot.\n"
+}

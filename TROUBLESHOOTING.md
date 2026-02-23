@@ -30,11 +30,37 @@ Obs om “(disk cache)” i Network:
 3) Logga in
 - Klicka “Login with GitHub”
 - Godkänn i GitHub
-- Efter callback ska CMS visa collections: “Kategorier” och “Produkter”
+- Efter callback ska CMS visa collections: “Kategorier”, “Produkter” och “Artiklar”
 
 4) Skapa och spara en post
 - Skapa en ny produkt och tryck Save/Publish
 - Verifiera i GitHub att en ny fil skapas i `content/products/` (t.ex. `content/products/<slug>.json`)
+
+## Status (verifierat)
+
+Den här setupen är verifierad när du ser:
+
+- URL: CMS kör på `https://www.innovatio-brutalis.se/admin/` (inte utan `www`)
+- Console/Network under login:
+  - `authorizing:github` (handshake från Worker `/auth`)
+  - `authorization:github:success:{...}` (token från Worker `/callback`)
+- Application → Local Storage:
+  - `decap-cms-user` sätts efter login
+- Network:
+  - Decap gör egna anrop till `api.github.com/*` efter login (inte bara dina egna VM-snuttar)
+
+## Placeholder-innehåll (för att slippa tomma listor)
+
+Om CMS är korrekt konfigurerat ska du direkt se exempelposter som redan finns i repot:
+
+- Kategorier:
+  - `content/categories/nyheter.json`
+  - `content/categories/projekt.json`
+  - `content/categories/verkstad.json`
+  - `content/categories/cnc.json`
+- Artiklar:
+  - `content/articles/valkommen.json`
+  - `content/articles/forsta-inlagget.json`
 
 ## Så felsöker du i Chrome DevTools (konkret)
 
