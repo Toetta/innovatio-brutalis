@@ -30,7 +30,7 @@ Obs om “(disk cache)” i Network:
 3) Logga in
 - Klicka “Login with GitHub”
 - Godkänn i GitHub
-- Efter callback ska CMS visa collections: “Kategorier”, “Produkter” och “Artiklar”
+- Efter callback ska CMS visa collections: “Kategorier”, “Produkter”, “Artiklar” och “Webshop”
 
 4) Skapa och spara en post
 - Skapa en ny produkt och tryck Save/Publish
@@ -61,6 +61,12 @@ Om CMS är korrekt konfigurerat ska du direkt se exempelposter som redan finns i
 - Artiklar:
   - `content/articles/valkommen.json`
   - `content/articles/forsta-inlagget.json`
+
+## Direktlänkar till artiklar
+
+- Public URL-format: `https://www.innovatio-brutalis.se/articles/#/<slug>`
+  - Ex: `https://www.innovatio-brutalis.se/articles/#/valkommen`
+- I CMS kan du också öppna en artikel direkt via collection-listan, och med `preview_path` får du en stabil “view”-länk baserad på slug.
 
 ## Så felsöker du i Chrome DevTools (konkret)
 

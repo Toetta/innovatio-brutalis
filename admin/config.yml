@@ -46,6 +46,7 @@ collections:
     format: "json"
     extension: "json"
     slug: "{{slug}}"
+    preview_path: "articles/#/{{slug}}"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
       - { label: "Titel", name: "title", widget: "string" }
@@ -54,3 +55,15 @@ collections:
       - { label: "Publicerad", name: "published", widget: "boolean", default: true }
       - { label: "Bild", name: "image", widget: "image", required: false }
       - { label: "Text", name: "body", widget: "markdown", required: false }
+
+  - name: "webshop"
+    label: "Webshop"
+    files:
+      - name: "settings"
+        label: "Webshop"
+        file: "content/webshop.json"
+        format: "json"
+        fields:
+          - { label: "Titel", name: "title", widget: "string", required: false }
+          - { label: "Intro", name: "intro", widget: "text", required: false }
+          - { label: "Aktiverad", name: "enabled", widget: "boolean", default: true }

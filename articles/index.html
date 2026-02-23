@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="sv">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Artiklar – Innovatio Brutalis</title>
+    <meta name="ib-nav-section" content="" />
+    <link rel="stylesheet" href="/css/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div id="site-topbar"></div>
+      <main id="ib-main">
+        <h1>Artiklar</h1>
+        <p><small>Tips: direktlänk ser ut så här: <code>/articles/#/valkommen</code></small></p>
+        <div id="article"></div>
+      </main>
+    </div>
+
+    <script src="/assets/site.js"></script>
+    <script>
+      (async () => {
+        const mount = document.getElementById('article');
+        const slug = (location.hash || '').replace(/^#\/?/, '').trim();
+
+        if (!slug) {
+          mount.innerHTML = '<p>Ange en artikel-slug i URL:en, t.ex. <a href="#/valkommen">#/valkommen</a>.</p>';
+          return;
+        }
+
+        const url = `/content/articles/${encodeURIComponent(slug)}.json`;
+        let data;
+        try {
+          const resp = await fetch(url, { cache: 'no-store' });
+          if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+          data = await resp.json();
+        } catch (e) {
+          mount.innerHTML = `<p>Kunde inte läsa <code>${url}</code>.</p>`;
+          return;
+        }
+
+        const title = String(data.title || slug);
+        const date = data.date ? new Date(data.date) : null;
+        const dateText = date && !isNaN(date.getTime()) ? date.toISOString().slice(0, 10) : '';
+
+        const wrapper = document.createElement('article');
+        const h = document.createElement('h2');
+        h.textContent = title;
+        wrapper.appendChild(h);
+
+        if (dateText) {
+          const p = document.createElement('p');
+          const small = document.createElement('small');
+          small.textContent = dateText;
+          p.appendChild(small);
+          wrapper.appendChild(p);
+        }
+
+        if (data.image) {
+          const img = document.createElement('img');
+          img.src = String(data.image);
+          img.alt = '';
+          img.style.maxWidth = '100%';
+          img.style.borderRadius = 'var(--radius)';
+          img.style.boxShadow = 'var(--shadow)';
+          wrapper.appendChild(img);
+        }
+
+        const body = document.createElement('div');
+        // Minimal rendering: show markdown as text while keeping it readable.
+        body.style.whiteSpace = 'pre-wrap';
+        body.textContent = String(data.body || '').trim();
+        wrapper.appendChild(body);
+
+        mount.replaceChildren(wrapper);
+
+        // Keep title in the browser tab useful.
+        document.title = `${title} – Innovatio Brutalis`;
+      })();
+
+      window.addEventListener('hashchange', () => location.reload());
+    </script>
+  </body>
+</html>
