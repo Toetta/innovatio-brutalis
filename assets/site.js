@@ -1089,6 +1089,11 @@
         if (url.origin !== window.location.origin) return false;
         const p = lower(url.pathname || "");
         if (p.startsWith("/assets/")) return false;
+
+        // Shop pages depend on their own JS that isn't executed during PJAX swaps.
+        // Force full navigation for anything under /shop.
+        if (p === "/shop" || p === "/shop/" || p.startsWith("/shop/")) return false;
+
         // Allow landing pages like /fu-bookkeeping/ to be PJAXed; the actual tool lives under /assets/.
         // Avoid hijacking direct file downloads
         const last = p.split("/").filter(Boolean).slice(-1)[0] || "";
