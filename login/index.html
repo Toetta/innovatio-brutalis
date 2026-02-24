@@ -64,6 +64,8 @@
       const siteKey = document.querySelector('meta[name="ib-turnstile-sitekey"]')?.getAttribute('content')?.trim();
       let turnstileToken = '';
       let turnstileWidgetId = null;
+      let turnstileScriptLoaded = false;
+      let turnstileScriptErrored = false;
 
       const isEmail = (s) => {
         const t = String(s || '').trim().toLowerCase();
@@ -135,7 +137,16 @@
 
           // After ~5s, show a clear hint.
           if (!turnstileToken) {
-            setStatus(statusEl, 'Turnstile laddade inte. Prova stäng av adblock/”tracking protection” och ladda om.', 'warn');
+            const scriptUrl = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+            if (turnstileScriptErrored) {
+              setStatus(statusEl, `Kunde inte ladda Turnstile (${scriptUrl}). Något blockerar anropet (nätverk/DNS/brandvägg).`, 'warn');
+              return;
+            }
+            if (!turnstileScriptLoaded) {
+              setStatus(statusEl, `Turnstile laddade inte (${scriptUrl}). Blockeras ofta av tracking protection eller DNS-filter.`, 'warn');
+              return;
+            }
+            setStatus(statusEl, 'Turnstile laddade men startade inte. Prova slå av “tracking protection”/Brave Shields och tillåt tredjepartsskript för sidan.', 'warn');
           }
         };
         tick();
@@ -147,10 +158,12 @@
       s.async = true;
       s.defer = true;
       s.onload = () => {
+        turnstileScriptLoaded = true;
         mountTurnstile();
         ensureTurnstileMounted();
       };
       s.onerror = () => {
+        turnstileScriptErrored = true;
         setStatus(statusEl, 'Kunde inte ladda Turnstile. Prova att stänga av adblock/”tracking protection” och ladda om.', 'warn');
       };
       document.head.appendChild(s);
