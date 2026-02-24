@@ -129,7 +129,7 @@ Lösning i repot:
 
 För att undvika att stora mobilbilder (t.ex. flera MB) hamnar i repot körs en GitHub Action som:
 - triggas när något pushas till `assets/uploads/`
-- resizar till max 1600px (längsta sida)
+- resizar till max 1200px (längsta sida)
 - komprimerar och committar tillbaka optimerade filer
 
 Workflow:

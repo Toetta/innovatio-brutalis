@@ -4,7 +4,7 @@ import path from "node:path";
 const repoRoot = process.cwd();
 
 const parseArgs = (argv) => {
-  const out = { max: 1600, paths: [] };
+  const out = { max: 1200, paths: [] };
   for (const a of argv) {
     if (a.startsWith("--max=")) {
       const n = Number(a.slice("--max=".length));

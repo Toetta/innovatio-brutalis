@@ -38,7 +38,7 @@ jobs:
 
           # For manual runs, just optimize all current uploads.
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            node tools/optimize-uploads.mjs --max=1600
+            node tools/optimize-uploads.mjs --max=1200
             exit 0
           fi
 
@@ -54,7 +54,7 @@ jobs:
           echo "Changed files:"; echo "$changed"
 
           # Pass as arguments (Decap filenames are typically space-free).
-          node tools/optimize-uploads.mjs --max=1600 $changed
+          node tools/optimize-uploads.mjs --max=1200 $changed
 
       - name: Commit optimized images (if changed)
         shell: bash
