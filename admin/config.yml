@@ -27,7 +27,7 @@ collections:
       - { label: "Sortering", name: "order", widget: "number", default: 1 }
 
   - name: "products"
-    label: "Produkter"
+    label: "Products / Produkter"
     folder: "content/products"
     create: true
     format: "json"
@@ -48,14 +48,14 @@ collections:
       - { label: "Bilder", name: "images", widget: "list", required: false, field: { label: "Bild", name: "image", widget: "image" } }
       - { label: "Bild (legacy)", name: "image", widget: "image", required: false }
 
-  - name: "articles"
-    label: "Artiklar"
-    folder: "content/articles"
+  - name: "services"
+    label: "Services / Tjänster"
+    folder: "content/articles" # legacy folder (keeps existing entries visible)
     create: true
     format: "json"
     extension: "json"
     slug: "{{slug}}"
-    preview_path: "articles/#/{{slug}}"
+    preview_path: "services/#/{{slug}}"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
       - { label: "Titel", name: "title", widget: "string" }
