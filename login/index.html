@@ -45,6 +45,13 @@
       import { apiPost } from '/assets/js/api.js';
       import { ensureShell, renderFooter, setStatus } from '/assets/js/ui.js';
 
+      // Avoid Turnstile domain mismatch by always using the canonical hostname.
+      try {
+        if (location.hostname === 'innovatio-brutalis.se') {
+          location.replace(`https://www.innovatio-brutalis.se${location.pathname}${location.search}${location.hash}`);
+        }
+      } catch (_) {}
+
       ensureShell({ activeSection: '' });
       renderFooter();
 
@@ -57,6 +64,17 @@
       const siteKey = document.querySelector('meta[name="ib-turnstile-sitekey"]')?.getAttribute('content')?.trim();
       let turnstileToken = '';
 
+      const isEmail = (s) => {
+        const t = String(s || '').trim().toLowerCase();
+        if (!t || t.length > 320) return false;
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+      };
+
+      const updateBtnState = () => {
+        const ok = isEmail(emailEl?.value) && Boolean(turnstileToken);
+        btn.disabled = !ok;
+      };
+
       const mountTurnstile = () => {
         if (!siteKey) {
           setStatus(statusEl, 'Turnstile site key saknas (ib-turnstile-sitekey).', 'warn');
@@ -65,9 +83,19 @@
         if (!window.turnstile || !turnstileMount) return;
         window.turnstile.render(turnstileMount, {
           sitekey: siteKey,
-          callback: (t) => { turnstileToken = String(t || ''); },
-          'expired-callback': () => { turnstileToken = ''; },
-          'error-callback': () => { turnstileToken = ''; },
+          callback: (t) => {
+            turnstileToken = String(t || '');
+            updateBtnState();
+          },
+          'expired-callback': () => {
+            turnstileToken = '';
+            updateBtnState();
+          },
+          'error-callback': () => {
+            turnstileToken = '';
+            setStatus(statusEl, 'Turnstile gav ett fel. Prova att ladda om sidan och kontrollera adblock/brandvägg.', 'warn');
+            updateBtnState();
+          },
         });
       };
 
@@ -77,10 +105,28 @@
       s.async = true;
       s.defer = true;
       s.onload = mountTurnstile;
+      s.onerror = () => {
+        setStatus(statusEl, 'Kunde inte ladda Turnstile. Prova att stänga av adblock/”tracking protection” och ladda om.', 'warn');
+      };
       document.head.appendChild(s);
+
+      // Only enable when we have both a valid email and a Turnstile token.
+      updateBtnState();
+      emailEl?.addEventListener('input', updateBtnState);
 
       btn.addEventListener('click', async () => {
         try {
+          if (!isEmail(emailEl.value)) {
+            setStatus(statusEl, 'Skriv in en giltig e-postadress.', 'warn');
+            updateBtnState();
+            return;
+          }
+          if (!turnstileToken) {
+            setStatus(statusEl, 'Verifiera att du inte är en robot (Turnstile).', 'warn');
+            updateBtnState();
+            return;
+          }
+
           btn.disabled = true;
           setStatus(statusEl, 'Skickar…');
           devEl.innerHTML = '';
@@ -104,7 +150,7 @@
           // UI should remain generic.
           setStatus(statusEl, 'Kolla din e-post för en login-länk.');
         } finally {
-          btn.disabled = false;
+          updateBtnState();
         }
       });
     </script>

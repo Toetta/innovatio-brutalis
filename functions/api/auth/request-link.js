@@ -61,6 +61,11 @@ export const onRequestPost = async (context) => {
   });
 
   if (!turnOk) {
+    console.warn("turnstile_not_ok", {
+      has_token: Boolean(turnstileToken),
+      token_len: String(turnstileToken || "").length,
+      has_ip: Boolean(ip),
+    });
     // Intentionally generic.
     return json({ ok: true });
   }
@@ -87,6 +92,7 @@ export const onRequestPost = async (context) => {
     }
 
     await sendLoginEmail({ env, to: email, loginUrl: verifyUrl });
+    console.info("request_link_email_sent", { provider: cfg.EMAIL_PROVIDER });
   } catch (err) {
     console.error("request_link_error", {
       message: String(err?.message || err),
