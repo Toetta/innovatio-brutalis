@@ -230,16 +230,13 @@
 				profile.setAttribute("title", t("nav_profile"));
 				profile.setAttribute("aria-label", t("nav_profile"));
 			}
-			const login = qs("#loginLink");
-			if (login) {
-				login.setAttribute("title", t("nav_login"));
-				login.setAttribute("aria-label", t("nav_login"));
+			const authBtn = qs("#authBtn");
+			const authText = qs("#authText");
+			if (authBtn) {
+				authBtn.setAttribute("title", t("nav_login"));
+				authBtn.setAttribute("aria-label", t("nav_login"));
 			}
-			const logout = qs("#logoutBtn");
-			if (logout) {
-				logout.setAttribute("title", t("nav_logout"));
-				logout.setAttribute("aria-label", t("nav_logout"));
-			}
+			if (authText) authText.textContent = t("nav_login");
 		} catch (_) {}
 	};
 
@@ -438,46 +435,75 @@
 		const cartCard = qs("#cartCard");
 		const cartBtn = qs("#cartBtn");
 		const cartCount = qs("#cartCount");
-		const loginLink = qs("#loginLink");
-		const logoutBtn = qs("#logoutBtn");
+		const authBtn = qs("#authBtn");
+		const authText = qs("#authText");
+		const authIconLogin = qs("#authIconLogin");
+		const authIconLogout = qs("#authIconLogout");
 		if (!categoryFilter || !searchInput || !grid) return;
 
-		// Login link should return to this exact shop URL
-		try {
-			if (loginLink) {
+		let isLoggedIn = false;
+		const setAuthUi = (loggedIn) => {
+			isLoggedIn = !!loggedIn;
+			try {
+				if (!authBtn) return;
+				authBtn.setAttribute("data-auth-mode", isLoggedIn ? "logout" : "login");
+				const label = isLoggedIn ? t("nav_logout") : t("nav_login");
+				authBtn.setAttribute("title", label);
+				authBtn.setAttribute("aria-label", label);
+				if (authText) authText.textContent = label;
+				if (authIconLogin) authIconLogin.hidden = isLoggedIn;
+				if (authIconLogout) authIconLogout.hidden = !isLoggedIn;
+			} catch (_) {}
+		};
+
+		// Default: show login state until we know
+		setAuthUi(false);
+
+		// Login should return to this exact shop URL
+		const getLoginUrl = () => {
+			try {
 				const returnTo = (window.location.pathname || "/shop/") + (window.location.search || "");
-				loginLink.setAttribute("href", `/login/?return=${encodeURIComponent(returnTo)}`);
+				return `/login/?return=${encodeURIComponent(returnTo)}`;
+			} catch (_) {
+				return "/login/";
+			}
+		};
+
+		try {
+			if (authBtn) {
+				authBtn.addEventListener("click", async (e) => {
+					e.preventDefault();
+					const mode = authBtn.getAttribute("data-auth-mode") || "login";
+					if (mode !== "logout") {
+						window.location.href = getLoginUrl();
+						return;
+					}
+					try {
+						authBtn.disabled = true;
+						await apiRequest("POST", "/api/auth/logout", {});
+					} catch (_) {
+						// Ignore; we'll fall back to checking /api/me.
+					} finally {
+						try { authBtn.disabled = false; } catch (_) {}
+					}
+					setAuthUi(false);
+				});
 			}
 		} catch (_) {}
 
 		// Toggle login/logout based on /api/me (async; don't block page)
 		try {
-			if (logoutBtn) logoutBtn.hidden = true;
-			if (loginLink) loginLink.hidden = false;
 			apiRequest("GET", "/api/me")
 				.then((me) => {
 					try {
-						const loggedIn = !!(me && me.ok);
-						if (logoutBtn) logoutBtn.hidden = !loggedIn;
-						if (loginLink) loginLink.hidden = loggedIn;
+						setAuthUi(!!(me && me.ok));
 					} catch (_) {}
 				})
 				.catch(() => {
 					try {
-						if (logoutBtn) logoutBtn.hidden = true;
-						if (loginLink) loginLink.hidden = false;
+						setAuthUi(false);
 					} catch (_) {}
 				});
-		} catch (_) {}
-
-		try {
-			if (logoutBtn) {
-				logoutBtn.addEventListener("click", async (e) => {
-					e.preventDefault();
-					try { await apiRequest("POST", "/api/auth/logout", {}); } catch (_) {}
-					window.location.reload();
-				});
-			}
 		} catch (_) {}
 
 		grid.innerHTML = `<div class="card">${esc(t("loading"))}</div>`;

@@ -31,4 +31,13 @@ export const apiGet = (path) => apiRequest("GET", path);
 export const apiPost = (path, body) => apiRequest("POST", path, body);
 export const apiPut = (path, body) => apiRequest("PUT", path, body);
 
-export const getMe = () => apiGet("/api/me");
+export const getMe = async () => {
+  try {
+    const me = await apiGet("/api/me");
+    if (me && me.ok === true) return me;
+    return null;
+  } catch (err) {
+    if (err && err.status === 401) return null;
+    throw err;
+  }
+};
