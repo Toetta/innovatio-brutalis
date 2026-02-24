@@ -21,7 +21,9 @@ collections:
     slug: "{{slug}}"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
-      - { label: "Titel", name: "title", widget: "string" }
+      - { label: "Titel (SV)", name: "title_sv", widget: "string" }
+      - { label: "Title (EN)", name: "title_en", widget: "string" }
+      - { label: "Titel (legacy)", name: "title", widget: "string", required: false }
       - { label: "Sortering", name: "order", widget: "number", default: 1 }
 
   - name: "products"
@@ -33,11 +35,18 @@ collections:
     slug: "{{slug}}"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
-      - { label: "Titel", name: "title", widget: "string" }
+      - { label: "Titel (SV)", name: "title_sv", widget: "string" }
+      - { label: "Title (EN)", name: "title_en", widget: "string" }
+      - { label: "Titel (legacy)", name: "title", widget: "string", required: false }
       - { label: "Pris (SEK)", name: "price_sek", widget: "number" }
       - { label: "Kategori (slug)", name: "category", widget: "string" }
       - { label: "Publicerad", name: "published", widget: "boolean", default: true }
-      - { label: "Bild", name: "image", widget: "image", required: false }
+      - { label: "Excerpt (SV)", name: "excerpt_sv", widget: "string", required: false }
+      - { label: "Excerpt (EN)", name: "excerpt_en", widget: "string", required: false }
+      - { label: "Beskrivning (SV)", name: "description_sv", widget: "text", required: false }
+      - { label: "Description (EN)", name: "description_en", widget: "text", required: false }
+      - { label: "Bilder", name: "images", widget: "list", required: false, field: { label: "Bild", name: "image", widget: "image" } }
+      - { label: "Bild (legacy)", name: "image", widget: "image", required: false }
 
   - name: "articles"
     label: "Artiklar"
@@ -64,6 +73,10 @@ collections:
         file: "content/webshop.json"
         format: "json"
         fields:
-          - { label: "Titel", name: "title", widget: "string", required: false }
-          - { label: "Intro", name: "intro", widget: "text", required: false }
+          - { label: "Titel (SV)", name: "title_sv", widget: "string", required: false }
+          - { label: "Title (EN)", name: "title_en", widget: "string", required: false }
+          - { label: "Intro (SV)", name: "intro_sv", widget: "text", required: false }
+          - { label: "Intro (EN)", name: "intro_en", widget: "text", required: false }
+          - { label: "Titel (legacy)", name: "title", widget: "string", required: false }
+          - { label: "Intro (legacy)", name: "intro", widget: "text", required: false }
           - { label: "Aktiverad", name: "enabled", widget: "boolean", default: true }
