@@ -14,8 +14,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>FU-Bookkeeping | Innovatio Brutalis</title>
-  <meta name="description" content="FU-Bookkeeping — offline-first bokföring utan abonnemang. Demo/debug för att visa upplägg, export (SIE) och arbetsflöde.">
+  <title>FU-BookKeeping | Innovatio Brutalis</title>
+  <meta name="description" content="FU-BookKeeping — bokföring utan ursäkter. Importera bank & skattekonto, hantera flera valutor och flera verksamheter med staging och godkännande innan något bokförs.">
 
   <link rel="canonical" href="https://www.innovatio-brutalis.se/fu-bookkeeping/">
 
@@ -34,16 +34,16 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Innovatio Brutalis">
   <meta property="og:locale" content="sv_SE">
-  <meta property="og:title" content="FU-Bookkeeping | Innovatio Brutalis">
-  <meta property="og:description" content="Offline-first bokföring utan abonnemang — demo/debug för att visa upplägg, export och arbetsflöde.">
+  <meta property="og:title" content="FU-BookKeeping | Innovatio Brutalis">
+  <meta property="og:description" content="Bokföring utan ursäkter. Importera bank & skattekonto, flera valutor och flera verksamheter — staging och godkännande innan något bokförs.">
   <meta property="og:url" content="https://www.innovatio-brutalis.se/fu-bookkeeping/">
   <meta property="og:image" content="https://www.innovatio-brutalis.se/tools/FU-BookKeeping.PNG">
   <meta property="og:image:type" content="image/png">
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="FU-Bookkeeping | Innovatio Brutalis">
-  <meta name="twitter:description" content="Offline-first bokföring utan abonnemang — demo/debug för att visa upplägg, export och arbetsflöde.">
+  <meta name="twitter:title" content="FU-BookKeeping | Innovatio Brutalis">
+  <meta name="twitter:description" content="Bokföring utan ursäkter. Importera bank & skattekonto, flera valutor och flera verksamheter — staging och godkännande innan något bokförs.">
   <meta name="twitter:image" content="https://www.innovatio-brutalis.se/tools/FU-BookKeeping.PNG">
 
   <link rel="stylesheet" href="/css/style.css">
@@ -61,39 +61,133 @@
       <div class="brand-hero">
         <img src="/tools/FU-BookKeeping.PNG" alt="FU-Bookkeeping" loading="eager" decoding="async" style="height: clamp(120px, 22vw, 220px); width: auto; max-width: min(560px, 92%); object-fit: contain;" />
       </div>
-      <h1>FU-Bookkeeping</h1>
+      <h1>FU-BookKeeping</h1>
       <p class="tagline">
-        Bokföring utan abonnemang, utan moln, utan krångel — all data lagras lokalt på din dator.
+        Bokföring utan ursäkter. Utan onödiga system. Utan att du tappar kontrollen.
+      </p>
+      <p style="margin-top:0; color: var(--text-muted);">
+        De flesta bokföringsverktyg är byggda för att låsa in dig. FU-BookKeeping är byggt för att frigöra dig.
+      </p>
+      <p style="margin-top:0; color: var(--text-muted);">
+        Importera bank &amp; skattekonto. Hantera flera valutor. Kör flera verksamheter.
+        Allt i webbläsaren. Med staging och godkännande innan något bokförs.
       </p>
       <div class="cta-row">
-        <a class="btn" href="/assets/fu-bookkeeping.html" data-popup="1240,820" title="Kräver Google Chrome">Öppna (kräver Google Chrome)</a>
-        <a class="btn small secondary" href="/coding/">Tillbaka till AI + CODING</a>
+        <a class="btn" href="/assets/fu-bookkeeping.html" data-popup="1240,820" title="Kräver Google Chrome">Testa gratis</a>
+        <a class="btn secondary" href="#sa-funkar-det">Se hur det funkar</a>
       </div>
     </section>
 
-    <section class="grid">
-      <article class="card" data-card-id="fu-bookkeeping-about">
-        <h2>Om verktyget</h2>
-        <p style="margin-top:0; color: var(--text-muted);">
-          FU-Bookkeeping är en demo/debug (work-in-progress) för att visa upplägg och få feedback. Inte avsedd för skarp bokföring.
-        </p>
+    <section class="card" data-card-id="fu-bookkeeping-problem" style="margin-top:28px;">
+      <h2>Problemet</h2>
+      <p style="margin-top:0; color: var(--text-muted);"><strong>“Varför känns bokföring alltid som ett straff?”</strong></p>
+      <p style="margin-top:0; color: var(--text-muted);">För att branschen tjänar på att du är osäker.</p>
 
-        <ul>
-          <li><strong>Offline-first:</strong> data sparas lokalt</li>
-          <li><strong>Export:</strong> SIE4 + backup.json</li>
-          <li><strong>Fokus:</strong> verifikationer, kontoplan (BAS-ish), fakturor</li>
-        </ul>
+      <ul>
+        <li>Exportera CSV → klippa/klistra → hoppas att det blev rätt</li>
+        <li>Klicka runt i menyer som känns designade 2009</li>
+        <li>“Autokontering” som råkar bli fel… och sen är det du som får stå för det</li>
+      </ul>
 
-        <hr class="sep">
+      <p style="margin-top:14px; color: var(--text-muted);">
+        FU-BookKeeping är motsatsen: du får automation där det är säkert — och kontroll där det är viktigt.
+      </p>
 
-        <h2>Starta</h2>
-        <p style="margin-top:0; color: var(--text-muted);">Öppnas i popup-fönster (Chrome) för att fungera stabilt med lokal lagring.</p>
-        <div class="cta-row" style="justify-content:flex-start;">
-          <a class="btn small secondary" href="/assets/fu-bookkeeping.html" data-popup="1240,820" title="Kräver Google Chrome">Öppna FU-Bookkeeping</a>
-        </div>
-      </article>
+      <hr class="sep">
 
-      
+      <p style="margin-top:0; color: var(--text-muted);">
+        <strong>Byggt för verkligheten:</strong> flera bolag, flera valutor, bankflöden och skattekonto.
+        Designat för att inte kunna sabotera din bokföring av misstag.
+      </p>
+    </section>
+
+    <section id="sa-funkar-det" class="card" data-card-id="fu-bookkeeping-how" style="margin-top:20px;">
+      <h2>Så funkar det</h2>
+
+      <h3 style="margin: 0 0 6px 0;">1) Importera → till inkorg (staging)</h3>
+      <p style="margin-top:0; color: var(--text-muted);">Importera bank- och skattekonto från CSV eller Excel. Allt hamnar i en inkorg först. Ingen bokföring sker automatiskt.</p>
+      <p style="margin-top:0; color: var(--text-muted);">Varför? För att “råkade importera fel fil” ska vara en icke-händelse.</p>
+
+      <hr class="sep">
+
+      <h3 style="margin: 0 0 6px 0;">2) Kontera radvis eller i bulk — med kontroll</h3>
+      <p style="margin-top:0; color: var(--text-muted);">Du väljer konto per rad eller använder regler/förslag. Sen bokför du när du är nöjd.</p>
+      <p style="margin-top:0; color: var(--text-muted);"><strong>Provokativt men sant:</strong> Om ett system kan massbokföra utan att du fattar vad som händer, är det inte “smart”. Det är farligt.</p>
+
+      <hr class="sep">
+
+      <h3 style="margin: 0 0 6px 0;">3) Multi-currency utan huvudvärk</h3>
+      <p style="margin-top:0; color: var(--text-muted);">Fakturor i EUR, USD, GBP? Inga problem.</p>
+      <ul>
+        <li>Bokför i basvaluta</li>
+        <li>Spara transaktionsvaluta + kurs</li>
+        <li>Hantera valutadifferenser korrekt (vinst/förlust-konton)</li>
+      </ul>
+      <p style="margin-top:14px; color: var(--text-muted);">Du ser verkligheten. Bokföringen förblir korrekt.</p>
+
+      <hr class="sep">
+
+      <h3 style="margin: 0 0 6px 0;">4) Flera verksamheter i samma instans</h3>
+      <p style="margin-top:0; color: var(--text-muted);">Har du fler än ett bolag eller projekt? Byt i en dropdown — allt är separerat:</p>
+      <ul>
+        <li>Separata JSON-datafiler</li>
+        <li>Separata backups</li>
+        <li>Noll risk att blanda ihop data</li>
+      </ul>
+    </section>
+
+    <section class="card" data-card-id="fu-bookkeeping-features" style="margin-top:20px;">
+      <h2>Funktioner</h2>
+
+      <h3 style="margin: 0 0 6px 0;">Bank &amp; Skattekonto</h3>
+      <ul>
+        <li>CSV + Excel-import</li>
+        <li>Kolumnmappning + preview</li>
+        <li>Dublettskydd</li>
+        <li>Batch-hantering (radera en hel import om du vill testa)</li>
+      </ul>
+
+      <hr class="sep">
+
+      <h3 style="margin: 0 0 6px 0;">Valutor</h3>
+      <ul>
+        <li>Basvaluta i systemet</li>
+        <li>Valuta + kurs per verifikationsrad</li>
+        <li>Valutadifferenser på betalningar</li>
+      </ul>
+
+      <hr class="sep">
+
+      <h3 style="margin: 0 0 6px 0;">Flera företag</h3>
+      <ul>
+        <li>Företagsväljare</li>
+        <li>Skapa nytt / koppla befintligt / koppla från</li>
+        <li>Separata backups per företag</li>
+      </ul>
+
+      <hr class="sep">
+
+      <h3 style="margin: 0 0 6px 0;">Data &amp; trygghet</h3>
+      <ul>
+        <li>Browser-native (ingen backend krävs)</li>
+        <li>Lokala JSON-filer</li>
+        <li>Autobackup (max 1/dag per företag)</li>
+        <li>Reversibla flöden (staging + ångra)</li>
+      </ul>
+    </section>
+
+    <section class="card" data-card-id="fu-bookkeeping-local" style="margin-top:20px;">
+      <h2>Varför “lokalt” är en feature, inte en brist</h2>
+      <p style="margin-top:0; color: var(--text-muted);">Du ska inte behöva lita på att någon annan tar hand om dina siffror.</p>
+
+      <ul>
+        <li>Din data ligger hos dig</li>
+        <li>Du kan jobba offline</li>
+        <li>Du kan versionera dina JSON-filer</li>
+        <li>Du har alltid en tydlig backup-historik</li>
+      </ul>
+
+      <p style="margin-top:14px; color: var(--text-muted);">Kort sagt: kontroll, spårbarhet, integritet.</p>
     </section>
 
     <footer>
