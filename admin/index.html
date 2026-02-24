@@ -12,6 +12,63 @@
     </script>
   </head>
   <body>
+    <script>
+      // Decap CMS image previews sometimes break when:
+      // 1) Older entries store paths like "assets/uploads/foo.jpg" (missing leading '/'), which resolves to "/admin/assets/uploads/...".
+      // 2) New uploads exist in GitHub, but your static host hasn't redeployed yet (so "/assets/uploads/..." 404s briefly).
+      //
+      // This normalizes those URLs inside the CMS UI only, by rewriting to GitHub raw URLs.
+      (function () {
+        const RAW_BASE = 'https://raw.githubusercontent.com/Toetta/innovatio-brutalis/main/';
+        const cacheBust = String(Date.now());
+
+        const rewriteUploadsSrc = (value) => {
+          if (!value || typeof value !== 'string') return null;
+          const v = value.trim();
+          if (!v) return null;
+
+          // Skip non-path URLs
+          if (v.startsWith('data:') || v.startsWith('blob:')) return null;
+          if (/^https?:\/\//i.test(v)) return null;
+
+          // Normalize common variants
+          const normalized = v.startsWith('/') ? v.slice(1) : v;
+          if (!normalized.startsWith('assets/uploads/')) return null;
+
+          return RAW_BASE + normalized + '?v=' + cacheBust;
+        };
+
+        const fixImages = (root) => {
+          try {
+            const imgs = (root || document).querySelectorAll?.('img[src]');
+            if (!imgs) return;
+            for (const img of imgs) {
+              const attr = img.getAttribute('src');
+              const next = rewriteUploadsSrc(attr);
+              if (next) img.setAttribute('src', next);
+            }
+          } catch (_) {}
+        };
+
+        // Initial pass + keep updating as React renders.
+        fixImages(document);
+
+        try {
+          const mo = new MutationObserver((mutations) => {
+            for (const m of mutations) {
+              if (m.type === 'attributes' && m.attributeName === 'src' && m.target?.tagName === 'IMG') {
+                fixImages(m.target);
+              } else if (m.type === 'childList') {
+                for (const n of m.addedNodes || []) {
+                  if (n && n.nodeType === 1) fixImages(n);
+                }
+              }
+            }
+          });
+          mo.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['src'] });
+        } catch (_) {}
+      })();
+    </script>
     <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
   </body>
 </html>
