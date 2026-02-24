@@ -683,6 +683,31 @@
         return { root, embedHost };
       };
 
+      const forceSpotifyEmbedsDark = () => {
+        try {
+          const host = document.getElementById("ib-spotify-embed");
+          if (!host) return;
+          const iframes = host.querySelectorAll("iframe");
+          if (!iframes || !iframes.length) return;
+
+          for (const iframe of iframes) {
+            try {
+              const src = String(iframe.getAttribute("src") || iframe.src || "").trim();
+              if (!src) continue;
+              if (!src.includes("open.spotify.com")) continue;
+
+              const u = new URL(src, "https://open.spotify.com");
+              // Spotify embed supports theme=0 (dark), theme=1 (light)
+              const cur = String(u.searchParams.get("theme") || "").trim();
+              if (cur === "0") continue;
+              u.searchParams.set("theme", "0");
+              const next = u.toString();
+              if (next !== src) iframe.setAttribute("src", next);
+            } catch (_) {}
+          }
+        } catch (_) {}
+      };
+
       const toSpotifyUri = (urlOrUri) => {
         const s = String(urlOrUri || "").trim();
         if (!s) return null;
@@ -705,6 +730,8 @@
         if (prev !== embed) {
           embedHost.innerHTML = `<iframe title="Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${embed}"></iframe>`;
           embedHost.dataset.src = embed;
+          try { forceSpotifyEmbedsDark(); } catch (_) {}
+          try { setTimeout(() => { try { forceSpotifyEmbedsDark(); } catch (_) {} }, 120); } catch (_) {}
         }
         root.style.display = "";
         placeSpotifyPlayerUnderTopbar();
@@ -794,6 +821,10 @@
               },
               (controller) => {
                 embedController = controller;
+
+                // Controller injects its own iframe(s). Force dark theme if possible.
+                try { forceSpotifyEmbedsDark(); } catch (_) {}
+                try { setTimeout(() => { try { forceSpotifyEmbedsDark(); } catch (_) {} }, 120); } catch (_) {}
 
                 try {
                   controller.addListener("playback_update", (e) => {
@@ -903,6 +934,7 @@
             placeSpotifyPlayerUnderTopbar();
             updateTopbarHeightVar();
             updatePlayerHeightVar();
+            try { forceSpotifyEmbedsDark(); } catch (_) {}
 
             // Analytics: impression/content switch (controller mode)
             try {
