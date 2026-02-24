@@ -113,6 +113,18 @@ Tips:
 
 ## Problem & lösningar
 
+### Problem: Bild-preview i CMS visar trasiga bilder
+
+Symptom:
+- I editorn eller preview-panelen visas “broken image”-ikoner trots att filen faktiskt laddats upp.
+
+Vanliga orsaker i den här setupen:
+- Äldre entries kan ha sparat bild-path utan inledande `/` (t.ex. `assets/uploads/foo.jpg`), vilket då laddas som `/admin/assets/uploads/foo.jpg`.
+- Nya uploads finns i GitHub direkt, men din statiska hosting kan behöva en liten stund för att deploy:a – då kan `/assets/uploads/...` ge 404 under tiden.
+
+Lösning i repot:
+- [admin/index.html](admin/index.html) innehåller en liten klient-side normalisering som, inne i CMS:et, mappar `assets/uploads/*` till GitHub “raw” URL så thumbnails/preview fungerar direkt.
+
 ### Problem 1: “Error loading the CMS configuration: Failed to load config.yml (Failed to fetch)”
 
 Vanliga orsaker:
