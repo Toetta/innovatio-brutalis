@@ -271,17 +271,12 @@ html.ib-fixed-ui *[id]{
   width: 100%;
   max-width: 360px;
 }
-
-  overflow:hidden;
-  border-radius: calc(var(--radius) - 6px);
 .spotify-embed iframe{
   width: 100%;
   height: 152px;
   border: 0;
   border-radius: var(--radius);
   background: rgba(0,0,0,.18);
-  background: transparent;
-  border-radius: calc(var(--radius) - 6px);
 }
 
 /* Persistent Spotify player (stays across internal navigation) */
@@ -312,6 +307,13 @@ html.ib-fixed-ui *[id]{
 
 #ib-spotify-embed{
   background: rgba(var(--card2-rgb), .98);
+  overflow:hidden;
+  border-radius: calc(var(--radius) - 6px);
+}
+
+#ib-spotify-embed iframe{
+  background: transparent;
+  border-radius: calc(var(--radius) - 6px);
 }
 
 .ib-spotify-player__row > #ib-spotify-embed{
