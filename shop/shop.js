@@ -17,6 +17,12 @@
 			category_label: "Category",
 			search_label: "Search",
 			search_placeholder: "Search products…",
+			cart_title: "Cart",
+			cart_empty: "Cart is empty.",
+			add_to_cart: "Add to cart",
+			remove: "Remove",
+			qty: "Qty",
+			total: "Total",
 			all_categories: "All",
 			loading: "Loading…",
 			not_found: "No products found.",
@@ -31,6 +37,12 @@
 			category_label: "Kategori",
 			search_label: "Sök",
 			search_placeholder: "Sök produkter…",
+			cart_title: "Kundvagn",
+			cart_empty: "Kundvagnen är tom.",
+			add_to_cart: "Lägg i kundvagn",
+			remove: "Ta bort",
+			qty: "Antal",
+			total: "Summa",
 			all_categories: "Alla",
 			loading: "Laddar…",
 			not_found: "Inga produkter hittades.",
@@ -41,6 +53,63 @@
 		};
 		const dict = isEN() ? en : sv;
 		return dict[key] || key;
+	};
+
+	// --- Cart (minimal MVP) ---
+	const CART_KEY = "ib_shop_cart_v1";
+	const readCart = () => {
+		try {
+			const raw = localStorage.getItem(CART_KEY);
+			if (!raw) return { items: {} };
+			const parsed = JSON.parse(raw);
+			const items = (parsed && typeof parsed === "object" && parsed.items && typeof parsed.items === "object") ? parsed.items : {};
+			return { items };
+		} catch (_) {
+			return { items: {} };
+		}
+	};
+	const writeCart = (cart) => {
+		try {
+			localStorage.setItem(CART_KEY, JSON.stringify(cart));
+		} catch (_) {}
+	};
+	const getCartQtyTotal = (cart) => {
+		try {
+			const items = (cart && cart.items) ? cart.items : {};
+			return Object.values(items).reduce((sum, v) => sum + Math.max(0, Number(v) || 0), 0);
+		} catch (_) {
+			return 0;
+		}
+	};
+	const setCartQty = (slug, qty) => {
+		const s = String(slug || "").trim();
+		if (!s) return;
+		const q = Math.max(0, Math.floor(Number(qty) || 0));
+		const cart = readCart();
+		cart.items = (cart.items && typeof cart.items === "object") ? cart.items : {};
+		if (q <= 0) delete cart.items[s];
+		else cart.items[s] = q;
+		writeCart(cart);
+		try { window.dispatchEvent(new CustomEvent("ib:cart_changed", { detail: { slug: s, qty: q } })); } catch (_) {}
+	};
+	const addToCart = (slug, delta = 1) => {
+		const s = String(slug || "").trim();
+		if (!s) return;
+		const cart = readCart();
+		cart.items = (cart.items && typeof cart.items === "object") ? cart.items : {};
+		const prev = Math.max(0, Math.floor(Number(cart.items[s]) || 0));
+		const next = Math.max(0, prev + Math.max(1, Math.floor(Number(delta) || 1)));
+		cart.items[s] = next;
+		writeCart(cart);
+		try {
+			if (typeof window.gtag === "function") {
+				window.gtag("event", "add_to_cart", {
+					currency: "SEK",
+					items: [{ item_id: s, quantity: next }],
+				});
+			}
+		} catch (_) {}
+		try { window.dispatchEvent(new CustomEvent("ib:cart_changed", { detail: { slug: s, qty: next } })); } catch (_) {}
 	};
 	const pickLang = (svValue, enValue, legacyValue) => {
 		const sv = (svValue ?? "");
@@ -309,6 +378,7 @@
 		const categoryFilter = qs("#categoryFilter");
 		const searchInput = qs("#searchInput");
 		const grid = qs("#productGrid");
+		const cartCard = qs("#cartCard");
 		if (!categoryFilter || !searchInput || !grid) return;
 
 		grid.innerHTML = `<div class="card">${esc(t("loading"))}</div>`;
@@ -328,6 +398,9 @@
 		const productsAll = [...catalog.products]
 			.filter((p) => p.isActive)
 			.sort((a, b) => String(a.titleSV || "").localeCompare(String(b.titleSV || "")));
+
+		const productBySlug = new Map();
+		for (const p of productsAll) productBySlug.set(String(p.slug), p);
 
 		const categoryTitleBySlug = new Map();
 		for (const c of categoriesSorted) {
@@ -373,23 +446,104 @@
 				const href = withLangQuery(`/shop/product.html?slug=${encodeURIComponent(p.slug)}`);
 				const catLabel = categoryTitleBySlug.get(String(p.categorySlug || "")) || String(p.categorySlug || "");
 				return `
-					<a class=\"card product\" href=\"${href}\">
-						${img ? `<img class=\"thumb\" src=\"${esc(img)}\" alt=\"\">` : `<div class=\"thumb\"></div>`}
-						<div>
-							<div style=\"font-weight:800\">${esc(title)}</div>
-							${excerpt ? `<div class=\"badge\">${esc(excerpt)}</div>` : ""}
-						</div>
-						<div class=\"meta\">
-							<div class=\"badge\">${esc(catLabel || "")}</div>
-							<div class=\"price\">${esc(price)}</div>
-						</div>
-					</a>
+					<div class=\"card product\">
+						<a class=\"product-link\" href=\"${href}\">
+							${img ? `<img class=\"thumb\" src=\"${esc(img)}\" alt=\"\">` : `<div class=\"thumb\"></div>`}
+							<div>
+								<div style=\"font-weight:800\">${esc(title)}</div>
+								${excerpt ? `<div class=\"badge\">${esc(excerpt)}</div>` : ""}
+							</div>
+							<div class=\"meta\">
+								<div class=\"badge\">${esc(catLabel || "")}</div>
+								<div class=\"price\">${esc(price)}</div>
+							</div>
+						</a>
+						<button class=\"btn primary\" type=\"button\" data-add-to-cart=\"${esc(p.slug)}\">${esc(t("add_to_cart"))}</button>
+					</div>
 				`;
 			}).join("");
+
+			if (cartCard) {
+				const cart = readCart();
+				const slugs = Object.keys(cart.items || {}).filter(Boolean);
+				const totalQty = getCartQtyTotal(cart);
+				if (!slugs.length) {
+					cartCard.hidden = true;
+				} else {
+					cartCard.hidden = false;
+					let total = 0;
+					const rows = slugs.map((slug) => {
+						const qty = Math.max(0, Math.floor(Number(cart.items[slug]) || 0));
+						const p = productBySlug.get(String(slug));
+						const title = p ? (isEN() ? (p.titleEN || p.titleSV || p.slug) : (p.titleSV || p.titleEN || p.slug)) : String(slug);
+						const line = p ? (Number.isFinite(Number(p.price)) ? (Number(p.price) * qty) : 0) : 0;
+						total += line;
+						return `
+							<div class=\"cart-row\" data-cart-row=\"${esc(slug)}\">
+								<div>
+									<div class=\"cart-title\">${esc(title)}</div>
+									${p ? `<div class=\"badge\">${esc(formatPrice(p.price, p.currency))}</div>` : ""}
+								</div>
+								<div class=\"cart-actions\">
+									<label class=\"badge\" style=\"display:flex; flex-direction:column; gap:6px\">
+										<span>${esc(t("qty"))}</span>
+										<input class=\"qty\" type=\"number\" min=\"0\" step=\"1\" value=\"${esc(qty)}\" data-cart-qty=\"${esc(slug)}\" />
+									</label>
+									<button class=\"btn\" type=\"button\" data-cart-remove=\"${esc(slug)}\">${esc(t("remove"))}</button>
+								</div>
+							</div>
+						`;
+					}).join("");
+
+					cartCard.innerHTML = `
+						<div style=\"display:flex; align-items:baseline; justify-content:space-between; gap:12px\">
+							<h2 style=\"margin:0\">${esc(t("cart_title"))}</h2>
+							<div class=\"badge\">${esc(totalQty)}</div>
+						</div>
+						<div style=\"margin-top:12px\">${rows}</div>
+						<div style=\"margin-top:12px; display:flex; justify-content:space-between; gap:12px\">
+							<div class=\"badge\">${esc(t("total"))}</div>
+							<div class=\"price\">${esc(formatPrice(total, "SEK"))}</div>
+						</div>
+					`;
+				}
+			}
 		};
 
 		categoryFilter.addEventListener("change", render);
 		searchInput.addEventListener("input", render);
+		grid.addEventListener("click", (e) => {
+			try {
+				const target = e.target;
+				const btn = target && target.closest ? target.closest("[data-add-to-cart]") : null;
+				if (!btn) return;
+				e.preventDefault();
+				e.stopPropagation();
+				addToCart(btn.getAttribute("data-add-to-cart") || "");
+				render();
+			} catch (_) {}
+		});
+		if (cartCard) {
+			cartCard.addEventListener("click", (e) => {
+				try {
+					const target = e.target;
+					const btn = target && target.closest ? target.closest("[data-cart-remove]") : null;
+					if (!btn) return;
+					e.preventDefault();
+					setCartQty(btn.getAttribute("data-cart-remove") || "", 0);
+					render();
+				} catch (_) {}
+			});
+			cartCard.addEventListener("change", (e) => {
+				try {
+					const target = e.target;
+					if (!target || !target.matches || !target.matches("[data-cart-qty]")) return;
+					const slug = target.getAttribute("data-cart-qty") || "";
+					setCartQty(slug, target.value);
+					render();
+				} catch (_) {}
+			});
+		}
 		render();
 	};
 
@@ -437,9 +591,22 @@
 		view.innerHTML = `
 			<h1 style=\"margin-bottom:10px\">${esc(title)}</h1>
 			<div class=\"price\" style=\"font-size:18px; margin-bottom:14px\">${esc(price)}</div>
+			<div style=\"margin-bottom:14px\">
+				<button class=\"btn primary\" type=\"button\" data-add-to-cart-product=\"${esc(product.slug)}\">${esc(t("add_to_cart"))}</button>
+			</div>
 			${img ? `<img class=\"thumb\" src=\"${esc(img)}\" alt=\"\" style=\"max-width:520px\">` : ""}
 			${description ? `<div style=\"margin-top:14px; white-space:pre-wrap\">${esc(description)}</div>` : ""}
 		`;
+
+		try {
+			const btn = qs("[data-add-to-cart-product]");
+			if (btn) {
+				btn.addEventListener("click", (e) => {
+					e.preventDefault();
+					addToCart(btn.getAttribute("data-add-to-cart-product") || "");
+				});
+			}
+		} catch (_) {}
 	};
 
 	const init = async () => {
