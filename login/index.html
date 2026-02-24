@@ -80,7 +80,11 @@
           setStatus(statusEl, 'Turnstile site key saknas (ib-turnstile-sitekey).', 'warn');
           return;
         }
-        if (!window.turnstile || !turnstileMount) return;
+        if (!turnstileMount) return;
+        if (!window.turnstile) {
+          setStatus(statusEl, 'Laddar verifiering…', 'info');
+          return;
+        }
         window.turnstile.render(turnstileMount, {
           sitekey: siteKey,
           callback: (t) => {
@@ -99,16 +103,55 @@
         });
       };
 
+      const ensureTurnstileMounted = () => {
+        // Turnstile sometimes becomes available slightly after script onload.
+        let attempts = 0;
+        const tick = () => {
+          attempts += 1;
+          if (turnstileToken) {
+            updateBtnState();
+            return;
+          }
+          if (window.turnstile && turnstileMount && !turnstileMount.dataset.mounted) {
+            try {
+              turnstileMount.dataset.mounted = '1';
+              mountTurnstile();
+              return;
+            } catch (_) {
+              // If render failed, allow retry.
+              delete turnstileMount.dataset.mounted;
+            }
+          }
+
+          if (attempts < 50) {
+            setTimeout(tick, 100);
+            return;
+          }
+
+          // After ~5s, show a clear hint.
+          if (!turnstileToken) {
+            setStatus(statusEl, 'Turnstile laddade inte. Prova stäng av adblock/”tracking protection” och ladda om.', 'warn');
+          }
+        };
+        tick();
+      };
+
       // Load Turnstile
       const s = document.createElement('script');
       s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
       s.async = true;
       s.defer = true;
-      s.onload = mountTurnstile;
+      s.onload = () => {
+        mountTurnstile();
+        ensureTurnstileMounted();
+      };
       s.onerror = () => {
         setStatus(statusEl, 'Kunde inte ladda Turnstile. Prova att stänga av adblock/”tracking protection” och ladda om.', 'warn');
       };
       document.head.appendChild(s);
+
+      // Try mounting even if onload fires before Turnstile is fully ready.
+      ensureTurnstileMounted();
 
       // Only enable when we have both a valid email and a Turnstile token.
       updateBtnState();
