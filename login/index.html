@@ -74,7 +74,8 @@
       };
 
       const updateBtnState = () => {
-        const ok = isEmail(emailEl?.value) && Boolean(turnstileToken);
+        // Turnstile is best-effort. Only require a valid email to request a link.
+        const ok = isEmail(emailEl?.value);
         btn.disabled = !ok;
       };
 
@@ -137,16 +138,12 @@
 
           // After ~5s, show a clear hint.
           if (!turnstileToken) {
-            const scriptUrl = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-            if (turnstileScriptErrored) {
-              setStatus(statusEl, `Kunde inte ladda Turnstile (${scriptUrl}). Något blockerar anropet (nätverk/DNS/brandvägg).`, 'warn');
+            // Keep this non-blocking: login should still work.
+            if (turnstileScriptErrored || !turnstileScriptLoaded) {
+              setStatus(statusEl, 'Verifiering kunde inte laddas, men du kan fortfarande begära en login-länk.', 'info');
               return;
             }
-            if (!turnstileScriptLoaded) {
-              setStatus(statusEl, `Turnstile laddade inte (${scriptUrl}). Blockeras ofta av tracking protection eller DNS-filter.`, 'warn');
-              return;
-            }
-            setStatus(statusEl, 'Turnstile laddade men startade inte. Prova slå av “tracking protection”/Brave Shields och tillåt tredjepartsskript för sidan.', 'warn');
+            setStatus(statusEl, 'Verifiering laddade men startade inte. Du kan ändå begära en login-länk.', 'info');
           }
         };
         tick();
@@ -179,11 +176,6 @@
         try {
           if (!isEmail(emailEl.value)) {
             setStatus(statusEl, 'Skriv in en giltig e-postadress.', 'warn');
-            updateBtnState();
-            return;
-          }
-          if (!turnstileToken) {
-            setStatus(statusEl, 'Verifiera att du inte är en robot (Turnstile).', 'warn');
             updateBtnState();
             return;
           }

@@ -53,21 +53,23 @@ export const onRequestPost = async (context) => {
 
   if (!isEmail(email)) return json({ ok: true });
 
-  // Verify Turnstile (generic success to clients).
+  // Verify Turnstile (best-effort). If it can't run client-side, we still allow
+  // requesting a magic link but enforce tighter rate limits.
   const ip = getClientIp(request);
-  const turnOk = await verifyTurnstile({ env, token: turnstileToken, remoteip: ip }).catch((err) => {
-    console.error("turnstile_verify_error", err);
-    return false;
-  });
+  let turnOk = null;
+  if (turnstileToken) {
+    turnOk = await verifyTurnstile({ env, token: turnstileToken, remoteip: ip }).catch((err) => {
+      console.error("turnstile_verify_error", err);
+      return false;
+    });
+  }
 
-  if (!turnOk) {
+  if (turnOk === false) {
     console.warn("turnstile_not_ok", {
-      has_token: Boolean(turnstileToken),
+      has_token: true,
       token_len: String(turnstileToken || "").length,
       has_ip: Boolean(ip),
     });
-    // Intentionally generic.
-    return json({ ok: true });
   }
 
   // Rate limit (generic success always).
@@ -76,6 +78,14 @@ export const onRequestPost = async (context) => {
     return { ok: false };
   });
   if (!allowed.ok) return json({ ok: true });
+
+  // If Turnstile was not verified (missing token or failed), apply stricter limits.
+  // This keeps login usable while still protecting the endpoint.
+  const unverified = turnOk !== true;
+  if (unverified) {
+    if (Number(allowed.emailCount || 0) >= 2) return json({ ok: true });
+    if (Number(allowed.ipCount || 0) >= 5) return json({ ok: true });
+  }
 
   const payload = { ok: true };
 
