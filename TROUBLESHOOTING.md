@@ -125,6 +125,17 @@ Vanliga orsaker i den här setupen:
 Lösning i repot:
 - [admin/index.html](admin/index.html) innehåller en liten klient-side normalisering som, inne i CMS:et, mappar `assets/uploads/*` till GitHub “raw” URL så thumbnails/preview fungerar direkt.
 
+### Automatisk komprimering efter upload (sparar space)
+
+För att undvika att stora mobilbilder (t.ex. flera MB) hamnar i repot körs en GitHub Action som:
+- triggas när något pushas till `assets/uploads/`
+- resizar till max 1600px (längsta sida)
+- komprimerar och committar tillbaka optimerade filer
+
+Workflow:
+- [.github/workflows/optimize-uploads.yml](.github/workflows/optimize-uploads.yml)
+- Script: [tools/optimize-uploads.mjs](tools/optimize-uploads.mjs)
+
 ### Problem 1: “Error loading the CMS configuration: Failed to load config.yml (Failed to fetch)”
 
 Vanliga orsaker:

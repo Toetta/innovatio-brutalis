@@ -1,0 +1,73 @@
+name: Optimize uploaded images
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - "assets/uploads/**"
+      - ".github/workflows/optimize-uploads.yml"
+      - "tools/optimize-uploads.mjs"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  optimize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install optimizer dependency
+        run: npm install --no-save sharp
+
+      - name: Optimize changed uploads
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # For manual runs, just optimize all current uploads.
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            node tools/optimize-uploads.mjs --max=1600
+            exit 0
+          fi
+
+          before="${{ github.event.before }}"
+          after="${{ github.sha }}"
+
+          changed=$(git diff --name-only "$before" "$after" -- 'assets/uploads/**' || true)
+          if [ -z "$changed" ]; then
+            echo "No changed uploads."
+            exit 0
+          fi
+
+          echo "Changed files:"; echo "$changed"
+
+          # Pass as arguments (Decap filenames are typically space-free).
+          node tools/optimize-uploads.mjs --max=1600 $changed
+
+      - name: Commit optimized images (if changed)
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if git diff --quiet -- assets/uploads; then
+            echo "No optimization changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/uploads
+          git commit -m "Optimize uploaded images"
+          git push
