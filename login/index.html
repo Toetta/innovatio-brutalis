@@ -84,9 +84,17 @@
           btn.disabled = true;
           setStatus(statusEl, 'Skickar…');
           devEl.innerHTML = '';
+
+          let returnPath = '';
+          try {
+            const params = new URLSearchParams(window.location.search || '');
+            returnPath = String(params.get('return') || '').trim();
+          } catch (_) {}
+
           const data = await apiPost('/api/auth/request-link', {
             email: emailEl.value,
             turnstileToken,
+            returnPath,
           });
           setStatus(statusEl, 'Kolla din e-post för en login-länk.');
           if (data && data.debug_link) {

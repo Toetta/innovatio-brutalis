@@ -29,6 +29,9 @@
 
 .shop .controls{display:flex;gap:14px;align-items:end;flex-wrap:wrap}
 
+.shop .shop-actions{margin-left:auto;display:flex;gap:10px;align-items:end}
+.shop .shop-actions .badge{min-width:1.8em;text-align:center}
+
 .shop label{display:flex;flex-direction:column;gap:6px;color:var(--shop-muted);font-size:14px}
 
 .shop input,

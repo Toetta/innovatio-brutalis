@@ -22,6 +22,19 @@ const canonicalOrigin = (origin) => {
   }
 };
 
+const safeReturnPath = (raw) => {
+  try {
+    const p = String(raw || "").trim();
+    if (!p) return "";
+    if (!p.startsWith("/")) return "";
+    if (p.startsWith("//")) return "";
+    if (p.includes("://")) return "";
+    return p;
+  } catch (_) {
+    return "";
+  }
+};
+
 export const onRequestPost = async (context) => {
   const { request, env } = context;
   const cfg = getEnv(env);
@@ -36,6 +49,7 @@ export const onRequestPost = async (context) => {
 
   const email = String(body?.email || "").trim().toLowerCase();
   const turnstileToken = String(body?.turnstileToken || "");
+  const returnPath = safeReturnPath(body?.returnPath);
 
   if (!isEmail(email)) return json({ ok: true });
 
@@ -61,7 +75,7 @@ export const onRequestPost = async (context) => {
   try {
     const link = await requestMagicLink({ request, env, email });
     const origin = canonicalOrigin(new URL(request.url).origin);
-    const verifyUrl = `${origin}/api/auth/verify?token=${encodeURIComponent(link.token)}`;
+    const verifyUrl = `${origin}/api/auth/verify?token=${encodeURIComponent(link.token)}${returnPath ? `&return=${encodeURIComponent(returnPath)}` : ""}`;
 
     if (cfg.EMAIL_PROVIDER === "disabled") {
       const payload = { ok: true };

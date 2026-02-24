@@ -17,6 +17,10 @@
 			category_label: "Category",
 			search_label: "Search",
 			search_placeholder: "Search products…",
+			nav_cart: "Cart",
+			nav_profile: "Profile",
+			nav_login: "Login",
+			nav_logout: "Logout",
 			cart_title: "Cart",
 			cart_empty: "Cart is empty.",
 			add_to_cart: "Add to cart",
@@ -37,6 +41,10 @@
 			category_label: "Kategori",
 			search_label: "Sök",
 			search_placeholder: "Sök produkter…",
+			nav_cart: "Kundvagn",
+			nav_profile: "Profil",
+			nav_login: "Logga in",
+			nav_logout: "Logga ut",
 			cart_title: "Kundvagn",
 			cart_empty: "Kundvagnen är tom.",
 			add_to_cart: "Lägg i kundvagn",
@@ -53,6 +61,30 @@
 		};
 		const dict = isEN() ? en : sv;
 		return dict[key] || key;
+	};
+
+	const apiRequest = async (method, path, body) => {
+		const res = await fetch(path, {
+			method,
+			headers: {
+				...(body ? { "content-type": "application/json" } : {}),
+				"accept": "application/json",
+			},
+			body: body ? JSON.stringify(body) : undefined,
+			credentials: "include",
+			cache: "no-store",
+		});
+		let data = null;
+		const ct = res.headers.get("content-type") || "";
+		if (ct.includes("application/json")) data = await res.json().catch(() => null);
+		else data = await res.text().catch(() => "");
+		if (!res.ok) {
+			const err = new Error("API error");
+			err.status = res.status;
+			err.data = data;
+			throw err;
+		}
+		return data;
 	};
 
 	// --- Cart (minimal MVP) ---
@@ -182,6 +214,30 @@
 			if (back) {
 				back.textContent = t("back_to_shop");
 				back.setAttribute("href", withLangQuery("/shop/"));
+			}
+		} catch (_) {}
+
+		// Action buttons on index page
+		try {
+			const cartBtn = qs("#cartBtn");
+			if (cartBtn) {
+				cartBtn.setAttribute("title", t("nav_cart"));
+				cartBtn.setAttribute("aria-label", t("nav_cart"));
+			}
+			const profile = qs("#profileLink");
+			if (profile) {
+				profile.setAttribute("title", t("nav_profile"));
+				profile.setAttribute("aria-label", t("nav_profile"));
+			}
+			const login = qs("#loginLink");
+			if (login) {
+				login.setAttribute("title", t("nav_login"));
+				login.setAttribute("aria-label", t("nav_login"));
+			}
+			const logout = qs("#logoutBtn");
+			if (logout) {
+				logout.setAttribute("title", t("nav_logout"));
+				logout.setAttribute("aria-label", t("nav_logout"));
 			}
 		} catch (_) {}
 	};
@@ -379,7 +435,48 @@
 		const searchInput = qs("#searchInput");
 		const grid = qs("#productGrid");
 		const cartCard = qs("#cartCard");
+		const cartBtn = qs("#cartBtn");
+		const cartCount = qs("#cartCount");
+		const loginLink = qs("#loginLink");
+		const logoutBtn = qs("#logoutBtn");
 		if (!categoryFilter || !searchInput || !grid) return;
+
+		// Login link should return to this exact shop URL
+		try {
+			if (loginLink) {
+				const returnTo = (window.location.pathname || "/shop/") + (window.location.search || "");
+				loginLink.setAttribute("href", `/login/?return=${encodeURIComponent(returnTo)}`);
+			}
+		} catch (_) {}
+
+		// Toggle login/logout based on /api/me (async; don't block page)
+		try {
+			if (logoutBtn) logoutBtn.hidden = true;
+			if (loginLink) loginLink.hidden = false;
+			apiRequest("GET", "/api/me")
+				.then(() => {
+					try {
+						if (logoutBtn) logoutBtn.hidden = false;
+						if (loginLink) loginLink.hidden = true;
+					} catch (_) {}
+				})
+				.catch(() => {
+					try {
+						if (logoutBtn) logoutBtn.hidden = true;
+						if (loginLink) loginLink.hidden = false;
+					} catch (_) {}
+				});
+		} catch (_) {}
+
+		try {
+			if (logoutBtn) {
+				logoutBtn.addEventListener("click", async (e) => {
+					e.preventDefault();
+					try { await apiRequest("POST", "/api/auth/logout", {}); } catch (_) {}
+					window.location.reload();
+				});
+			}
+		} catch (_) {}
 
 		grid.innerHTML = `<div class="card">${esc(t("loading"))}</div>`;
 
@@ -467,8 +564,23 @@
 				const cart = readCart();
 				const slugs = Object.keys(cart.items || {}).filter(Boolean);
 				const totalQty = getCartQtyTotal(cart);
+				try {
+					if (cartCount) cartCount.textContent = totalQty ? String(totalQty) : "";
+				} catch (_) {}
 				if (!slugs.length) {
-					cartCard.hidden = true;
+					const force = String(cartCard.getAttribute("data-force-visible") || "") === "1";
+					if (!force) {
+						cartCard.hidden = true;
+						return;
+					}
+					cartCard.hidden = false;
+					cartCard.innerHTML = `
+						<div style=\"display:flex; align-items:baseline; justify-content:space-between; gap:12px\">
+							<h2 style=\"margin:0\">${esc(t("cart_title"))}</h2>
+							<div class=\"badge\">0</div>
+						</div>
+						<div style=\"margin-top:12px\" class=\"badge\">${esc(t("cart_empty"))}</div>
+					`;
 				} else {
 					cartCard.hidden = false;
 					let total = 0;
@@ -509,6 +621,24 @@
 				}
 			}
 		};
+
+		try {
+			if (cartBtn) {
+				cartBtn.addEventListener("click", (e) => {
+					e.preventDefault();
+					try {
+						if (cartCard) cartCard.setAttribute("data-force-visible", "1");
+					} catch (_) {}
+					render();
+					try {
+						if (cartCard) {
+							cartCard.hidden = false;
+							cartCard.scrollIntoView({ behavior: "smooth", block: "start" });
+						}
+					} catch (_) {}
+				});
+			}
+		} catch (_) {}
 
 		categoryFilter.addEventListener("change", render);
 		searchInput.addEventListener("input", render);
