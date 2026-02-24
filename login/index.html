@@ -79,18 +79,26 @@
         btn.disabled = !ok;
       };
 
+      const getTurnstileApi = () => {
+        const t = window.turnstile;
+        if (!t) return null;
+        if (typeof t.render !== 'function') return null;
+        return t;
+      };
+
       const mountTurnstile = () => {
         if (!siteKey) {
           setStatus(statusEl, 'Turnstile site key saknas (ib-turnstile-sitekey).', 'warn');
           return false;
         }
         if (!turnstileMount) return;
-        if (!window.turnstile) {
+        const t = getTurnstileApi();
+        if (!t) {
           setStatus(statusEl, 'Laddar verifiering…', 'info');
           return false;
         }
         if (turnstileWidgetId !== null) return true;
-        window.turnstile.render(turnstileMount, {
+        const id = t.render(turnstileMount, {
           sitekey: siteKey,
           callback: (t) => {
             turnstileToken = String(t || '');
@@ -106,9 +114,8 @@
             updateBtnState();
           },
         });
-        // render() returns a widget id, but not all versions consistently do.
-        // We treat "attempted render" as mounted to avoid repeated renders.
-        try { turnstileWidgetId = 0; } catch (_) {}
+        // render() returns a widget id (number). If it doesn't, use a sentinel.
+        turnstileWidgetId = typeof id === 'number' ? id : 0;
         return true;
       };
 
@@ -121,7 +128,7 @@
             updateBtnState();
             return;
           }
-          if (window.turnstile && turnstileMount && turnstileWidgetId === null) {
+          if (getTurnstileApi() && turnstileMount && turnstileWidgetId === null) {
             try {
               const ok = mountTurnstile();
               if (ok) return;
@@ -150,20 +157,35 @@
       };
 
       // Load Turnstile
-      const s = document.createElement('script');
-      s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
-      s.async = true;
-      s.defer = true;
-      s.onload = () => {
+      const scriptUrl = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+      const existing = Array.from(document.scripts || []).find((x) => {
+        try {
+          const src = String(x?.src || '');
+          return src.includes('challenges.cloudflare.com/turnstile/v0/api.js');
+        } catch (_) {
+          return false;
+        }
+      });
+
+      if (!existing) {
+        const s = document.createElement('script');
+        s.src = scriptUrl;
+        s.async = true;
+        s.defer = true;
+        s.onload = () => {
+          turnstileScriptLoaded = true;
+          mountTurnstile();
+          ensureTurnstileMounted();
+        };
+        s.onerror = () => {
+          turnstileScriptErrored = true;
+          setStatus(statusEl, 'Kunde inte ladda Turnstile. Prova att stänga av adblock/”tracking protection” och ladda om.', 'warn');
+        };
+        document.head.appendChild(s);
+      } else {
+        // Avoid loading Turnstile multiple times; just wait for API to be ready.
         turnstileScriptLoaded = true;
-        mountTurnstile();
-        ensureTurnstileMounted();
-      };
-      s.onerror = () => {
-        turnstileScriptErrored = true;
-        setStatus(statusEl, 'Kunde inte ladda Turnstile. Prova att stänga av adblock/”tracking protection” och ladda om.', 'warn');
-      };
-      document.head.appendChild(s);
+      }
 
       // Try mounting even if onload fires before Turnstile is fully ready.
       ensureTurnstileMounted();
