@@ -1,4 +1,5 @@
 (() => {
+	const IBShop = (window.IBShop = window.IBShop || {});
 	const qs = (sel) => document.querySelector(sel);
 	const getLang = () => {
 		try {
@@ -740,6 +741,10 @@
 	};
 
 	const init = async () => {
+		const initKey = `${window.location.pathname}${window.location.search}`;
+		if (IBShop._lastInitKey === initKey) return;
+		IBShop._lastInitKey = initKey;
+
 		try {
 			await renderShopIndex();
 			await renderProductPage();
@@ -748,9 +753,9 @@
 		}
 	};
 
-	if (document.readyState === "loading") {
-		document.addEventListener("DOMContentLoaded", init);
-	} else {
-		init();
-	}
+	IBShop.init = init;
+
+	// Run once on direct page loads.
+	if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => IBShop.init());
+	else IBShop.init();
 })();

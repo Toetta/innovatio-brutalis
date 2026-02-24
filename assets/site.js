@@ -1074,6 +1074,98 @@
   // - Never runs on /assets/* or fu-bookkeeping.
   // - Does not attempt to execute scripts from destination pages.
   if (!shouldNoopApp()) {
+    const normPath = (p) => {
+      try {
+        const s = String(p || "");
+        if (s.endsWith("/")) return s;
+        const last = s.split("/").filter(Boolean).slice(-1)[0] || "";
+        return last.includes(".") ? s : (s + "/");
+      } catch (_) {
+        return String(p || "");
+      }
+    };
+
+    const isShopPathname = (pathname) => {
+      try {
+        const p = lower(normPath(pathname || ""));
+        const shopPath = p.replace(/^\/en\//, "/");
+        return shopPath === "/shop/" || shopPath === "/shop" || shopPath.startsWith("/shop/");
+      } catch (_) {
+        return false;
+      }
+    };
+
+    const applyFixedUiModeForPath = (pathname) => {
+      try {
+        if (!document.getElementById("ib-main")) return;
+        const isShop = isShopPathname(pathname);
+        if (isShop) document.documentElement.classList.remove("ib-fixed-ui");
+        else document.documentElement.classList.add("ib-fixed-ui");
+      } catch (_) {}
+    };
+
+    const ensureStylesheet = (href) => {
+      try {
+        const h = String(href || "").trim();
+        if (!h) return;
+        const targetPath = new URL(h, window.location.origin).pathname;
+        const existing = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+          .some((l) => {
+            const raw = l.getAttribute("href");
+            if (!raw) return false;
+            try { return new URL(raw, window.location.href).pathname === targetPath; }
+            catch (_) { return false; }
+          });
+        if (existing) return;
+        const link = document.createElement("link");
+        link.setAttribute("rel", "stylesheet");
+        link.setAttribute("href", h);
+        document.head.appendChild(link);
+      } catch (_) {}
+    };
+
+    const loadScriptOnce = (src) => {
+      return new Promise((resolve, reject) => {
+        try {
+          const s = String(src || "").trim();
+          if (!s) return resolve();
+          const targetPath = new URL(s, window.location.origin).pathname;
+          const already = Array.from(document.querySelectorAll("script[src]"))
+            .some((sc) => {
+              const raw = sc.getAttribute("src");
+              if (!raw) return false;
+              try { return new URL(raw, window.location.href).pathname === targetPath; }
+              catch (_) { return false; }
+            });
+          if (already) return resolve();
+          const existing = document.querySelector(`script[data-ib-src="${s}"]`);
+          if (existing) return resolve();
+          const el = document.createElement("script");
+          el.src = s;
+          el.async = true;
+          el.defer = true;
+          el.setAttribute("data-ib-src", s);
+          el.onload = () => resolve();
+          el.onerror = () => reject(new Error(`Failed to load ${s}`));
+          document.head.appendChild(el);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    };
+
+    const afterNavigation = async (u) => {
+      try {
+        const url = (u instanceof URL) ? u : new URL(String(u), window.location.origin);
+        applyFixedUiModeForPath(url.pathname);
+        if (isShopPathname(url.pathname)) {
+          ensureStylesheet("/shop/shop.css");
+          await loadScriptOnce("/shop/shop.js");
+          try { window.IBShop?.init?.(); } catch (_) {}
+        }
+      } catch (_) {}
+    };
+
     const isHijackableLink = (a) => {
       try {
         if (!a) return false;
@@ -1090,9 +1182,11 @@
         const p = lower(url.pathname || "");
         if (p.startsWith("/assets/")) return false;
 
-        // Shop pages depend on their own JS that isn't executed during PJAX swaps.
-        // Force full navigation for anything under /shop.
-        if (p === "/shop" || p === "/shop/" || p.startsWith("/shop/")) return false;
+        // Pages that rely on inline scripts (not executed during PJAX swaps).
+        const lp = p.replace(/^\/en\//, "/");
+        if (lp === "/admin" || lp.startsWith("/admin/")) return false;
+        if (lp === "/login" || lp.startsWith("/login/")) return false;
+        if (lp === "/account" || lp.startsWith("/account/")) return false;
 
         // Allow landing pages like /fu-bookkeeping/ to be PJAXed; the actual tool lives under /assets/.
         // Avoid hijacking direct file downloads
@@ -1125,8 +1219,15 @@
             if (el.id === "site-topbar") return true;
             if (el.id === "ib-spotify-player") return true;
             if (el.tagName === "SCRIPT") {
-              const src = String(el.getAttribute("src") || "").toLowerCase();
+              const raw = String(el.getAttribute("src") || "");
+              const src = raw.toLowerCase();
               if (src.includes("/assets/site.js") || src.includes("/assets/site-deeplinks.js")) return true;
+              if (src.includes("/shop/shop.js")) return true;
+              try {
+                const base = el.ownerDocument?.baseURI || window.location.href;
+                const p = new URL(raw, base).pathname.toLowerCase();
+                if (p === "/shop/shop.js") return true;
+              } catch (_) {}
             }
           }
           return false;
@@ -1182,6 +1283,7 @@
       refreshTopbar();
       ensureMainRegion();
       placeSpotifyPlayerUnderTopbar();
+      applyFixedUiModeForPath(window.location.pathname);
       updateTopbarHeightVar();
       refreshYear();
       try { window.SiteDeepLinks?.refresh?.(); } catch (_) {}
@@ -1200,6 +1302,8 @@
       swapFromDoc(doc);
       if (replace) history.replaceState({}, "", u.toString());
       else history.pushState({}, "", u.toString());
+
+      try { await afterNavigation(u); } catch (_) {}
 
       const scrollRoot = document.getElementById("ib-main") || document.scrollingElement || document.documentElement;
 
@@ -1239,5 +1343,8 @@
         // If PJAX fails, do nothing; user can refresh.
       });
     });
+
+    // Ensure correct mode on initial load, and eagerly init shop if needed.
+    try { afterNavigation(new URL(window.location.href)); } catch (_) {}
   }
 })();
