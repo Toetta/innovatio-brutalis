@@ -11,6 +11,9 @@ public_folder: "/assets/uploads"
 site_url: "https://www.innovatio-brutalis.se"
 display_url: "https://www.innovatio-brutalis.se"
 
+preview_styles:
+  - "/admin/preview.css"
+
 collections:
   - name: "categories"
     label: "Categories / Kategorier"

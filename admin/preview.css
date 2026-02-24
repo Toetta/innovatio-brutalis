@@ -1,0 +1,14 @@
+/* Decap CMS preview iframe only.
+   Keep it minimal: constrain media so previews aren't gigantic. */
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Product/article images should not dominate the preview pane */
+img {
+  max-height: 520px;
+  object-fit: contain;
+}
