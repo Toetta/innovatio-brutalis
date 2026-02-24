@@ -1,0 +1,8 @@
+{
+  "name": "innovatio-brutalis-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node tools/build-shop-catalog.mjs"
+  }
+}

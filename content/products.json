@@ -1,18 +1,11 @@
 {
   "products": [
     {
-      "title": "Unbreakable Frames",
-      "slug": "unbreakable-frames",
-      "categorySlug": "frames",
-      "price": 1495,
-      "currency": "SEK",
-      "vatRate": 25,
-      "excerpt": "Flexible, durable frames made for real life.",
-      "description": "## Unbreakable Frames\nBuilt for everyday use.\n",
-      "images": [],
-      "stockQty": 10,
-      "isActive": true,
-      "tags": ["featured"]
+      "slug": "testprodukt",
+      "title": "Testprodukt",
+      "price_sek": 199,
+      "category": "nyheter",
+      "published": true
     }
   ]
 }

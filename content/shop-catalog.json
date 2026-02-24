@@ -1,9 +1,9 @@
 {
   "categorySlugs": [
+    "general-engine-tools",
+    "lambretta",
     "nyheter",
-    "projekt",
-    "verkstad",
-    "cnc"
+    "verkstad"
   ],
   "productSlugs": [
     "testprodukt"

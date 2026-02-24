@@ -1,6 +1,26 @@
 {
   "categories": [
-    { "name": "Frames", "slug": "frames", "sortOrder": 10, "isActive": true },
-    { "name": "Prints", "slug": "prints", "sortOrder": 20, "isActive": true }
+    {
+      "order": 1,
+      "title": "General Engine Tools",
+      "slug": "Crank case sealsng plugs"
+    },
+    {
+      "order": 1,
+      "title": "Lambretta",
+      "slug": "I dont know what slug is",
+      "title_sv": "Lambrettadelar och verktyg",
+      "title_en": "Lambretta Tools and Parts"
+    },
+    {
+      "slug": "nyheter",
+      "title": "Vespa",
+      "order": 1
+    },
+    {
+      "slug": "verkstad",
+      "title": "Verkstad",
+      "order": 3
+    }
   ]
 }

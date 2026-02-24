@@ -141,6 +141,27 @@
 		return await res.json();
 	};
 
+	const fetchJSONCached = async (cacheKey, url, maxAgeMs) => {
+		try {
+			const key = `ib_cache:${cacheKey}`;
+			const now = Date.now();
+			const raw = localStorage.getItem(key);
+			if (raw) {
+				const parsed = JSON.parse(raw);
+				const ts = Number(parsed?.ts || 0);
+				if (ts && (now - ts) < (Number(maxAgeMs) || 0) && parsed?.value) {
+					return parsed.value;
+				}
+			}
+		} catch (_) {}
+
+		const value = await fetchJSON(url);
+		try {
+			localStorage.setItem(`ib_cache:${cacheKey}`, JSON.stringify({ ts: Date.now(), value }));
+		} catch (_) {}
+		return value;
+	};
+
 	const normalizeCategory = (c) => {
 		if (!c || typeof c !== "object") return null;
 		if (c.slug && (c.title_sv || c.title_en || c.title || c.name)) {
@@ -208,6 +229,45 @@
 	};
 
 	const loadCatalog = async () => {
+		// Best effort auto-discovery: list the folders in the GitHub repo.
+		// This avoids having to manually keep content/shop-catalog.json in sync.
+		const loadViaGitHub = async () => {
+			const REPO = "Toetta/innovatio-brutalis";
+			const REF = "main";
+			const listFolder = async (folder) => {
+				const apiUrl = `https://api.github.com/repos/${REPO}/contents/${folder}?ref=${encodeURIComponent(REF)}`;
+				// Cache the folder listing briefly to avoid hitting rate limits,
+				// but keep it short so new entries appear quickly after publishing.
+				const data = await fetchJSONCached(`gh:${folder}:${REF}`, apiUrl, 60 * 1000);
+				const items = Array.isArray(data) ? data : [];
+				return items
+					.filter((x) => x && x.type === "file" && typeof x.name === "string" && x.name.toLowerCase().endsWith(".json"))
+					.map((x) => ({
+						name: String(x.name),
+						download_url: String(x.download_url || ""),
+					}))
+					.filter((x) => x.download_url);
+			};
+
+			const [categoryFiles, productFiles] = await Promise.all([
+				listFolder("content/categories"),
+				listFolder("content/products"),
+			]);
+
+			const categoriesRaw = await Promise.all(categoryFiles.map((f) => fetchJSON(f.download_url).catch(() => null)));
+			const productsRaw = await Promise.all(productFiles.map((f) => fetchJSON(f.download_url).catch(() => null)));
+
+			const categories = categoriesRaw.map(normalizeCategory).filter(Boolean);
+			const products = productsRaw.map(normalizeProduct).filter(Boolean);
+			return { categories, products };
+		};
+
+		try {
+			return await loadViaGitHub();
+		} catch (_) {
+			// Fall back to manifest/aggregated JSON
+		}
+
 		// Preferred: manifest that lists folder-based slugs
 		//   { "categorySlugs": [..], "productSlugs": [..] }
 		try {
