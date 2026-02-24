@@ -179,6 +179,7 @@
 
 	const normalizeProduct = (p) => {
 		if (!p || typeof p !== "object") return null;
+		const tags = Array.isArray(p.tags) ? p.tags.map((x) => String(x || "").trim()).filter(Boolean) : [];
 
 		// Folder-style placeholder schema
 		if (p.slug && (p.title_sv || p.title_en || p.title) && ("price_sek" in p || "category" in p || "published" in p)) {
@@ -199,6 +200,7 @@
 				descriptionSV: descriptions.sv,
 				descriptionEN: descriptions.en,
 				images,
+				tags,
 				isActive,
 			};
 		}
@@ -221,6 +223,7 @@
 				descriptionSV: descriptions.sv,
 				descriptionEN: descriptions.en,
 				images,
+				tags,
 				isActive: p.isActive !== false,
 			};
 		}
@@ -346,8 +349,14 @@
 			const products = productsAll.filter((p) => {
 				const title = isEN() ? (p.titleEN || p.titleSV || "") : (p.titleSV || p.titleEN || "");
 				const excerpt = isEN() ? (p.excerptEN || p.excerptSV || "") : (p.excerptSV || p.excerptEN || "");
+				const tagsHaystack = Array.isArray(p.tags) ? p.tags.join(" ") : "";
 				if (selectedCategory && p.categorySlug !== selectedCategory) return false;
-				if (q && !String(title).toLowerCase().includes(q) && !String(excerpt).toLowerCase().includes(q)) return false;
+				if (q) {
+					const inTitle = String(title).toLowerCase().includes(q);
+					const inExcerpt = String(excerpt).toLowerCase().includes(q);
+					const inTags = String(tagsHaystack).toLowerCase().includes(q);
+					if (!inTitle && !inExcerpt && !inTags) return false;
+				}
 				return true;
 			});
 

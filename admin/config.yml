@@ -20,6 +20,7 @@ collections:
     format: "json"
     extension: "json"
     slug: "{{fields.slug}}"
+    summary: "{{title_sv}} / {{title_en}} ({{slug}})"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
       - { label: "Titel (SV)", name: "title_sv", widget: "string" }
@@ -47,6 +48,11 @@ collections:
         search_fields: ["title_sv", "title_en", "slug", "title"]
         value_field: "slug"
         display_fields: ["title_sv", "title_en", "slug"]
+      - label: "Tags / Sökord"
+        name: "tags"
+        widget: "list"
+        required: false
+        field: { label: "Tag", name: "tag", widget: "string" }
       - { label: "Publicerad", name: "published", widget: "boolean", default: true }
       - { label: "Excerpt (SV)", name: "excerpt_sv", widget: "string", required: false }
       - { label: "Excerpt (EN)", name: "excerpt_en", widget: "string", required: false }
