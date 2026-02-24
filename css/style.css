@@ -196,6 +196,26 @@ html.ib-fixed-ui *[id]{
   }
 }
 
+/* FU-Bookkeeping landing: keep hero centered (no side-by-side drift on desktop) */
+@media (min-width: 900px){
+  .hero.hero-fu-bookkeeping{
+    grid-template-columns: 1fr;
+    text-align:center;
+  }
+  .hero.hero-fu-bookkeeping .brand-hero{
+    justify-content:center;
+    grid-row:auto;
+  }
+  .hero.hero-fu-bookkeeping .brand-hero img{
+    margin: 0 auto;
+  }
+  .hero.hero-fu-bookkeeping h1,
+  .hero.hero-fu-bookkeeping .tagline,
+  .hero.hero-fu-bookkeeping .cta-row{
+    grid-column:auto;
+  }
+}
+
 .spotify-hero{
   display:flex;
   flex-direction:column;
