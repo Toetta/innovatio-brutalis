@@ -72,3 +72,10 @@ export const createKlarnaPaymentsOrder = async ({ env, authorization_token, purc
   const path = `/payments/v1/authorizations/${encodeURIComponent(String(authorization_token || ""))}/order`;
   return await klarnaFetchJson({ env, path, method: "POST", body: payload });
 };
+
+export const getKlarnaOrder = async ({ env, order_id }) => {
+  const oid = String(order_id || "");
+  if (!oid) throw new Error("Missing Klarna order_id");
+  const path = `/ordermanagement/v1/orders/${encodeURIComponent(oid)}`;
+  return await klarnaFetchJson({ env, path, method: "GET" });
+};

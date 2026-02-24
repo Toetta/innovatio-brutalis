@@ -59,6 +59,16 @@
         }).then(function (r) { return r.json(); });
       };
 
+      var tryVerifyKlarna = function () {
+        return fetch('/api/payments/klarna/verify', {
+          method: 'POST',
+          credentials: 'include',
+          cache: 'no-store',
+          headers: { 'content-type': 'application/json', 'accept': 'application/json' },
+          body: JSON.stringify({ order_id: orderId, token: token })
+        }).then(function (r) { return r.json(); }).catch(function () { return null; });
+      };
+
       var tick = 0;
       var poll = function () {
         tick++;
@@ -77,6 +87,15 @@
           else msg.textContent = 'Betalning behandlas…';
 
           if (o.status === 'paid' || o.status === 'failed' || o.status === 'cancelled' || o.status === 'refunded') return;
+
+          // If still awaiting action, attempt server-side verification (Klarna) in the background.
+          if (o.status === 'awaiting_action' || o.status === 'pending_payment') {
+            tryVerifyKlarna().then(function () {
+              if (tick < 60) setTimeout(poll, 1500);
+            });
+            return;
+          }
+
           if (tick < 60) setTimeout(poll, 2000);
         }).catch(function () {
           if (tick < 60) setTimeout(poll, 2500);

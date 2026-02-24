@@ -288,6 +288,8 @@ Admin endpoints reuse the existing header-based key:
    - Body: `{ email, customer_country, payment_provider: "stripe", items: { [slug]: qty } }`
    - Returns: `{ order, public_token, stripe: { publishable_key, client_secret } }`
 - `POST /api/payments/klarna/complete` (server-side finalize Klarna authorization → marks order paid)
+- `POST /api/payments/klarna/complete` (creates Klarna order id; does NOT mark paid)
+- `POST /api/payments/klarna/verify` (queries Klarna Order Management; marks order `paid` only after verified)
 - `POST /api/webhooks/stripe` (Stripe webhook; signature verified)
 - `GET /api/fu/pull` (requires `X-FU-Key`)
 - `POST /api/fu/ack` (requires `X-FU-Key`)

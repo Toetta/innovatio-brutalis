@@ -2,7 +2,7 @@ import { badRequest, json, notFound } from "../../_lib/resp.js";
 import { assertDb, exec, one } from "../../_lib/db.js";
 import { nowIso, uuid } from "../../_lib/crypto.js";
 import { createKlarnaPaymentsOrder } from "../../_lib/klarna.js";
-import { queueFuPayloadForOrder } from "../../_lib/fu.js";
+// NOTE: Do not mark paid here; use /api/payments/klarna/verify which queries Klarna Order Management.
 
 export const onRequestPost = async (context) => {
   const { request, env } = context;
@@ -78,11 +78,9 @@ export const onRequestPost = async (context) => {
 
   await exec(
     db,
-    "UPDATE orders SET status = 'paid', paid_at = COALESCE(paid_at, ?), payment_reference = ?, updated_at = ? WHERE id = ?",
-    [ts, klarnaOrderId, ts, order_id]
+    "UPDATE orders SET status = 'awaiting_action', payment_reference = ?, updated_at = ? WHERE id = ?",
+    [klarnaOrderId, ts, order_id]
   );
-
-  await queueFuPayloadForOrder({ env, orderId: order_id, kind: "sale" }).catch(() => null);
 
   return json({ ok: true, klarna_order_id: klarnaOrderId });
 };
