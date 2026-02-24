@@ -272,12 +272,16 @@ html.ib-fixed-ui *[id]{
   max-width: 360px;
 }
 
+  overflow:hidden;
+  border-radius: calc(var(--radius) - 6px);
 .spotify-embed iframe{
   width: 100%;
   height: 152px;
   border: 0;
   border-radius: var(--radius);
   background: rgba(0,0,0,.18);
+  background: transparent;
+  border-radius: calc(var(--radius) - 6px);
 }
 
 /* Persistent Spotify player (stays across internal navigation) */
