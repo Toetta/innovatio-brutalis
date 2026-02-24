@@ -19,7 +19,7 @@ collections:
     create: true
     format: "json"
     extension: "json"
-    slug: "{{slug}}"
+    slug: "{{fields.slug}}"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
       - { label: "Titel (SV)", name: "title_sv", widget: "string" }
@@ -33,7 +33,7 @@ collections:
     create: true
     format: "json"
     extension: "json"
-    slug: "{{slug}}"
+    slug: "{{fields.slug}}"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
       - { label: "Titel (SV)", name: "title_sv", widget: "string" }
@@ -61,7 +61,7 @@ collections:
     create: true
     format: "json"
     extension: "json"
-    slug: "{{slug}}"
+    slug: "{{fields.slug}}"
     preview_path: "services/#/{{slug}}"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
