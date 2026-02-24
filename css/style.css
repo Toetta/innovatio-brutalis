@@ -270,13 +270,16 @@ html.ib-fixed-ui *[id]{
 .spotify-embed{
   width: 100%;
   max-width: 360px;
+  background: rgba(var(--card2-rgb), .98);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 .spotify-embed iframe{
   width: 100%;
   height: 152px;
   border: 0;
-  border-radius: var(--radius);
-  background: rgba(0,0,0,.18);
+  border-radius: 0;
+  background: transparent;
 }
 
 /* Persistent Spotify player (stays across internal navigation) */
@@ -313,7 +316,7 @@ html.ib-fixed-ui *[id]{
 
 #ib-spotify-embed iframe{
   background: transparent;
-  border-radius: calc(var(--radius) - 6px);
+  border-radius: 0;
 }
 
 .ib-spotify-player__row > #ib-spotify-embed{
@@ -330,12 +333,15 @@ html.ib-fixed-ui *[id]{
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-variant-emoji: text;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Segoe UI Symbol";
+  font-size: 16px;
 }
 
 .ib-spotify-player iframe{
   display: block;
   width: 100%;
-  height: 80px;
+  height: var(--ib-spotify-iframe-h, 80px);
   border: 0;
 }
 

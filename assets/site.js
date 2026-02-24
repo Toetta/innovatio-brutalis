@@ -140,6 +140,16 @@
     try {
       const btn = document.getElementById("ib-spotify-next");
       if (!btn) return;
+
+      // Ensure the button icon is a plain text glyph (some platforms render ⏭ as emoji
+      // with a light tile/background which can look like "white corners").
+      try {
+        const raw = String(btn.textContent || "").trim();
+        if (!raw || raw === "⏭" || raw === "⏭️" || raw.includes("⏭")) {
+          btn.textContent = "»";
+        }
+      } catch (_) {}
+
       const { isEN } = computeState();
       const title = isEN ? "Next random track" : "Nästa slumpade låt";
       btn.setAttribute("title", title);
@@ -392,6 +402,7 @@
   if (!shouldNoopApp()) {
     try {
       const PLAYER_HEIGHT_PX = 80;
+      const PLAYLIST_HEIGHT_PX = 152;
       const PLAYER_GAP_PX = 12;
 
       let cachedTrackUrls = null;
@@ -468,12 +479,18 @@
           <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
             <div class="ib-spotify-player__row">
               <div id="ib-spotify-embed" aria-label="Spotify player"></div>
-              <button id="ib-spotify-next" class="btn small secondary ib-spotify-next" type="button">⏭</button>
             </div>
           </div>
         `;
         document.body.appendChild(wrap);
       }
+
+      // TEMP: remove the extra Next button (if it exists from a previous version)
+      // to isolate the "white corners" issue.
+      try {
+        const oldBtn = document.getElementById("ib-spotify-next");
+        if (oldBtn && typeof oldBtn.remove === "function") oldBtn.remove();
+      } catch (_) {}
 
       // Place the player in-flow right under the topbar so content never goes behind it.
       placeSpotifyPlayerUnderTopbar();
@@ -685,6 +702,9 @@
 
       const forceSpotifyEmbedsDark = () => {
         try {
+          // If we're running the Spotify iframe controller, do not mutate iframe.src
+          // as it may break the controller's postMessage channel.
+          if (embedController) return;
           const host = document.getElementById("ib-spotify-embed");
           if (!host) return;
           const iframes = host.querySelectorAll("iframe");
@@ -726,6 +746,11 @@
         if (!embed) return false;
         const { root, embedHost } = getEls();
         if (!root || !embedHost) return false;
+
+        // Playlist embeds use a taller layout than track embeds.
+        const desiredHeight = embed.includes("/embed/playlist/") ? PLAYLIST_HEIGHT_PX : PLAYER_HEIGHT_PX;
+        try { root.style.setProperty("--ib-spotify-iframe-h", `${desiredHeight}px`); } catch (_) {}
+
         const prev = String(embedHost.dataset.src || "").trim();
         if (prev !== embed) {
           embedHost.innerHTML = `<iframe title="Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${embed}"></iframe>`;
@@ -811,20 +836,21 @@
 
         return new Promise((resolve) => {
           try {
+            try {
+              const { root } = getEls();
+              if (root) root.style.setProperty("--ib-spotify-iframe-h", `${PLAYER_HEIGHT_PX}px`);
+            } catch (_) {}
+
             apiObj.createController(
               embedHost,
               {
                 uri: initialUri,
                 width: "100%",
                 height: PLAYER_HEIGHT_PX,
-                theme: "dark",
+                theme: 0,
               },
               (controller) => {
                 embedController = controller;
-
-                // Controller injects its own iframe(s). Force dark theme if possible.
-                try { forceSpotifyEmbedsDark(); } catch (_) {}
-                try { setTimeout(() => { try { forceSpotifyEmbedsDark(); } catch (_) {} }, 120); } catch (_) {}
 
                 try {
                   controller.addListener("playback_update", (e) => {
@@ -934,7 +960,6 @@
             placeSpotifyPlayerUnderTopbar();
             updateTopbarHeightVar();
             updatePlayerHeightVar();
-            try { forceSpotifyEmbedsDark(); } catch (_) {}
 
             // Analytics: impression/content switch (controller mode)
             try {
@@ -978,6 +1003,24 @@
                 return;
               }
             } catch (_) {}
+
+            // If we only have a playlist embed, prefer a random track fallback.
+            // Playlist embeds often use a different (sometimes lighter) UI that can look
+            // like "white corners" next to our extra Next button.
+            try {
+              const isPlaylistEmbed = /open\.spotify\.com\/embed\/playlist\//.test(embed) || /open\.spotify\.com\/playlist\//.test(embed);
+              if (embed && isPlaylistEmbed) {
+                const urls = await ensureTrackUrls();
+                const picked = pickRandom(urls);
+                if (picked) {
+                  showFallbackIframe(picked);
+                  return;
+                }
+                // If we can't load tracks, avoid showing the playlist fallback in the compact player.
+                return;
+              }
+            } catch (_) {}
+
             if (embed) showFallbackIframe(embed);
           })();
 
@@ -1033,13 +1076,27 @@
             // Prefer a random track from the playlist (minimal player), fallback to the playlist embed.
             const isPlaylist = /open\.spotify\.com\/playlist\/[A-Za-z0-9]+/.test(def);
             if (isPlaylist) {
-              const urls = await loadTrackUrls();
-              const picked = pickRandom(urls);
-              if (picked) {
-                // Ensure controller so we can autoplay after user interaction.
-                try { await ensureController(toSpotifyUri(picked)); } catch (_) {}
-                if (show(picked, { autoplay: false })) return;
-              }
+              // Prefer controller for playlists (compact UI). If controller isn't available,
+              // fall back to a random track embed rather than a playlist embed.
+              try {
+                const playlistUri = toSpotifyUri(def) || "spotify:playlist:7h1c4DGKumkFVXH2N8eMFu";
+                const c = await ensureController(playlistUri);
+                if (c) {
+                  if (show(def, { autoplay: false })) return;
+                }
+              } catch (_) {}
+
+              try {
+                const urls = await ensureTrackUrls();
+                const picked = pickRandom(urls);
+                if (picked) {
+                  if (show(picked, { autoplay: false })) return;
+                }
+              } catch (_) {}
+
+              // If we can't load tracks and controller is unavailable, don't show the playlist embed
+              // in the compact persistent player.
+              return;
             }
 
             show(def, { autoplay: false });
