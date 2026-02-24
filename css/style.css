@@ -298,8 +298,10 @@ html.ib-fixed-ui *[id]{
   border: 1px solid rgba(184,115,51,.22);
   border-radius: var(--radius);
   overflow: hidden;
-  background: rgba(var(--card2-rgb), .98);
+  background: var(--card2);
   box-shadow: var(--shadow);
+  clip-path: inset(0 round var(--radius));
+  position: relative;
 }
 
 .ib-spotify-player__row{
@@ -309,9 +311,10 @@ html.ib-fixed-ui *[id]{
 }
 
 #ib-spotify-embed{
-  background: rgba(var(--card2-rgb), .98);
+  background: var(--card2);
   overflow:hidden;
   border-radius: calc(var(--radius) - 6px);
+  clip-path: inset(0 round calc(var(--radius) - 6px));
 }
 
 #ib-spotify-embed iframe{
@@ -325,7 +328,6 @@ html.ib-fixed-ui *[id]{
 }
 
 .ib-spotify-next{
-  flex: 0 0 auto;
   width: 42px;
   height: 42px;
   padding: 0;
@@ -333,9 +335,34 @@ html.ib-fixed-ui *[id]{
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-variant-emoji: text;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Noto Sans", "Segoe UI Symbol";
-  font-size: 16px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid rgba(184,115,51,.35);
+  color: var(--text-main);
+  box-shadow: none;
+}
+
+.ib-spotify-next:hover{
+  background: rgba(184,115,51,.12);
+}
+
+.ib-spotify-next__icon{
+  display:block;
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.ib-spotify-next--floating{
+  position: absolute;
+  top: 50%;
+  right: -54px;
+  transform: translateY(-50%);
+  z-index: 75;
+}
+
+@media (max-width: 520px){
+  .ib-spotify-next--floating{ right: 10px; }
 }
 
 .ib-spotify-player iframe{
@@ -386,6 +413,8 @@ h1{
 }
 .btn:hover{background: rgba(184,115,51,.20); text-decoration:none}
 .btn.secondary{background: transparent; border-color: rgba(184,115,51,.35); color: var(--text-main)}
+
+/* Persistent Spotify player: next button lives outside the iframe so it doesn't affect layout */
 
 /* Content */
 .grid{

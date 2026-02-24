@@ -140,16 +140,6 @@
     try {
       const btn = document.getElementById("ib-spotify-next");
       if (!btn) return;
-
-      // Ensure the button icon is a plain text glyph (some platforms render ⏭ as emoji
-      // with a light tile/background which can look like "white corners").
-      try {
-        const raw = String(btn.textContent || "").trim();
-        if (!raw || raw === "⏭" || raw === "⏭️" || raw.includes("⏭")) {
-          btn.textContent = "»";
-        }
-      } catch (_) {}
-
       const { isEN } = computeState();
       const title = isEN ? "Next random track" : "Nästa slumpade låt";
       btn.setAttribute("title", title);
@@ -405,6 +395,15 @@
       const PLAYLIST_HEIGHT_PX = 152;
       const PLAYER_GAP_PX = 12;
 
+      const NEXT_BUTTON_HTML = `
+        <button id="ib-spotify-next" class="ib-spotify-next ib-spotify-next--floating" type="button" aria-label="Nästa slumpade låt" title="Nästa slumpade låt">
+          <svg class="ib-spotify-next__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+            <path d="M6 6v12l8.5-6L6 6z"></path>
+            <path d="M14.5 6v12l8.5-6-8.5-6z"></path>
+          </svg>
+        </button>
+      `.trim();
+
       let cachedTrackUrls = null;
       let cachedTrackUrlsPromise = null;
 
@@ -481,15 +480,43 @@
               <div id="ib-spotify-embed" aria-label="Spotify player"></div>
             </div>
           </div>
+          ${NEXT_BUTTON_HTML}
         `;
         document.body.appendChild(wrap);
       }
 
-      // TEMP: remove the extra Next button (if it exists from a previous version)
-      // to isolate the "white corners" issue.
+      // Ensure the Next button exists even if the player was created by an older build.
       try {
-        const oldBtn = document.getElementById("ib-spotify-next");
-        if (oldBtn && typeof oldBtn.remove === "function") oldBtn.remove();
+        const host = document.getElementById("ib-spotify-player");
+        const btn = document.getElementById("ib-spotify-next");
+        if (host && !btn) {
+          host.insertAdjacentHTML("beforeend", NEXT_BUTTON_HTML);
+        }
+      } catch (_) {}
+
+      // Normalize button markup (no emoji) even if it already existed.
+      try {
+        const btn = document.getElementById("ib-spotify-next");
+        if (btn) {
+          // If a previous version placed the button inside the inner row,
+          // move it out so it doesn't overlap or shrink the embed.
+          try {
+            const host = document.getElementById("ib-spotify-player");
+            if (host && btn.closest && btn.closest(".ib-spotify-player__row")) {
+              btn.remove();
+              host.insertAdjacentHTML("beforeend", NEXT_BUTTON_HTML);
+            }
+          } catch (_) {}
+
+          btn.type = "button";
+          btn.className = "ib-spotify-next ib-spotify-next--floating";
+          btn.innerHTML = `
+            <svg class="ib-spotify-next__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
+              <path d="M6 6v12l8.5-6L6 6z"></path>
+              <path d="M14.5 6v12l8.5-6-8.5-6z"></path>
+            </svg>
+          `.trim();
+        }
       } catch (_) {}
 
       // Place the player in-flow right under the topbar so content never goes behind it.
