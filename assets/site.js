@@ -275,6 +275,47 @@
     }
   };
 
+  const wireFixedUiAutoMeasure = () => {
+    try {
+      if (window.__IB_FIXED_UI_MEASURE_WIRED) return;
+      window.__IB_FIXED_UI_MEASURE_WIRED = true;
+
+      const schedule = () => {
+        try { updateTopbarHeightVar(); } catch (_) {}
+        try { updatePlayerHeightVar(); } catch (_) {}
+      };
+
+      // Observe size changes (e.g. Spotify embed loads and changes height)
+      if (typeof ResizeObserver === "function") {
+        const ro = new ResizeObserver(() => {
+          try { schedule(); } catch (_) {}
+        });
+        try {
+          const topbar = document.querySelector("#site-topbar .topbar") || document.getElementById("site-topbar");
+          if (topbar) ro.observe(topbar);
+        } catch (_) {}
+        try {
+          const player = document.getElementById("ib-spotify-player");
+          if (player) ro.observe(player);
+        } catch (_) {}
+      }
+
+      // Catch iframe load in fallback mode
+      try {
+        document.addEventListener("load", (e) => {
+          try {
+            const el = e && e.target;
+            if (!el || el.tagName !== "IFRAME") return;
+            if (!el.closest || !el.closest("#ib-spotify-player")) return;
+            schedule();
+            try { requestAnimationFrame(schedule); } catch (_) {}
+            try { setTimeout(schedule, 120); } catch (_) {}
+          } catch (_) {}
+        }, true);
+      } catch (_) {}
+    } catch (_) {}
+  };
+
   refreshTopbar();
   ensureMainRegion();
   try {
@@ -301,6 +342,7 @@
   } catch (_) {}
   updateTopbarHeightVar();
   updatePlayerHeightVar();
+  wireFixedUiAutoMeasure();
 
   // --- Analytics (GA4 via gtag) ---
   const gaEvent = (name, params = {}) => {
@@ -440,12 +482,26 @@
 
       const toEmbedUrl = (url) => {
         const s = String(url || "").trim();
+        const withDarkTheme = (embedUrl) => {
+          try {
+            const u = new URL(String(embedUrl), "https://open.spotify.com");
+            // Spotify embed supports theme=0 (dark)
+            u.searchParams.set("theme", "0");
+            return u.toString();
+          } catch (_) {
+            // Fallback: append if it looks like a normal URL
+            const x = String(embedUrl || "");
+            if (!x) return x;
+            return x.includes("?") ? (x + "&theme=0") : (x + "?theme=0");
+          }
+        };
+
         let m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
-        if (m?.[1]) return `https://open.spotify.com/embed/track/${m[1]}`;
+        if (m?.[1]) return withDarkTheme(`https://open.spotify.com/embed/track/${m[1]}`);
         m = s.match(/open\.spotify\.com\/playlist\/([A-Za-z0-9]+)/);
-        if (m?.[1]) return `https://open.spotify.com/embed/playlist/${m[1]}`;
+        if (m?.[1]) return withDarkTheme(`https://open.spotify.com/embed/playlist/${m[1]}`);
         m = s.match(/open\.spotify\.com\/embed\/(track|playlist)\/([A-Za-z0-9]+)/);
-        if (m?.[1] && m?.[2]) return `https://open.spotify.com/embed/${m[1]}/${m[2]}`;
+        if (m?.[1] && m?.[2]) return withDarkTheme(`https://open.spotify.com/embed/${m[1]}/${m[2]}`);
         return null;
       };
 
@@ -734,6 +790,7 @@
                 uri: initialUri,
                 width: "100%",
                 height: PLAYER_HEIGHT_PX,
+                theme: "dark",
               },
               (controller) => {
                 embedController = controller;

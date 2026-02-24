@@ -306,6 +306,10 @@ html.ib-fixed-ui *[id]{
   gap:10px;
 }
 
+#ib-spotify-embed{
+  background: rgba(var(--card2-rgb), .98);
+}
+
 .ib-spotify-player__row > #ib-spotify-embed{
   flex: 1 1 auto;
   min-width: 0;
