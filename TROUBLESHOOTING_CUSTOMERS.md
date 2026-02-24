@@ -35,6 +35,8 @@ If `DEV_MODE=true`, the endpoint returns `{ ok:true, debug_link:"..." }` so you 
 
 For a fully offline DEV flow, set `EMAIL_PROVIDER=disabled`.
 
+Tip: set `LOGIN_EMAIL_FROM=... <login@your-domain>` so you can filter magic-link emails by recipient/sender in Gmail.
+
 ### Verify link
 
 - The link target is: `/api/auth/verify?token=...`

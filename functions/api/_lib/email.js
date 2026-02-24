@@ -4,7 +4,7 @@ export const sendLoginEmail = async ({ env, to, loginUrl }) => {
   const cfg = getEnv(env);
   const provider = cfg.EMAIL_PROVIDER;
 
-  const from = String(cfg.EMAIL_FROM || "").trim();
+  const from = String(cfg.LOGIN_EMAIL_FROM || cfg.EMAIL_FROM || "").trim();
   if (!from) throw new Error("Missing EMAIL_FROM");
 
   const subject = "Your Innovatio Brutalis login link";

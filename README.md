@@ -216,6 +216,14 @@ Set these in your hosting platform (e.g. Cloudflare Pages/Workers env vars):
    - Example: `Innovatio Brutalis <info@innovatio-brutalis.se>`
    - Must be a sender/domain that is verified with your email provider.
 
+Optional (recommended for inbox filtering / separation):
+
+- `LOGIN_EMAIL_FROM`
+   - Example: `Innovatio Brutalis Login <login@innovatio-brutalis.se>`
+   - If set, magic-link emails use this sender (falls back to `EMAIL_FROM`).
+- `ORDER_EMAIL_FROM`
+   - Reserved for future order emails.
+
 Related:
 
 - `DEV_MODE=true` (enables returning `debug_link` from `/api/auth/request-link`)
@@ -226,6 +234,7 @@ Related:
 1. Create a Resend account and add/verify your domain.
 2. Create an API key and set `RESEND_API_KEY`.
 3. Set `EMAIL_FROM` to a verified sender on that domain.
+   - Recommended: also set `LOGIN_EMAIL_FROM` to `... <login@your-domain>` so you can filter login emails in Gmail.
 4. Ensure `EMAIL_PROVIDER=resend`.
 
 ## DEV testing without email

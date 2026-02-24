@@ -5,13 +5,15 @@ export const onRequestGet = async (context) => {
   const hasD1 = Boolean(context?.env?.DB);
   const cfg = getEnv(context?.env);
   const hasTurnstileSecret = Boolean(String(cfg.TURNSTILE_SECRET || "").trim());
-  const emailFrom = String(cfg.EMAIL_FROM || "").trim();
+  const supportFrom = String(cfg.EMAIL_FROM || "").trim();
+  const loginFrom = String(cfg.LOGIN_EMAIL_FROM || "").trim();
+  const effectiveLoginFrom = (loginFrom || supportFrom).trim();
   const hasResendKey = Boolean(String(cfg.RESEND_API_KEY || "").trim());
 
   const turnstileReady = hasTurnstileSecret;
   const emailReady =
     cfg.EMAIL_PROVIDER === "disabled" ? true :
-    cfg.EMAIL_PROVIDER === "resend" ? (Boolean(emailFrom) && hasResendKey) :
+    cfg.EMAIL_PROVIDER === "resend" ? (Boolean(effectiveLoginFrom) && hasResendKey) :
     false;
 
   const base = {
@@ -25,14 +27,16 @@ export const onRequestGet = async (context) => {
     },
     email: {
       provider: cfg.EMAIL_PROVIDER,
-      fromSet: Boolean(emailFrom),
+      fromSet: Boolean(supportFrom),
+      loginFromSet: Boolean(loginFrom),
       hasResendKey,
       ready: emailReady,
     },
   };
 
   if (cfg.DEV_MODE) {
-    base.email.from = emailFrom;
+    base.email.from = supportFrom;
+    base.email.loginFrom = effectiveLoginFrom;
   }
 
   return json(base);

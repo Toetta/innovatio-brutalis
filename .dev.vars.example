@@ -8,6 +8,8 @@ TURNSTILE_SECRET=
 # Email provider: resend | disabled
 EMAIL_PROVIDER=disabled
 EMAIL_FROM=Innovatio Brutalis <info@innovatio-brutalis.se>
+LOGIN_EMAIL_FROM=Innovatio Brutalis Login <login@innovatio-brutalis.se>
+ORDER_EMAIL_FROM=Innovatio Brutalis Orders <order@innovatio-brutalis.se>
 RESEND_API_KEY=
 
 # Export admin key (required for /api/export/*)
