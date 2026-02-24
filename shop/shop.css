@@ -7,6 +7,7 @@
   --shop-radius:16px;
   --shop-pad:16px;
   color: var(--shop-text);
+  color-scheme: dark;
 }
 
 .shop a{color:inherit;text-decoration:none}
@@ -42,6 +43,13 @@
   padding:10px 12px;
   border-radius:12px;
   min-width:220px;
+  color-scheme: dark;
+}
+
+/* Dropdown list (opened menu) — best-effort across browsers */
+.shop select option{
+  background: rgba(var(--card2-rgb), .98);
+  color: var(--shop-text);
 }
 
 .shop .grid{

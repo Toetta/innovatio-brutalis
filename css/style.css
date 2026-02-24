@@ -31,6 +31,22 @@
   --maxw: 1080px;
   --radius: 18px;
   --shadow: 0 8px 30px rgba(0,0,0,.45);
+  color-scheme: dark;
+}
+
+select{
+  background: rgba(var(--card-rgb), .85);
+  color: var(--text);
+  border: 1px solid rgba(184,115,51,.28);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  color-scheme: dark;
+}
+
+select option{
+  background: rgba(var(--card2-rgb), .98);
+  color: var(--text);
 }
 
 *{box-sizing:border-box}
