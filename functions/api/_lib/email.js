@@ -4,6 +4,9 @@ export const sendLoginEmail = async ({ env, to, loginUrl }) => {
   const cfg = getEnv(env);
   const provider = cfg.EMAIL_PROVIDER;
 
+  const from = String(cfg.EMAIL_FROM || "").trim();
+  if (!from) throw new Error("Missing EMAIL_FROM");
+
   const subject = "Your Innovatio Brutalis login link";
   const text = `Use this link to sign in:\n\n${loginUrl}\n\nThis link expires in 15 minutes.`;
 
@@ -20,7 +23,7 @@ export const sendLoginEmail = async ({ env, to, loginUrl }) => {
         "content-type": "application/json",
       },
       body: JSON.stringify({
-        from: cfg.EMAIL_FROM,
+        from,
         to,
         subject,
         text,

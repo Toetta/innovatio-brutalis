@@ -72,22 +72,31 @@ export const onRequestPost = async (context) => {
   });
   if (!allowed.ok) return json({ ok: true });
 
+  const payload = { ok: true };
+
   try {
     const link = await requestMagicLink({ request, env, email });
     const origin = canonicalOrigin(new URL(request.url).origin);
     const verifyUrl = `${origin}/api/auth/verify?token=${encodeURIComponent(link.token)}${returnPath ? `&return=${encodeURIComponent(returnPath)}` : ""}`;
 
+    // In DEV, always return a debug link so the flow can be tested even if email isn't configured.
+    if (cfg.DEV_MODE) payload.debug_link = verifyUrl;
+
     if (cfg.EMAIL_PROVIDER === "disabled") {
-      const payload = { ok: true };
-      if (cfg.DEV_MODE) payload.debug_link = verifyUrl;
       return json(payload);
     }
 
     await sendLoginEmail({ env, to: email, loginUrl: verifyUrl });
   } catch (err) {
-    console.error("request_link_error", err);
+    console.error("request_link_error", {
+      message: String(err?.message || err),
+      email_provider: cfg.EMAIL_PROVIDER,
+      has_resend_key: Boolean(cfg.RESEND_API_KEY),
+      email_from: cfg.EMAIL_FROM,
+      dev_mode: cfg.DEV_MODE,
+    });
     // Still return generic success.
   }
 
-  return json({ ok: true });
+  return json(payload);
 };

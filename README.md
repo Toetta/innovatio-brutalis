@@ -198,6 +198,43 @@ Concept:
 The workflow file is: `.github/workflows/spotify-daily-track.yml`
 The updater script is: `tools/spotify-daily-playlist.mjs`
 
+---
+
+# Magic-link login (email)
+
+Magic-link login uses the API route `POST /api/auth/request-link` which creates a short-lived token and emails a verification link.
+
+## Required environment variables
+
+Set these in your hosting platform (e.g. Cloudflare Pages/Workers env vars):
+
+- `EMAIL_PROVIDER`
+   - `resend` (default)
+   - `disabled` (no email is sent; useful for DEV)
+- `RESEND_API_KEY` (required when `EMAIL_PROVIDER=resend`)
+- `EMAIL_FROM`
+   - Example: `Innovatio Brutalis <info@innovatio-brutalis.se>`
+   - Must be a sender/domain that is verified with your email provider.
+
+Related:
+
+- `DEV_MODE=true` (enables returning `debug_link` from `/api/auth/request-link`)
+- `TURNSTILE_SECRET` (required in prod; in DEV it can be omitted and Turnstile is bypassed)
+
+## Recommended setup (Resend)
+
+1. Create a Resend account and add/verify your domain.
+2. Create an API key and set `RESEND_API_KEY`.
+3. Set `EMAIL_FROM` to a verified sender on that domain.
+4. Ensure `EMAIL_PROVIDER=resend`.
+
+## DEV testing without email
+
+- Set `EMAIL_PROVIDER=disabled` and `DEV_MODE=true`.
+- Use `/login/` and after submitting, a `DEV: öppna login-länken` link will appear.
+
+Note: Never enable `DEV_MODE=true` in production; it returns a login link in API responses.
+
 ## Public “today’s track” (no OAuth)
 
 Legacy option (static JSON) — keep using this if you don’t want any automation.

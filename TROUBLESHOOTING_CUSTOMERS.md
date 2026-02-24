@@ -31,7 +31,9 @@ If `hasD1` is `false`, your Cloudflare Pages project is missing the D1 binding n
   - create a short-lived magic-link (15 minutes)
   - send email via provider
 
-If `EMAIL_PROVIDER=disabled` and `DEV_MODE=true`, the endpoint returns `{ ok:true, debug_link:"..." }` so you can click the verify URL without email.
+If `DEV_MODE=true`, the endpoint returns `{ ok:true, debug_link:"..." }` so you can click the verify URL without relying on email delivery.
+
+For a fully offline DEV flow, set `EMAIL_PROVIDER=disabled`.
 
 ### Verify link
 
