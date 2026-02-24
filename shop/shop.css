@@ -13,6 +13,13 @@
 
 .shop .hero{padding:8px 0 18px 0}
 
+/* The global .hero becomes a 2-column layout on wide screens.
+   Shop's hero has no side logo column, so keep it single-column and centered. */
+@media (min-width: 900px){
+  .shop .hero{grid-template-columns:1fr;text-align:center}
+  .shop .hero h1{grid-column:1}
+}
+
 .shop .card{
   background:var(--shop-card);
   border:1px solid var(--shop-line);

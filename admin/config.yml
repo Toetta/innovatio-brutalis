@@ -13,7 +13,8 @@ display_url: "https://www.innovatio-brutalis.se"
 
 collections:
   - name: "categories"
-    label: "Kategorier"
+    label: "Categories / Kategorier"
+    label_singular: "Category / Kategori"
     folder: "content/categories"
     create: true
     format: "json"
@@ -24,7 +25,7 @@ collections:
       - { label: "Titel (SV)", name: "title_sv", widget: "string" }
       - { label: "Title (EN)", name: "title_en", widget: "string" }
       - { label: "Titel (legacy)", name: "title", widget: "string", required: false }
-      - { label: "Sortering", name: "order", widget: "number", default: 1 }
+      - { label: "Order / Sortering", name: "order", widget: "number", default: 1 }
 
   - name: "products"
     label: "Products / Produkter"
@@ -39,7 +40,13 @@ collections:
       - { label: "Title (EN)", name: "title_en", widget: "string" }
       - { label: "Titel (legacy)", name: "title", widget: "string", required: false }
       - { label: "Pris (SEK)", name: "price_sek", widget: "number" }
-      - { label: "Kategori (slug)", name: "category", widget: "string" }
+      - label: "Category / Kategori"
+        name: "category"
+        widget: "relation"
+        collection: "categories"
+        search_fields: ["title_sv", "title_en", "slug", "title"]
+        value_field: "slug"
+        display_fields: ["title_sv", "title_en", "slug"]
       - { label: "Publicerad", name: "published", widget: "boolean", default: true }
       - { label: "Excerpt (SV)", name: "excerpt_sv", widget: "string", required: false }
       - { label: "Excerpt (EN)", name: "excerpt_en", widget: "string", required: false }
