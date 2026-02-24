@@ -272,6 +272,12 @@ Klarna guard:
 
 - `KLARNA_MAX_SEK` (default `500`)
 
+Klarna Payments (test mode):
+
+- `KLARNA_TEST_MODE=true` (uses `api.playground.klarna.com`)
+- `KLARNA_USERNAME`
+- `KLARNA_PASSWORD`
+
 Admin endpoints reuse the existing header-based key:
 
 - `EXPORT_ADMIN_KEY` (used as `X-Admin-Key`)
@@ -281,6 +287,7 @@ Admin endpoints reuse the existing header-based key:
 - `POST /api/orders`
    - Body: `{ email, customer_country, payment_provider: "stripe", items: { [slug]: qty } }`
    - Returns: `{ order, public_token, stripe: { publishable_key, client_secret } }`
+- `POST /api/payments/klarna/complete` (server-side finalize Klarna authorization → marks order paid)
 - `POST /api/webhooks/stripe` (Stripe webhook; signature verified)
 - `GET /api/fu/pull` (requires `X-FU-Key`)
 - `POST /api/fu/ack` (requires `X-FU-Key`)

@@ -4,6 +4,7 @@ import { assertDb, all, exec } from "./_lib/db.js";
 import { getEnv } from "./_lib/env.js";
 import { nowIso, uuid, sha256Hex, randomToken } from "./_lib/crypto.js";
 import { createStripePaymentIntent } from "./_lib/stripe.js";
+import { createKlarnaPaymentsSession } from "./_lib/klarna.js";
 
 const to2 = (n) => {
   const x = Number(n);
@@ -136,13 +137,12 @@ export const onRequestPost = async (context) => {
 
   const currency = "SEK";
 
-  // Klarna guard (SE + <= 500 SEK)
+  // Klarna guard (SE + <= KLARNA_MAX_SEK)
   if (payment_provider === "klarna") {
     const { KLARNA_MAX_SEK, KLARNA_USERNAME, KLARNA_PASSWORD } = getEnv(env);
     if (String(customer_country) !== "SE") return badRequest("Klarna only available for SE");
     if (Number(total_inc_vat) > Number(KLARNA_MAX_SEK || 0)) return badRequest(`Klarna max ${Number(KLARNA_MAX_SEK || 0)} SEK`);
     if (!KLARNA_USERNAME || !KLARNA_PASSWORD) return badRequest("Klarna not configured");
-    return badRequest("Klarna session creation not implemented yet");
   }
 
   const id = uuid();
@@ -219,6 +219,55 @@ export const onRequestPost = async (context) => {
         payee_alias: SWISH_PAYEE_ALIAS || null,
         reference: order_number,
         amount_sek: total_inc_vat,
+      },
+    });
+  }
+
+  if (payment_provider === "klarna") {
+    // Build Klarna order lines (minor units, inc VAT)
+    const klarnaLines = cartItems.map((ci) => {
+      const p = products.get(ci.slug);
+      const title = String(p?.title || ci.slug);
+      const priceIncVat = Number(p?.price_sek);
+      const unit_price = toMinor(priceIncVat);
+      const total_amount = unit_price * ci.qty;
+      const total_tax_amount = Math.round((total_amount * (vatRate / (1 + vatRate))) || 0);
+      return {
+        name: title,
+        quantity: ci.qty,
+        unit_price,
+        tax_rate: Math.round(vatRate * 10000),
+        total_amount,
+        total_tax_amount,
+      };
+    });
+
+    const session = await createKlarnaPaymentsSession({
+      env,
+      purchase_country: "SE",
+      purchase_currency: "SEK",
+      locale: "sv-SE",
+      order_amount: total_minor,
+      order_tax_amount: vat_total_minor,
+      order_lines: klarnaLines,
+      merchant_reference1: order_number,
+      merchant_reference2: id,
+    });
+
+    await exec(
+      db,
+      "UPDATE orders SET payment_provider = 'klarna', payment_reference = ?, status = 'awaiting_action', updated_at = ? WHERE id = ?",
+      [String(session?.session_id || ""), nowIso(), id]
+    );
+
+    return json({
+      ok: true,
+      order: { id, order_number, currency, total_inc_vat, status: "awaiting_action", placed_at },
+      public_token,
+      klarna: {
+        mode: "test",
+        session_id: String(session?.session_id || ""),
+        client_token: String(session?.client_token || ""),
       },
     });
   }

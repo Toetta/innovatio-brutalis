@@ -27,6 +27,11 @@
   const countryEl = qs("#country");
   const paymentEl = qs("#paymentElement");
   const swishBox = qs("#swishBox");
+  const klarnaOption = qs("#klarnaOption");
+  const klarnaForm = qs("#klarnaForm");
+  const klarnaBtn = qs("#klarnaBtn");
+  const klarnaErr = qs("#klarnaErr");
+  const klarnaWidget = qs("#klarnaWidget");
 
   const fmt = (amount, currency) => {
     const n = Number(amount);
@@ -67,6 +72,50 @@
     return out;
   };
 
+  const fetchProducts = async () => {
+    const res = await fetch("/content/products.json", { cache: "no-store", headers: { accept: "application/json" } });
+    if (!res.ok) throw new Error("Could not load products");
+    const data = await res.json();
+    const list = Array.isArray(data?.products) ? data.products : [];
+    const map = new Map();
+    for (const p of list) {
+      const slug = String(p?.slug || "").trim();
+      if (!slug) continue;
+      map.set(slug, p);
+    }
+    return map;
+  };
+
+  let cartTotalSEK = 0;
+  const computeCartTotal = async () => {
+    const items = getCartItems();
+    const slugs = Object.keys(items);
+    if (!slugs.length) return 0;
+    const products = await fetchProducts();
+    let total = 0;
+    for (const slug of slugs) {
+      const p = products.get(slug);
+      const unit = Number(p?.price_sek);
+      const qty = Number(items[slug] || 0);
+      if (Number.isFinite(unit) && unit >= 0 && Number.isFinite(qty) && qty > 0) total += unit * qty;
+    }
+    return Math.round(total * 100) / 100;
+  };
+
+  const refreshPaymentOptions = () => {
+    const country = String(countryEl?.value || "SE").trim().toUpperCase();
+    const showKlarna = country === "SE" && cartTotalSEK > 0 && cartTotalSEK <= 500;
+    if (klarnaOption) klarnaOption.hidden = !showKlarna;
+    // If Klarna was selected but now hidden, fall back to stripe.
+    if (!showKlarna) {
+      const checked = qs("input[name='paymethod']:checked");
+      if (checked && checked.value === "klarna") {
+        const stripeRadio = qs("input[name='paymethod'][value='stripe']");
+        if (stripeRadio) stripeRadio.checked = true;
+      }
+    }
+  };
+
   const renderCartSummary = async () => {
     const items = getCartItems();
     const slugs = Object.keys(items);
@@ -76,7 +125,17 @@
       return;
     }
 
-    cartSummary.textContent = `Produkter: ${slugs.length} · Antal: ${Object.values(items).reduce((s, v) => s + v, 0)}`;
+    const qtyTotal = Object.values(items).reduce((s, v) => s + v, 0);
+    cartSummary.textContent = `Produkter: ${slugs.length} · Antal: ${qtyTotal}`;
+
+    try {
+      cartTotalSEK = await computeCartTotal();
+      if (cartTotalSEK > 0) cartSummary.innerHTML = `${esc(cartSummary.textContent)} · <strong>${esc(fmt(cartTotalSEK, 'SEK'))}</strong>`;
+    } catch (_) {
+      cartTotalSEK = 0;
+    }
+
+    refreshPaymentOptions();
   };
 
   let stripe = null;
@@ -148,6 +207,32 @@
         return;
       }
 
+      // Klarna
+      if (data?.klarna && data.klarna.client_token) {
+        if (payForm) payForm.hidden = true;
+        if (swishBox) swishBox.hidden = true;
+        if (klarnaForm) klarnaForm.hidden = false;
+        if (klarnaErr) klarnaErr.textContent = "";
+
+        // Wait for Klarna JS
+        for (let i = 0; i < 60; i++) {
+          if (window.Klarna && window.Klarna.Payments) break;
+          await new Promise((r) => setTimeout(r, 100));
+        }
+        if (!window.Klarna || !window.Klarna.Payments) throw new Error("Klarna could not be loaded");
+
+        window.Klarna.Payments.init({ client_token: data.klarna.client_token });
+        await new Promise((resolve, reject) => {
+          window.Klarna.Payments.load({ container: "#klarnaWidget" }, function (res) {
+            if (res && res.error) reject(new Error(res.error));
+            else resolve();
+          });
+        });
+
+        startForm.hidden = true;
+        return;
+      }
+
       // Stripe
       const clientSecret = data?.stripe?.client_secret || "";
       const publishableKey = data?.stripe?.publishable_key || "";
@@ -194,6 +279,43 @@
       if (payBtn) payBtn.disabled = false;
     }
   });
+
+  klarnaForm?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (klarnaErr) klarnaErr.textContent = "";
+    try {
+      if (klarnaBtn) klarnaBtn.disabled = true;
+      if (!window.Klarna || !window.Klarna.Payments) throw new Error("Klarna not ready");
+
+      const authRes = await new Promise((resolve, reject) => {
+        window.Klarna.Payments.authorize({}
+          , {}
+          , function (res) {
+            if (!res) return reject(new Error("No response"));
+            if (res.approved !== true) return reject(new Error("Not approved"));
+            if (!res.authorization_token) return reject(new Error("Missing authorization token"));
+            resolve(res);
+          }
+        );
+      });
+
+      await apiPost("/api/payments/klarna/complete", {
+        order_id: orderId,
+        authorization_token: authRes.authorization_token,
+      });
+
+      const url = new URL("/shop/thanks.html", window.location.origin);
+      url.searchParams.set("order", orderId);
+      url.searchParams.set("token", publicToken);
+      window.location.href = url.toString();
+    } catch (err) {
+      if (klarnaErr) klarnaErr.textContent = String(err?.message || "Klarna failed");
+    } finally {
+      if (klarnaBtn) klarnaBtn.disabled = false;
+    }
+  });
+
+  countryEl?.addEventListener("change", refreshPaymentOptions);
 
   renderCartSummary().catch(() => {
     if (cartSummary) cartSummary.textContent = "Kunde inte läsa kundvagn.";

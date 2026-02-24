@@ -52,6 +52,10 @@
                 <input type="radio" name="paymethod" value="swish_manual">
                 <span>Swish (manuellt)</span>
               </label>
+              <label id="klarnaOption" style="display:flex; gap:10px; align-items:center" hidden>
+                <input type="radio" name="paymethod" value="klarna">
+                <span>Klarna (test)</span>
+              </label>
             </fieldset>
 
             <button id="startBtn" class="btn primary" type="submit">Gå till betalning</button>
@@ -67,12 +71,19 @@
           </form>
 
           <div id="swishBox" hidden style="margin-top:14px"></div>
+
+          <form id="klarnaForm" hidden style="margin-top:14px">
+            <div id="klarnaWidget"></div>
+            <button id="klarnaBtn" class="btn primary" type="submit" style="margin-top:12px">Betala med Klarna</button>
+            <div id="klarnaErr" style="margin-top:8px; color:var(--text-muted)"></div>
+          </form>
         </section>
       </section>
     </main>
   </div>
 
   <script src="https://js.stripe.com/v3/" async></script>
+  <script src="https://x.klarnacdn.net/kp/lib/v1/api.js" async></script>
   <script src="/shop/checkout.js"></script>
 </body>
 </html>
