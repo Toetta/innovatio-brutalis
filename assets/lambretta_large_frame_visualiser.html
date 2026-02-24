@@ -15,13 +15,19 @@
   <title>Lambretta Large Frame Gearbox Visualiser</title>
   <style>
     :root {
-      --bg: #0b0f14;
-      --panel: rgba(255,255,255,0.06);
-      --panel2: rgba(255,255,255,0.09);
-      --line: rgba(255,255,255,0.10);
-      --text: rgba(255,255,255,0.92);
-      --muted: rgba(255,255,255,0.65);
-      --accent: #4bb3ff;
+      --bg:#191717;
+      --bg2:#141212;
+      --bg-rgb:25,23,23;
+      --card-rgb:33,31,31;
+      --card2-rgb:40,38,38;
+      --line-rgb:34,48,68;
+
+      --panel: rgba(var(--card-rgb), .94);
+      --panel2: rgba(var(--card2-rgb), .98);
+      --line: rgba(var(--line-rgb), .55);
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #60a5fa;
       --rowH: 34px;
       --radius: 16px;
       --shadow: 0 20px 60px rgba(0,0,0,.45);
@@ -30,9 +36,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: radial-gradient(1200px 600px at 30% -10%, rgba(75,179,255,0.18), transparent 55%),
-                  radial-gradient(900px 500px at 90% 10%, rgba(255,90,90,0.12), transparent 55%),
-                  var(--bg);
+      background: linear-gradient(180deg, var(--bg), var(--bg2));
       color: var(--text);
       font: 14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
     }
@@ -59,7 +63,7 @@
     }
 
     .panel {
-      background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.05));
+      background: var(--panel);
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
@@ -80,7 +84,7 @@
     }
 
     .card {
-      background: rgba(0,0,0,0.25);
+      background: rgba(var(--card-rgb), .85);
       border: 1px solid var(--line);
       border-radius: 14px;
       padding: 12px;
@@ -106,7 +110,7 @@
       padding: 10px 12px;
       border-radius: 12px;
       border: 1px solid var(--line);
-      background: rgba(0,0,0,0.35);
+      background: rgba(var(--card-rgb), .85);
       color: var(--text);
       outline: none;
     }

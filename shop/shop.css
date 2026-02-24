@@ -1,9 +1,9 @@
 .shop{
-  --shop-card:#121925;
-  --shop-text:#e7eefc;
-  --shop-muted:#9db0d1;
-  --shop-line:#1e2a3d;
-  --shop-accent:#7aa2ff;
+  --shop-card: rgba(var(--card-rgb), .94);
+  --shop-text: var(--text);
+  --shop-muted: var(--muted);
+  --shop-line: var(--line);
+  --shop-accent: var(--accent);
   --shop-radius:16px;
   --shop-pad:16px;
   color: var(--shop-text);
@@ -36,7 +36,7 @@
 
 .shop input,
 .shop select{
-  background:#0d1420;
+  background: rgba(var(--card-rgb), .85);
   border:1px solid var(--shop-line);
   color:var(--shop-text);
   padding:10px 12px;
@@ -59,7 +59,7 @@
   justify-content:center;
   gap:8px;
   border:1px solid var(--shop-line);
-  background:#0d1420;
+  background: rgba(var(--card-rgb), .85);
   color:var(--shop-text);
   border-radius:12px;
   padding:10px 12px;
@@ -80,7 +80,7 @@
 .shop .qty{
   width:74px;
   min-width:74px;
-  background:#0d1420;
+  background: rgba(var(--card-rgb), .85);
   border:1px solid var(--shop-line);
   color:var(--shop-text);
   padding:10px 12px;
@@ -103,7 +103,7 @@
   aspect-ratio:4/3;
   border-radius:14px;
   border:1px solid var(--shop-line);
-  background:#0d1420;
+  background: rgba(var(--card-rgb), .85);
   display:block;
   object-fit:cover;
 }
