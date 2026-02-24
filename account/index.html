@@ -59,21 +59,42 @@
         <div style="display:grid; grid-template-columns:1fr; gap:16px; margin-top:14px">
           <div>
             <h3>Faktura</h3>
-            <label>Adressrad 1<input id="b_line1" type="text" style="width:100%"></label>
-            <label>Adressrad 2<input id="b_line2" type="text" style="width:100%"></label>
-            <label>Postnr<input id="b_postal_code" type="text" style="width:100%"></label>
-            <label>Stad<input id="b_city" type="text" style="width:100%"></label>
-            <label>Region<input id="b_region" type="text" style="width:100%"></label>
-            <label>Land<input id="b_country" type="text" style="width:100%" value="SE"></label>
+            <div class="addr-grid">
+              <div class="addr-fields">
+                <label>Adressrad 1<input id="b_line1" type="text" style="width:100%"></label>
+                <label>Adressrad 2<input id="b_line2" type="text" style="width:100%"></label>
+                <label>Postnr<input id="b_postal_code" type="text" style="width:100%"></label>
+                <label>Stad<input id="b_city" type="text" style="width:100%"></label>
+                <label>Region<input id="b_region" type="text" style="width:100%"></label>
+                <label>Land<input id="b_country" type="text" style="width:100%" value="SE"></label>
+              </div>
+
+              <aside class="addr-preview" aria-label="Förhandsvisning fakturaadress">
+                <div class="addr-preview-title">Förhandsvisning</div>
+                <div id="b_preview" class="addr-preview-box"></div>
+                <small>Namn, företag, telefon och e-post hämtas från profilen ovan.</small>
+              </aside>
+            </div>
           </div>
+
           <div>
-            <h3>Leverans</h3>
-            <label>Adressrad 1<input id="s_line1" type="text" style="width:100%"></label>
-            <label>Adressrad 2<input id="s_line2" type="text" style="width:100%"></label>
-            <label>Postnr<input id="s_postal_code" type="text" style="width:100%"></label>
-            <label>Stad<input id="s_city" type="text" style="width:100%"></label>
-            <label>Region<input id="s_region" type="text" style="width:100%"></label>
-            <label>Land<input id="s_country" type="text" style="width:100%" value="SE"></label>
+            <h3>Leverans <small>(inkl. namn)</small></h3>
+            <div class="addr-grid">
+              <div class="addr-fields">
+                <label>Adressrad 1<input id="s_line1" type="text" style="width:100%"></label>
+                <label>Adressrad 2<input id="s_line2" type="text" style="width:100%"></label>
+                <label>Postnr<input id="s_postal_code" type="text" style="width:100%"></label>
+                <label>Stad<input id="s_city" type="text" style="width:100%"></label>
+                <label>Region<input id="s_region" type="text" style="width:100%"></label>
+                <label>Land<input id="s_country" type="text" style="width:100%" value="SE"></label>
+              </div>
+
+              <aside class="addr-preview" aria-label="Förhandsvisning leveransadress">
+                <div class="addr-preview-title">Förhandsvisning</div>
+                <div id="s_preview" class="addr-preview-box"></div>
+                <small>Leveransadressen använder ditt namn och dina kontaktuppgifter från profilen ovan.</small>
+              </aside>
+            </div>
           </div>
         </div>
 
@@ -99,6 +120,9 @@
       const statusEl = document.getElementById('status');
       const status2El = document.getElementById('status2');
 
+      const bPreview = document.getElementById('b_preview');
+      const sPreview = document.getElementById('s_preview');
+
       const get = (id) => document.getElementById(id);
 
       const fillAddr = (type, row) => {
@@ -110,6 +134,61 @@
         get(pre+'city').value = row.city || '';
         get(pre+'region').value = row.region || '';
         get(pre+'country').value = row.country || '';
+      };
+
+      const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (ch) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;'
+      }[ch]));
+
+      const getProfileLines = () => {
+        const lines = [];
+        const fullName = String(get('full_name')?.value || '').trim();
+        const company = String(get('company_name')?.value || '').trim();
+        const phone = String(get('phone')?.value || '').trim();
+        const email = String(who?.textContent || '').trim();
+        if (fullName) lines.push(fullName);
+        if (company) lines.push(company);
+        // Keep contact info visible so users understand what “comes with” the address.
+        if (phone) lines.push(`Tel: ${phone}`);
+        if (email) lines.push(`E-post: ${email}`);
+        return lines;
+      };
+
+      const getAddressLines = (prefix) => {
+        const line1 = String(get(prefix+'line1')?.value || '').trim();
+        const line2 = String(get(prefix+'line2')?.value || '').trim();
+        const postal = String(get(prefix+'postal_code')?.value || '').trim();
+        const city = String(get(prefix+'city')?.value || '').trim();
+        const region = String(get(prefix+'region')?.value || '').trim();
+        const country = String(get(prefix+'country')?.value || '').trim();
+
+        const lines = [];
+        if (line1) lines.push(line1);
+        if (line2) lines.push(line2);
+        const pcCity = [postal, city].filter(Boolean).join(' ');
+        if (pcCity) lines.push(pcCity);
+        if (region) lines.push(region);
+        if (country) lines.push(country);
+        return lines;
+      };
+
+      const renderPreviews = () => {
+        try {
+          if (bPreview) {
+            const lines = [...getProfileLines(), ...getAddressLines('b_')].filter(Boolean);
+            bPreview.innerHTML = esc(lines.join('\n'));
+          }
+        } catch (_) {}
+
+        try {
+          if (sPreview) {
+            const lines = [...getProfileLines(), ...getAddressLines('s_')].filter(Boolean);
+            sPreview.innerHTML = esc(lines.join('\n'));
+          }
+        } catch (_) {}
       };
 
       const load = async () => {
@@ -128,6 +207,8 @@
           const shipping = (me.addresses || []).find(a => a.type === 'shipping');
           fillAddr('billing', billing);
           fillAddr('shipping', shipping);
+
+          renderPreviews();
         } catch (err) {
           if (err && err.status === 401) {
             window.location.href = '/login/';
@@ -136,6 +217,20 @@
           setStatus(statusEl, 'Kunde inte ladda konto.', 'error');
         }
       };
+
+      // Live previews update for typing + browser autofill.
+      for (const id of [
+        'full_name','company_name','phone',
+        'b_line1','b_line2','b_postal_code','b_city','b_region','b_country',
+        's_line1','s_line2','s_postal_code','s_city','s_region','s_country'
+      ]) {
+        try {
+          const el = get(id);
+          if (!el) continue;
+          el.addEventListener('input', renderPreviews);
+          el.addEventListener('change', renderPreviews);
+        } catch (_) {}
+      }
 
       document.getElementById('save').addEventListener('click', async () => {
         try {
@@ -149,6 +244,7 @@
             marketing_opt_in: get('marketing_opt_in').checked,
           });
           setStatus(statusEl, 'Sparat.');
+          renderPreviews();
         } catch (_) {
           setStatus(statusEl, 'Kunde inte spara.', 'error');
         }
@@ -176,6 +272,7 @@
             }
           });
           setStatus(status2El, 'Sparat.');
+          renderPreviews();
         } catch (_) {
           setStatus(status2El, 'Kunde inte spara.', 'error');
         }

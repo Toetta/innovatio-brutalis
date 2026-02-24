@@ -332,6 +332,43 @@ h1{
   text-align:left;
 }
 
+/* Account: address preview next to inputs */
+.addr-grid{
+  display:grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+@media (min-width: 900px){
+  .addr-grid{ grid-template-columns: minmax(0, 1fr) minmax(0, 340px); align-items:start; }
+}
+
+.addr-fields{display:grid; gap:12px}
+
+.addr-preview{
+  border:1px solid rgba(184,115,51,.18);
+  border-radius: calc(var(--radius) - 6px);
+  background: rgba(21,21,21,.45);
+  padding: 14px;
+}
+
+.addr-preview-title{
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+.addr-preview-box{
+  white-space: pre-line;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.55;
+  margin-bottom: 10px;
+  color: var(--text-main);
+}
+
 /* Deep links: temporary highlight (added/removed by assets/site-deeplinks.js) */
 .deep-link-highlight{
   outline: 2px solid rgba(214,164,106,.85);
