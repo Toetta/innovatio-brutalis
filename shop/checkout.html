@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Checkout – Innovatio Brutalis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/shop/shop.css" />
+</head>
+<body>
+  <div class="container">
+    <div id="site-topbar"></div>
+    <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
+
+    <main class="shop">
+      <section class="shop-surface" aria-label="Checkout">
+        <a class="back" href="/shop/">← Tillbaka</a>
+        <section class="card">
+          <h1 style="margin-top:0">Kassa</h1>
+          <p style="margin-top:0; color:var(--text-muted)">Kortbetalning via Stripe.</p>
+
+          <div id="cartSummary" class="badge" style="margin-top:10px">Laddar kundvagn…</div>
+
+          <form id="startForm" style="margin-top:14px; display:grid; gap:10px">
+            <label class="badge" style="display:grid; gap:6px">
+              <span>E-post</span>
+              <input id="email" type="email" autocomplete="email" required />
+            </label>
+
+            <label class="badge" style="display:grid; gap:6px">
+              <span>Land</span>
+              <select id="country" required>
+                <option value="SE" selected>Sverige</option>
+                <option value="NO">Norge</option>
+                <option value="DK">Danmark</option>
+                <option value="FI">Finland</option>
+                <option value="DE">Tyskland</option>
+                <option value="NL">Nederländerna</option>
+                <option value="GB">Storbritannien</option>
+                <option value="US">USA</option>
+              </select>
+            </label>
+
+            <fieldset class="badge" style="display:grid; gap:8px; padding:12px">
+              <legend style="padding:0 6px">Betalmetod</legend>
+              <label style="display:flex; gap:10px; align-items:center">
+                <input type="radio" name="paymethod" value="stripe" checked>
+                <span>Kort (Stripe)</span>
+              </label>
+              <label style="display:flex; gap:10px; align-items:center">
+                <input type="radio" name="paymethod" value="swish_manual">
+                <span>Swish (manuellt)</span>
+              </label>
+            </fieldset>
+
+            <button id="startBtn" class="btn primary" type="submit">Gå till betalning</button>
+            <div id="startErr" style="color:var(--text-muted)"></div>
+          </form>
+
+          <hr class="sep" style="margin-top:16px">
+
+          <form id="payForm" hidden style="margin-top:14px">
+            <div id="paymentElement"></div>
+            <button id="payBtn" class="btn primary" type="submit" style="margin-top:12px">Betala</button>
+            <div id="payErr" style="margin-top:8px; color:var(--text-muted)"></div>
+          </form>
+
+          <div id="swishBox" hidden style="margin-top:14px"></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://js.stripe.com/v3/" async></script>
+  <script src="/shop/checkout.js"></script>
+</body>
+</html>

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tack – Innovatio Brutalis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <link rel="stylesheet" href="/shop/shop.css" />
+</head>
+<body>
+  <div class="container">
+    <div id="site-topbar"></div>
+    <script defer src="/assets/site.js"></script>
+    <script defer src="/assets/site-deeplinks.js"></script>
+
+    <main>
+      <section class="card" style="margin-top:16px">
+        <h1 style="margin-top:0">Tack!</h1>
+        <p id="msg" style="margin-top:0; color:var(--text-muted)">Kontrollerar orderstatus…</p>
+        <div id="details" style="margin-top:12px"></div>
+        <div style="margin-top:14px">
+          <a class="btn" href="/shop/">Tillbaka till webshop</a>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      var msg = document.getElementById('msg');
+      var details = document.getElementById('details');
+      var params = new URLSearchParams(window.location.search || '');
+      var orderId = params.get('order') || '';
+      var token = params.get('token') || '';
+
+      var esc = function (s) {
+        return String(s || '').replace(/[&<>"']/g, function (ch) {
+          return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]);
+        });
+      };
+
+      var fmt = function (amount, currency) {
+        var n = Number(amount);
+        if (!isFinite(n)) return '';
+        try { return new Intl.NumberFormat('sv-SE', { style:'currency', currency: currency || 'SEK' }).format(n); }
+        catch (_) { return n + ' ' + (currency || 'SEK'); }
+      };
+
+      if (!orderId || !token) {
+        msg.textContent = 'Saknar order-id eller token.';
+        return;
+      }
+
+      var fetchStatus = function () {
+        return fetch('/api/orders-public/' + encodeURIComponent(orderId) + '?token=' + encodeURIComponent(token), {
+          credentials: 'include',
+          cache: 'no-store',
+          headers: { 'accept': 'application/json' }
+        }).then(function (r) { return r.json(); });
+      };
+
+      var tick = 0;
+      var poll = function () {
+        tick++;
+        fetchStatus().then(function (data) {
+          if (!data || !data.ok || !data.order) throw new Error('Bad response');
+          var o = data.order;
+          details.innerHTML = ''
+            + '<div><strong>Order:</strong> ' + esc(o.order_number) + '</div>'
+            + '<div><strong>Status:</strong> ' + esc(o.status) + '</div>'
+            + '<div><strong>Summa:</strong> ' + esc(fmt(o.total_inc_vat, o.currency)) + '</div>';
+
+          if (o.status === 'paid') msg.textContent = 'Betalning mottagen.';
+          else if (o.status === 'failed') msg.textContent = 'Betalningen misslyckades.';
+          else if (o.status === 'cancelled') msg.textContent = 'Ordern avbröts.';
+          else if (o.status === 'refunded') msg.textContent = 'Ordern är återbetalad.';
+          else msg.textContent = 'Betalning behandlas…';
+
+          if (o.status === 'paid' || o.status === 'failed' || o.status === 'cancelled' || o.status === 'refunded') return;
+          if (tick < 60) setTimeout(poll, 2000);
+        }).catch(function () {
+          if (tick < 60) setTimeout(poll, 2500);
+          else msg.textContent = 'Kunde inte läsa status.';
+        });
+      };
+
+      poll();
+    })();
+  </script>
+</body>
+</html>

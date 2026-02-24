@@ -244,6 +244,51 @@ Related:
 
 Note: Never enable `DEV_MODE=true` in production; it returns a login link in API responses.
 
+---
+
+# Webshop payments (Stripe) + FU sync
+
+This repo contains a minimal checkout flow:
+
+- Frontend: `/shop/checkout.html` → creates an order and pays with Stripe
+- Backend: `/api/orders` (creates order + Stripe PaymentIntent)
+- Webhook-only state transitions: `/api/webhooks/stripe`
+- Bookkeeping sync (pull/ack queue): `/api/fu/pull` + `/api/fu/ack`
+
+## Required environment variables
+
+Set these in your hosting platform (Cloudflare Pages/Workers env vars):
+
+- `STRIPE_SECRET_KEY`
+- `STRIPE_PUBLISHABLE_KEY`
+- `STRIPE_WEBHOOK_SECRET`
+- `FU_SYNC_KEY` (used as `X-FU-Key` header for pull/ack)
+
+Optional (Swish manual display):
+
+- `SWISH_PAYEE_ALIAS` (your Swish number/alias; shown to customers)
+
+Klarna guard:
+
+- `KLARNA_MAX_SEK` (default `500`)
+
+Admin endpoints reuse the existing header-based key:
+
+- `EXPORT_ADMIN_KEY` (used as `X-Admin-Key`)
+
+## Endpoints
+
+- `POST /api/orders`
+   - Body: `{ email, customer_country, payment_provider: "stripe", items: { [slug]: qty } }`
+   - Returns: `{ order, public_token, stripe: { publishable_key, client_secret } }`
+- `POST /api/webhooks/stripe` (Stripe webhook; signature verified)
+- `GET /api/fu/pull` (requires `X-FU-Key`)
+- `POST /api/fu/ack` (requires `X-FU-Key`)
+- `GET /api/admin/orders` (requires `X-Admin-Key`)
+- `POST /api/admin/orders/:id/retry-fu` (requires `X-Admin-Key`)
+- `POST /api/admin/orders/:id/mark-paid` (requires `X-Admin-Key`, for manual Swish verification)
+
+
 ## Public “today’s track” (no OAuth)
 
 Legacy option (static JSON) — keep using this if you don’t want any automation.

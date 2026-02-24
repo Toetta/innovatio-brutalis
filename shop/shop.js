@@ -35,6 +35,7 @@
 			missing_slug: "Missing product slug.",
 			product_missing_prefix: "Could not find product:",
 			back_to_shop: "← Back to shop",
+			checkout: "Checkout",
 		};
 		const sv = {
 			shop_title: "Webshop",
@@ -59,6 +60,7 @@
 			missing_slug: "Saknar produkt-slug.",
 			product_missing_prefix: "Kunde inte hitta produkt:",
 			back_to_shop: "← Tillbaka till webshop",
+			checkout: "Till kassan",
 		};
 		const dict = isEN() ? en : sv;
 		return dict[key] || key;
@@ -644,6 +646,9 @@
 						<div style=\"margin-top:12px; display:flex; justify-content:space-between; gap:12px\">
 							<div class=\"badge\">${esc(t("total"))}</div>
 							<div class=\"price\">${esc(formatPrice(total, "SEK"))}</div>
+						</div>
+						<div style=\"margin-top:12px; display:flex; justify-content:flex-end\">
+							<a class=\"btn primary\" href=\"${withLangQuery("/shop/checkout.html")}\">${esc(t("checkout"))}</a>
 						</div>
 					`;
 				}
