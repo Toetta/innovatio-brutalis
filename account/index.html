@@ -194,6 +194,10 @@
       const load = async () => {
         try {
           const me = await apiGet('/api/me');
+          if (!me || me.ok !== true) {
+            window.location.href = '/login/';
+            return;
+          }
           const c = me.customer;
           who.textContent = c.email;
           get('full_name').value = c.full_name || '';
@@ -210,10 +214,6 @@
 
           renderPreviews();
         } catch (err) {
-          if (err && err.status === 401) {
-            window.location.href = '/login/';
-            return;
-          }
           setStatus(statusEl, 'Kunde inte ladda konto.', 'error');
         }
       };

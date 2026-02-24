@@ -6,7 +6,10 @@ import { nowIso } from "./_lib/crypto.js";
 export const onRequestGet = async (context) => {
   const { request, env } = context;
   const auth = await requireCustomer({ request, env });
-  if (!auth.ok) return unauthorized();
+  if (!auth.ok) {
+    // Returning 200 avoids noisy console errors for expected "logged out" state.
+    return json({ ok: false, customer: null, addresses: [] });
+  }
 
   const db = assertDb(env);
   const addresses = await all(

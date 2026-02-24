@@ -455,10 +455,11 @@
 			if (logoutBtn) logoutBtn.hidden = true;
 			if (loginLink) loginLink.hidden = false;
 			apiRequest("GET", "/api/me")
-				.then(() => {
+				.then((me) => {
 					try {
-						if (logoutBtn) logoutBtn.hidden = false;
-						if (loginLink) loginLink.hidden = true;
+						const loggedIn = !!(me && me.ok);
+						if (logoutBtn) logoutBtn.hidden = !loggedIn;
+						if (loginLink) loginLink.hidden = loggedIn;
 					} catch (_) {}
 				})
 				.catch(() => {
