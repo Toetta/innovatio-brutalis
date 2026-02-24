@@ -63,6 +63,7 @@
 
       const siteKey = document.querySelector('meta[name="ib-turnstile-sitekey"]')?.getAttribute('content')?.trim();
       let turnstileToken = '';
+      let turnstileWidgetId = null;
 
       const isEmail = (s) => {
         const t = String(s || '').trim().toLowerCase();
@@ -78,13 +79,14 @@
       const mountTurnstile = () => {
         if (!siteKey) {
           setStatus(statusEl, 'Turnstile site key saknas (ib-turnstile-sitekey).', 'warn');
-          return;
+          return false;
         }
         if (!turnstileMount) return;
         if (!window.turnstile) {
           setStatus(statusEl, 'Laddar verifiering…', 'info');
-          return;
+          return false;
         }
+        if (turnstileWidgetId !== null) return true;
         window.turnstile.render(turnstileMount, {
           sitekey: siteKey,
           callback: (t) => {
@@ -101,6 +103,10 @@
             updateBtnState();
           },
         });
+        // render() returns a widget id, but not all versions consistently do.
+        // We treat "attempted render" as mounted to avoid repeated renders.
+        try { turnstileWidgetId = 0; } catch (_) {}
+        return true;
       };
 
       const ensureTurnstileMounted = () => {
@@ -112,14 +118,13 @@
             updateBtnState();
             return;
           }
-          if (window.turnstile && turnstileMount && !turnstileMount.dataset.mounted) {
+          if (window.turnstile && turnstileMount && turnstileWidgetId === null) {
             try {
-              turnstileMount.dataset.mounted = '1';
-              mountTurnstile();
-              return;
+              const ok = mountTurnstile();
+              if (ok) return;
             } catch (_) {
               // If render failed, allow retry.
-              delete turnstileMount.dataset.mounted;
+              turnstileWidgetId = null;
             }
           }
 
