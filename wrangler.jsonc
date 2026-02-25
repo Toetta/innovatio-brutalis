@@ -1,0 +1,13 @@
+{
+  // Minimal Wrangler config for D1 migrations (Pages Functions uses env.DB binding)
+  "name": "innovatio-brutalis",
+  "compatibility_date": "2026-02-25",
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "innovatio_brutalis_db",
+      "database_id": "81199dfe-9b3e-40e2-8d26-84928cc72bd6",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
