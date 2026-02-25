@@ -72,17 +72,48 @@
     return out;
   };
 
-  const fetchProducts = async () => {
-    const res = await fetch("/content/products.json", { cache: "no-store", headers: { accept: "application/json" } });
-    if (!res.ok) throw new Error("Could not load products");
-    const data = await res.json();
-    const list = Array.isArray(data?.products) ? data.products : [];
+  const fetchProducts = async (slugs = []) => {
+    const wanted = Array.isArray(slugs) ? slugs.map((s) => String(s || "").trim()).filter(Boolean) : [];
     const map = new Map();
-    for (const p of list) {
-      const slug = String(p?.slug || "").trim();
-      if (!slug) continue;
-      map.set(slug, p);
+
+    // Fast path: aggregated JSON (may be stale in some deploy setups)
+    try {
+      const res = await fetch("/content/products.json", { cache: "no-store", headers: { accept: "application/json" } });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        const list = Array.isArray(data?.products) ? data.products : [];
+        for (const p of list) {
+          const slug = String(p?.slug || "").trim();
+          if (!slug) continue;
+          if (!map.has(slug)) map.set(slug, p);
+        }
+      }
+    } catch (_) {
+      // ignore
     }
+
+    // Fallback: load missing slugs directly
+    const missing = wanted.length ? wanted.filter((s) => !map.has(s)) : [];
+    if (missing.length) {
+      const docs = await Promise.all(
+        missing.map(async (slug) => {
+          try {
+            const res = await fetch(`/content/products/${encodeURIComponent(slug)}.json`, { cache: "no-store", headers: { accept: "application/json" } });
+            if (!res.ok) return null;
+            return await res.json();
+          } catch (_) {
+            return null;
+          }
+        })
+      );
+      for (const p of docs) {
+        const slug = String(p?.slug || "").trim();
+        if (!slug) continue;
+        if (!map.has(slug)) map.set(slug, p);
+      }
+    }
+
+    if (!map.size) throw new Error("Could not load products");
     return map;
   };
 
@@ -91,10 +122,11 @@
     const items = getCartItems();
     const slugs = Object.keys(items);
     if (!slugs.length) return 0;
-    const products = await fetchProducts();
+    const products = await fetchProducts(slugs);
     let total = 0;
     for (const slug of slugs) {
       const p = products.get(slug);
+      if (!p || p.published === false) continue;
       const unit = Number(p?.price_sek);
       const qty = Number(items[slug] || 0);
       if (Number.isFinite(unit) && unit >= 0 && Number.isFinite(qty) && qty > 0) total += unit * qty;

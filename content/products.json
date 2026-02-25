@@ -1,11 +1,26 @@
 {
   "products": [
     {
-      "slug": "testprodukt",
-      "title": "Testprodukt",
-      "price_sek": 199,
-      "category": "nyheter",
-      "published": true
+      "published": true,
+      "slug": "beeline-holder-1-basic",
+      "title_sv": "Beeline gen1 hållare basmodell",
+      "title_en": "Beeline gen1 holder basic",
+      "title": "Beeline holder",
+      "price_sek": 247,
+      "category": "lambretta"
+    },
+    {
+      "price_sek": 458,
+      "title_sv": "Insug till M210 Quattrini",
+      "slug": "quattrini-inlet",
+      "published": true,
+      "title_en": "Inlet manifold for M210 Quattrini",
+      "title": "M210 Quattrini Inlet ",
+      "images": [
+        "/assets/uploads/inlet1.jpg"
+      ],
+      "image": "",
+      "category": "lambretta"
     }
   ]
 }

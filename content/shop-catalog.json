@@ -1,11 +1,11 @@
 {
   "categorySlugs": [
-    "general-engine-tools",
     "lambretta",
     "nyheter",
-    "verkstad"
+    "service-area"
   ],
   "productSlugs": [
-    "testprodukt"
+    "beeline-holder-1-basic",
+    "quattrini-inlet"
   ]
 }

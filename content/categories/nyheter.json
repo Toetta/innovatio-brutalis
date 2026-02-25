@@ -1,7 +1,7 @@
 {
-  "slug": "Vespa",
-  "title": "Vespa",
-  "order": 1,
-  "title_sv": "Vespadelar och verktyg",
-  "title_en": "Vespa Parts and Tools"
+  "order": 2,
+  "title": "Nyheter",
+  "slug": "nyheter",
+  "title_sv": "Nyheter",
+  "title_en": "News"
 }
