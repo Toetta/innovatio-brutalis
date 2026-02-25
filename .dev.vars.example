@@ -14,3 +14,20 @@ RESEND_API_KEY=
 
 # Export admin key (required for /api/export/*)
 EXPORT_ADMIN_KEY=
+
+# Payments (Stripe)
+STRIPE_SECRET_KEY=
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_WEBHOOK_SECRET=
+
+# FU sync key (required for /api/fu/*)
+FU_SYNC_KEY=
+
+# Optional payment options
+SWISH_PAYEE_ALIAS=
+
+# Optional Klarna test mode
+KLARNA_MAX_SEK=500
+KLARNA_TEST_MODE=true
+KLARNA_USERNAME=
+KLARNA_PASSWORD=

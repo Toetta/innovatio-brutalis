@@ -10,6 +10,10 @@ export const onRequestGet = async (context) => {
   const effectiveLoginFrom = (loginFrom || supportFrom).trim();
   const hasResendKey = Boolean(String(cfg.RESEND_API_KEY || "").trim());
 
+  const hasStripeSecretKey = Boolean(String(cfg.STRIPE_SECRET_KEY || "").trim());
+  const hasStripePublishableKey = Boolean(String(cfg.STRIPE_PUBLISHABLE_KEY || "").trim());
+  const hasStripeWebhookSecret = Boolean(String(cfg.STRIPE_WEBHOOK_SECRET || "").trim());
+
   const turnstileReady = hasTurnstileSecret;
   const emailReady =
     cfg.EMAIL_PROVIDER === "disabled" ? true :
@@ -31,6 +35,13 @@ export const onRequestGet = async (context) => {
       loginFromSet: Boolean(loginFrom),
       hasResendKey,
       ready: emailReady,
+    },
+    stripe: {
+      hasSecretKey: hasStripeSecretKey,
+      hasPublishableKey: hasStripePublishableKey,
+      hasWebhookSecret: hasStripeWebhookSecret,
+      checkoutReady: hasStripeSecretKey && hasStripePublishableKey,
+      webhookReady: hasStripeWebhookSecret,
     },
   };
 
