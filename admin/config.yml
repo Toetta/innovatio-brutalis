@@ -28,7 +28,10 @@ collections:
       - { label: "Slug", name: "slug", widget: "string" }
       - { label: "Titel (SV)", name: "title_sv", widget: "string" }
       - { label: "Title (EN)", name: "title_en", widget: "string" }
-      - { label: "Titel (legacy)", name: "title", widget: "string", required: false }
+      - label: "Titel (legacy)"
+        name: "title"
+        widget: "string"
+        required: false
       - { label: "Order / Sortering", name: "order", widget: "number", default: 1 }
 
   - name: "products"
@@ -42,7 +45,10 @@ collections:
       - { label: "Slug", name: "slug", widget: "string" }
       - { label: "Titel (SV)", name: "title_sv", widget: "string" }
       - { label: "Title (EN)", name: "title_en", widget: "string" }
-      - { label: "Titel (legacy)", name: "title", widget: "string", required: false }
+      - label: "Titel (legacy)"
+        name: "title"
+        widget: "string"
+        required: false
       - { label: "Pris (SEK)", name: "price_sek", widget: "number" }
       - label: "Category / Kategori"
         name: "category"
@@ -93,6 +99,9 @@ collections:
           - { label: "Title (EN)", name: "title_en", widget: "string", required: false }
           - { label: "Intro (SV)", name: "intro_sv", widget: "text", required: false }
           - { label: "Intro (EN)", name: "intro_en", widget: "text", required: false }
-          - { label: "Titel (legacy)", name: "title", widget: "string", required: false }
+          - label: "Titel (legacy)"
+            name: "title"
+            widget: "string"
+            required: false
           - { label: "Intro (legacy)", name: "intro", widget: "text", required: false }
           - { label: "Aktiverad", name: "enabled", widget: "boolean", default: true }
