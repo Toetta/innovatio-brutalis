@@ -36,6 +36,8 @@
 			product_missing_prefix: "Could not find product:",
 			back_to_shop: "← Back to shop",
 			checkout: "Checkout",
+			vat_included_short: "incl. VAT",
+			vat_included_se: "incl. 25% VAT (SE)",
 		};
 		const sv = {
 			shop_title: "Webshop",
@@ -61,6 +63,8 @@
 			product_missing_prefix: "Kunde inte hitta produkt:",
 			back_to_shop: "← Tillbaka till webshop",
 			checkout: "Till kassan",
+			vat_included_short: "inkl. moms",
+			vat_included_se: "inkl. 25% moms (SE)",
 		};
 		const dict = isEN() ? en : sv;
 		return dict[key] || key;
@@ -258,6 +262,11 @@
 		} catch (_) {
 			return `${n} ${currency}`;
 		}
+	};
+
+	const vatLabel = (countryCode) => {
+		const c = String(countryCode || "SE").trim().toUpperCase();
+		return c === "SE" ? t("vat_included_se") : t("vat_included_short");
 	};
 
 	const fetchJSON = async (url) => {
@@ -570,6 +579,7 @@
 				const excerpt = isEN() ? (p.excerptEN || p.excerptSV || "") : (p.excerptSV || p.excerptEN || "");
 				const img = (p.images && p.images[0]) ? String(p.images[0]) : "";
 				const price = formatPrice(p.price, p.currency);
+				const priceNote = vatLabel("SE");
 				const href = withLangQuery(`/shop/product.html?slug=${encodeURIComponent(p.slug)}`);
 				const catLabel = categoryTitleBySlug.get(String(p.categorySlug || "")) || String(p.categorySlug || "");
 				return `
@@ -582,7 +592,10 @@
 							</div>
 							<div class=\"meta\">
 								<div class=\"badge\">${esc(catLabel || "")}</div>
-								<div class=\"price\">${esc(price)}</div>
+								<div style=\"text-align:right\">
+									<div class=\"price\">${esc(price)}</div>
+									<div class=\"badge\">${esc(priceNote)}</div>
+								</div>
 							</div>
 						</a>
 						<button class=\"btn primary\" type=\"button\" data-add-to-cart=\"${esc(p.slug)}\">${esc(t("add_to_cart"))}</button>
@@ -644,7 +657,7 @@
 						</div>
 						<div style=\"margin-top:12px\">${rows}</div>
 						<div style=\"margin-top:12px; display:flex; justify-content:space-between; gap:12px\">
-							<div class=\"badge\">${esc(t("total"))}</div>
+							<div class=\"badge\">${esc(t("total"))} · ${esc(vatLabel("SE"))}</div>
 							<div class=\"price\">${esc(formatPrice(total, "SEK"))}</div>
 						</div>
 						<div style=\"margin-top:12px; display:flex; justify-content:flex-end\">
@@ -750,10 +763,12 @@
 
 		const img = (product.images && product.images[0]) ? String(product.images[0]) : "";
 		const price = formatPrice(product.price, product.currency);
+		const priceNote = vatLabel("SE");
 
 		view.innerHTML = `
 			<h1 style=\"margin-bottom:10px\">${esc(title)}</h1>
-			<div class=\"price\" style=\"font-size:18px; margin-bottom:14px\">${esc(price)}</div>
+			<div class=\"price\" style=\"font-size:18px; margin-bottom:4px\">${esc(price)}</div>
+			<div class=\"badge\" style=\"margin-bottom:14px\">${esc(priceNote)}</div>
 			<div style=\"margin-bottom:14px\">
 				<button class=\"btn primary\" type=\"button\" data-add-to-cart-product=\"${esc(product.slug)}\">${esc(t("add_to_cart"))}</button>
 			</div>
