@@ -29,6 +29,14 @@ export const buildFuVoucherPayload = ({ order, kind }) => {
   const subtotalExVat = toAmount2(order.subtotal_ex_vat);
   const clearing = clearingAccountForProvider(order.payment_provider);
 
+  let tax = null;
+  try {
+    const meta = order.metadata ? JSON.parse(String(order.metadata)) : null;
+    tax = meta && meta.tax && typeof meta.tax === "object" ? meta.tax : null;
+  } catch (_) {
+    tax = null;
+  }
+
   const sign = kind === "refund" ? -1 : 1;
   const text = kind === "refund" ? `Refund ${order.order_number}` : `Order ${order.order_number}`;
 
@@ -68,6 +76,10 @@ export const buildFuVoucherPayload = ({ order, kind }) => {
       payment_reference: order.payment_reference || null,
       email: order.email || null,
       customer_country: order.customer_country || null,
+      tax_mode: tax?.mode || null,
+      vat_rate: tax?.vat_rate != null ? tax.vat_rate : null,
+      vat_number: tax?.vat_number || null,
+      vies_status: tax?.vies?.status || null,
     },
   };
 };

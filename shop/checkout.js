@@ -37,6 +37,8 @@
   const payErr = qs("#payErr");
   const emailEl = qs("#email");
   const countryEl = qs("#country");
+  const vatIdWrap = qs("#vatIdWrap");
+  const vatIdEl = qs("#vatId");
   const paymentEl = qs("#paymentElement");
   const swishBox = qs("#swishBox");
   const klarnaOption = qs("#klarnaOption");
@@ -117,23 +119,83 @@
     return Math.round(x * 100) / 100;
   };
 
-  const calcVatFromInc = ({ total_inc_vat, customer_country }) => {
-    const inc = Number(total_inc_vat);
-    if (!Number.isFinite(inc)) return { subtotal_ex_vat: 0, vat_total: 0, vat_rate: 0 };
-    const c = String(customer_country || "SE").trim().toUpperCase();
-    const vat_rate = c === "SE" ? 0.25 : 0.0;
-    const ex = vat_rate > 0 ? (inc / (1 + vat_rate)) : inc;
-    const vat = inc - ex;
-    return { subtotal_ex_vat: to2(ex), vat_total: to2(vat), vat_rate };
+  const EU_COUNTRIES = new Set([
+    "AT","BE","BG","HR","CY","CZ","DK","EE","FI","FR","DE","GR","HU","IE","IT","LV","LT","LU","MT","NL","PL","PT","RO","SK","SI","ES","SE",
+  ]);
+
+  const STANDARD_VAT_RATES = Object.freeze({
+    AT: 0.2,
+    BE: 0.21,
+    BG: 0.2,
+    HR: 0.25,
+    CY: 0.19,
+    CZ: 0.21,
+    DK: 0.25,
+    EE: 0.22,
+    FI: 0.24,
+    FR: 0.2,
+    DE: 0.19,
+    GR: 0.24,
+    HU: 0.27,
+    IE: 0.23,
+    IT: 0.22,
+    LV: 0.21,
+    LT: 0.21,
+    LU: 0.17,
+    MT: 0.18,
+    NL: 0.21,
+    PL: 0.23,
+    PT: 0.23,
+    RO: 0.19,
+    SK: 0.2,
+    SI: 0.22,
+    ES: 0.21,
+    SE: 0.25,
+  });
+
+  const isEu = (cc) => {
+    const c = String(cc || "").trim().toUpperCase();
+    return EU_COUNTRIES.has(c);
   };
 
-  const renderTaxSummaryText = ({ currency = "SEK", customer_country = "SE", subtotal_ex_vat, vat_total, total_inc_vat, vat_rate }) => {
+  const normalizeVatIdForSend = (raw) => {
+    const s = String(raw || "").trim().toUpperCase();
+    if (!s) return "";
+    return s.replace(/[^A-Z0-9]/g, "");
+  };
+
+  const getPreviewVatRate = ({ customer_country }) => {
+    const c = String(customer_country || "SE").trim().toUpperCase();
+    if (c === "SE") return 0.25;
+    if (!isEu(c)) return 0.0;
+    const r = STANDARD_VAT_RATES[c];
+    return Number.isFinite(Number(r)) ? Number(r) : 0.0;
+  };
+
+  const calcVatFromInc = ({ total_inc_vat, customer_country, vat_rate }) => {
+    const inc = Number(total_inc_vat);
+    if (!Number.isFinite(inc)) return { subtotal_ex_vat: 0, vat_total: 0, vat_rate: 0 };
+    const rate = Number.isFinite(Number(vat_rate)) ? Number(vat_rate) : getPreviewVatRate({ customer_country });
+    const ex = rate > 0 ? (inc / (1 + rate)) : inc;
+    const vat = inc - ex;
+    return { subtotal_ex_vat: to2(ex), vat_total: to2(vat), vat_rate: rate };
+  };
+
+  const renderTaxSummaryText = ({ currency = "SEK", customer_country = "SE", subtotal_ex_vat, vat_total, total_inc_vat, vat_rate, tax_mode, vies_status }) => {
     const c = String(customer_country || "SE").trim().toUpperCase();
     const rate = Number(vat_rate);
     const pct = Number.isFinite(rate) ? Math.round(rate * 100) : 0;
     const lines = [];
     lines.push(`Summa exkl. moms: ${fmt(subtotal_ex_vat, currency)}`);
-    lines.push(`Moms (${pct}%${c ? `, ${c}` : ""}): ${fmt(vat_total, currency)}`);
+    const mode = String(tax_mode || "");
+    if (mode === "reverse_charge") {
+      const suffix = vies_status ? `, VIES: ${String(vies_status)}` : "";
+      lines.push(`Moms (${pct}%${c ? `, ${c}` : ""}, omvänd skattskyldighet${suffix}): ${fmt(vat_total, currency)}`);
+    } else if (mode === "export") {
+      lines.push(`Moms (${pct}%${c ? `, ${c}` : ""}, export): ${fmt(vat_total, currency)}`);
+    } else {
+      lines.push(`Moms (${pct}%${c ? `, ${c}` : ""}): ${fmt(vat_total, currency)}`);
+    }
     lines.push(`Summa inkl. moms: ${fmt(total_inc_vat, currency)}`);
     return lines.join("\n");
   };
@@ -141,19 +203,36 @@
   const updatePreviewTaxSummary = () => {
     if (!taxSummary) return;
     const country = String(countryEl?.value || "SE").trim().toUpperCase();
+    const vatId = normalizeVatIdForSend(vatIdEl?.value || "");
     if (!cartTotalSEK || cartTotalSEK <= 0) {
       taxSummary.textContent = country === "SE" ? "Priser visas inkl. moms." : "";
       return;
     }
-    const calc = calcVatFromInc({ total_inc_vat: cartTotalSEK, customer_country: country });
-    taxSummary.textContent = renderTaxSummaryText({
+    const HOME_VAT_RATE = 0.25;
+    const isExport = country !== "SE" && !isEu(country);
+    const totalForCustomer = isExport ? (cartTotalSEK / (1 + HOME_VAT_RATE)) : cartTotalSEK;
+    const previewRate = isExport ? 0.0 : getPreviewVatRate({ customer_country: country });
+
+    const calc = calcVatFromInc({ total_inc_vat: totalForCustomer, customer_country: country, vat_rate: previewRate });
+    let text = renderTaxSummaryText({
       currency: "SEK",
       customer_country: country,
       subtotal_ex_vat: calc.subtotal_ex_vat,
       vat_total: calc.vat_total,
-      total_inc_vat: cartTotalSEK,
+      total_inc_vat: totalForCustomer,
       vat_rate: calc.vat_rate,
+      tax_mode: isExport ? "export" : null,
     });
+
+    if (vatId && country !== "SE" && isEu(country)) {
+      text += "\n\nOBS: Om VAT-ID är giltigt kan moms bli 0% (omvänd skattskyldighet).";
+    }
+
+    if (isExport) {
+      text += "\n\nOBS: Export utanför EU (0% moms).";
+    }
+
+    taxSummary.textContent = text;
   };
 
   const apiPost = async (path, body) => {
@@ -196,6 +275,10 @@
 
   countryEl?.addEventListener("change", () => {
     countryTouched = true;
+  });
+
+  vatIdEl?.addEventListener("input", () => {
+    updatePreviewTaxSummary();
   });
 
   const getCartItems = () => {
@@ -277,6 +360,16 @@
     const country = String(countryEl?.value || "SE").trim().toUpperCase();
     const showKlarna = country === "SE" && cartTotalSEK > 0 && cartTotalSEK <= 500;
     if (klarnaOption) klarnaOption.hidden = !showKlarna;
+
+    // VAT-ID is only meaningful for EU B2B outside Sweden.
+    const showVatId = country !== "SE" && isEu(country);
+    if (vatIdWrap) vatIdWrap.hidden = !showVatId;
+    if (!showVatId) {
+      try {
+        if (vatIdEl) vatIdEl.value = "";
+      } catch (_) {}
+    }
+
     // If Klarna was selected but now hidden, fall back to stripe.
     if (!showKlarna) {
       const checked = qs("input[name='paymethod']:checked");
@@ -339,6 +432,7 @@
     const email = String(emailEl?.value || "").trim();
     const customer_country = String(countryEl?.value || "SE").trim().toUpperCase();
     const payment_provider = String((qs("input[name='paymethod']:checked") || {}).value || "stripe");
+    const vat_number = normalizeVatIdForSend(vatIdEl?.value || "");
     if (!email || !email.includes("@")) {
       if (startErr) startErr.textContent = "Fyll i e-post.";
       return;
@@ -352,6 +446,7 @@
       const data = await apiPost("/api/orders", {
         email,
         customer_country,
+        vat_number: vat_number || undefined,
         payment_provider,
         items,
       });
@@ -363,10 +458,12 @@
         const o = data?.order || {};
         const currency = String(o?.currency || "SEK");
         const customer_country = String(o?.customer_country || customer_country || "SE");
+        const tax_mode = (o?.tax_mode ?? null);
         const subtotal_ex_vat = (o?.subtotal_ex_vat ?? null);
         const vat_total = (o?.vat_total ?? null);
         const total_inc_vat = (o?.total_inc_vat ?? null);
         const vat_rate = (o?.vat_rate ?? null);
+        const vies_status = (o?.vies_status ?? data?.order?.vies_status ?? null);
 
         const fallback = calcVatFromInc({ total_inc_vat, customer_country });
         const text = renderTaxSummaryText({
@@ -376,6 +473,8 @@
           vat_total: Number.isFinite(Number(vat_total)) ? Number(vat_total) : fallback.vat_total,
           total_inc_vat: Number.isFinite(Number(total_inc_vat)) ? Number(total_inc_vat) : 0,
           vat_rate: Number.isFinite(Number(vat_rate)) ? Number(vat_rate) : fallback.vat_rate,
+          tax_mode,
+          vies_status,
         });
         if (taxSummary) taxSummary.textContent = text;
         if (payTaxSummary) payTaxSummary.textContent = text;

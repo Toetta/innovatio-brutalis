@@ -5,6 +5,7 @@ import { getEnv } from "./_lib/env.js";
 import { nowIso, uuid, sha256Hex, randomToken } from "./_lib/crypto.js";
 import { createStripePaymentIntent } from "./_lib/stripe.js";
 import { createKlarnaPaymentsSession } from "./_lib/klarna.js";
+import { decideVatForOrder } from "./_lib/vat.js";
 
 const getOrdersSchemaInfo = async (db) => {
   const rows = await all(db.prepare("PRAGMA table_info(orders)").all());
@@ -129,6 +130,9 @@ export const onRequestPost = async (context) => {
   const customer_country = String(body?.customer_country || "SE").trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(customer_country)) return badRequest("Invalid customer_country");
 
+  const vat_number = body?.vat_number != null ? String(body.vat_number || "").trim() : "";
+  if (vat_number && vat_number.length > 32) return badRequest("Invalid vat_number");
+
   const payment_provider = String(body?.payment_provider || "stripe").trim().toLowerCase();
   if (!payment_provider || !["stripe", "swish_manual", "klarna"].includes(payment_provider)) {
     return badRequest("Unsupported payment_provider");
@@ -152,7 +156,20 @@ export const onRequestPost = async (context) => {
     return badRequest("Could not load catalog");
   }
 
-  const vatRate = customer_country === "SE" ? 0.25 : 0.0;
+  const vatDecision = await decideVatForOrder({
+    homeCountry: "SE",
+    homeVatRate: 0.25,
+    customerCountry: customer_country,
+    vatNumberRaw: vat_number,
+    validateVatId: true,
+  }).catch(() => ({ ok: true, vat_rate: customer_country === "SE" ? 0.25 : 0.0, tax_mode: customer_country === "SE" ? "domestic" : "export", vat_number: null, vies: null }));
+
+  const vatRate = Number(vatDecision?.vat_rate) || 0;
+  const tax_mode = String(vatDecision?.tax_mode || "");
+
+  const HOME_VAT_RATE = 0.25;
+  const zeroVatRemovesHomeVat = tax_mode === "reverse_charge" || tax_mode === "export";
+
   const lines = [];
   for (const ci of cartItems) {
     const p = products.get(ci.slug);
@@ -162,7 +179,13 @@ export const onRequestPost = async (context) => {
     const priceIncVat = Number(p?.price_sek);
     if (!Number.isFinite(priceIncVat) || priceIncVat < 0) return badRequest(`Invalid price: ${ci.slug}`);
 
-    const unitEx = vatRate > 0 ? (priceIncVat / (1 + vatRate)) : priceIncVat;
+    // Pricing model:
+    // - Stored prices are assumed to be VAT-inclusive for the home market (SE).
+    // - For export / reverse charge, we remove home VAT so the customer pays net.
+    const storedNet = priceIncVat / (1 + HOME_VAT_RATE);
+    const grossForCustomer = (vatRate === 0 && zeroVatRemovesHomeVat) ? storedNet : priceIncVat;
+
+    const unitEx = vatRate > 0 ? (grossForCustomer / (1 + vatRate)) : grossForCustomer;
     const lineEx = unitEx * ci.qty;
     const lineVat = lineEx * vatRate;
     const lineInc = lineEx + lineVat;
@@ -211,7 +234,20 @@ export const onRequestPost = async (context) => {
   const public_token = await randomToken(24);
   const public_token_hash = await sha256Hex(public_token);
 
-  const metadata = body?.metadata && typeof body.metadata === "object" ? JSON.stringify(body.metadata) : null;
+  let metadataObj = null;
+  if (body?.metadata && typeof body.metadata === "object" && !Array.isArray(body.metadata)) {
+    metadataObj = { ...body.metadata };
+  }
+  if (!metadataObj) metadataObj = {};
+  metadataObj.tax = {
+    mode: tax_mode || null,
+    vat_rate: Number.isFinite(Number(vatRate)) ? Number(vatRate) : 0,
+    customer_country,
+    vat_number: vatDecision?.vat_number || null,
+    vies: vatDecision?.vies || null,
+  };
+
+  const metadata = JSON.stringify(metadataObj);
 
   await exec(
     db,
@@ -273,6 +309,8 @@ export const onRequestPost = async (context) => {
         currency,
         status: "pending_payment",
         customer_country,
+        tax_mode,
+        vies_status: vatDecision?.vies?.status || null,
         vat_rate: vatRate,
         subtotal_ex_vat,
         vat_total,
@@ -336,6 +374,8 @@ export const onRequestPost = async (context) => {
         currency,
         status: "awaiting_action",
         customer_country,
+        tax_mode,
+        vies_status: vatDecision?.vies?.status || null,
         vat_rate: vatRate,
         subtotal_ex_vat,
         vat_total,
@@ -382,6 +422,8 @@ export const onRequestPost = async (context) => {
         currency,
         status: "awaiting_action",
         customer_country,
+        tax_mode,
+        vies_status: vatDecision?.vies?.status || null,
         vat_rate: vatRate,
         subtotal_ex_vat,
         vat_total,

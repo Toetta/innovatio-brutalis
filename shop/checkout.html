@@ -33,15 +33,47 @@
               <span>Land</span>
               <select id="country" required>
                 <option value="SE" selected>Sverige</option>
-                <option value="NO">Norge</option>
+                <option value="AT">Österrike</option>
+                <option value="BE">Belgien</option>
+                <option value="BG">Bulgarien</option>
+                <option value="HR">Kroatien</option>
+                <option value="CY">Cypern</option>
+                <option value="CZ">Tjeckien</option>
                 <option value="DK">Danmark</option>
+                <option value="EE">Estland</option>
                 <option value="FI">Finland</option>
+                <option value="FR">Frankrike</option>
                 <option value="DE">Tyskland</option>
+                <option value="GR">Grekland</option>
+                <option value="HU">Ungern</option>
+                <option value="IE">Irland</option>
+                <option value="IT">Italien</option>
+                <option value="LV">Lettland</option>
+                <option value="LT">Litauen</option>
+                <option value="LU">Luxemburg</option>
+                <option value="MT">Malta</option>
                 <option value="NL">Nederländerna</option>
+                <option value="PL">Polen</option>
+                <option value="PT">Portugal</option>
+                <option value="RO">Rumänien</option>
+                <option value="SK">Slovakien</option>
+                <option value="SI">Slovenien</option>
+                <option value="ES">Spanien</option>
+                <option value="NO">Norge</option>
                 <option value="GB">Storbritannien</option>
                 <option value="US">USA</option>
               </select>
             </label>
+
+            <div id="vatIdWrap" class="badge" style="display:grid; gap:8px" hidden>
+              <label style="display:grid; gap:6px">
+                <span>VAT-ID (företag inom EU)</span>
+                <input id="vatId" type="text" inputmode="text" autocomplete="off" placeholder="Ex: DE123456789" />
+              </label>
+              <div style="color:var(--text-muted)">
+                Ange endast om du handlar som företag inom EU (utanför Sverige). VAT-ID valideras via VIES; vid giltigt VAT-ID tillämpas 0% moms (omvänd skattskyldighet).
+              </div>
+            </div>
 
             <fieldset class="badge" style="display:grid; gap:8px; padding:12px">
               <legend style="padding:0 6px">Betalmetod</legend>

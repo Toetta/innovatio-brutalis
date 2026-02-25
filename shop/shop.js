@@ -37,7 +37,7 @@
 			back_to_shop: "← Back to shop",
 			checkout: "Checkout",
 			vat_included_short: "incl. VAT",
-			vat_included_se: "incl. 25% VAT (SE)",
+			vat_included_se: "incl. VAT",
 		};
 		const sv = {
 			shop_title: "Webshop",
@@ -64,7 +64,7 @@
 			back_to_shop: "← Tillbaka till webshop",
 			checkout: "Till kassan",
 			vat_included_short: "inkl. moms",
-			vat_included_se: "inkl. 25% moms (SE)",
+			vat_included_se: "inkl. moms",
 		};
 		const dict = isEN() ? en : sv;
 		return dict[key] || key;

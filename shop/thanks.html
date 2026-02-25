@@ -52,11 +52,25 @@
         return Math.round(x * 100) / 100;
       };
 
-      var calcVatFromInc = function (totalInc, country) {
+      var EU = {
+        AT:1,BE:1,BG:1,HR:1,CY:1,CZ:1,DK:1,EE:1,FI:1,FR:1,DE:1,GR:1,HU:1,IE:1,IT:1,LV:1,LT:1,LU:1,MT:1,NL:1,PL:1,PT:1,RO:1,SK:1,SI:1,ES:1,SE:1
+      };
+      var VAT_RATES = {
+        AT:0.2,BE:0.21,BG:0.2,HR:0.25,CY:0.19,CZ:0.21,DK:0.25,EE:0.22,FI:0.24,FR:0.2,DE:0.19,GR:0.24,HU:0.27,IE:0.23,IT:0.22,LV:0.21,LT:0.21,LU:0.17,MT:0.18,NL:0.21,PL:0.23,PT:0.23,RO:0.19,SK:0.2,SI:0.22,ES:0.21,SE:0.25
+      };
+      var getRate = function (cc) {
+        var c = String(cc || 'SE').trim().toUpperCase();
+        if (c === 'SE') return 0.25;
+        if (!EU[c]) return 0.0;
+        var r = VAT_RATES[c];
+        return isFinite(Number(r)) ? Number(r) : 0.0;
+      };
+
+      var calcVatFromInc = function (totalInc, country, rateOverride) {
         var inc = Number(totalInc);
         if (!isFinite(inc)) return { ex: 0, vat: 0, rate: 0 };
         var c = String(country || 'SE').trim().toUpperCase();
-        var rate = c === 'SE' ? 0.25 : 0.0;
+        var rate = isFinite(Number(rateOverride)) ? Number(rateOverride) : getRate(c);
         var ex = rate > 0 ? (inc / (1 + rate)) : inc;
         var vat = inc - ex;
         return { ex: to2(ex), vat: to2(vat), rate: rate };
@@ -93,15 +107,20 @@
           var o = data.order;
           var cc = String(o.customer_country || 'SE');
           var currency = o.currency || 'SEK';
-          var calc = calcVatFromInc(o.total_inc_vat, cc);
+          var rate = isFinite(Number(o.vat_rate)) ? Number(o.vat_rate) : getRate(cc);
+          var calc = calcVatFromInc(o.total_inc_vat, cc, rate);
           var ex = isFinite(Number(o.subtotal_ex_vat)) ? Number(o.subtotal_ex_vat) : calc.ex;
           var vat = isFinite(Number(o.vat_total)) ? Number(o.vat_total) : calc.vat;
-          var pct = Math.round((calc.rate || 0) * 100);
+          var pct = Math.round((rate || 0) * 100);
+          var mode = String(o.tax_mode || '');
+          var vatLabel = 'Moms (' + esc(String(pct)) + '%):';
+          if (mode === 'reverse_charge') vatLabel = 'Moms (' + esc(String(pct)) + '%, omvänd skattskyldighet):';
+          else if (mode === 'export') vatLabel = 'Moms (' + esc(String(pct)) + '%, export):';
           details.innerHTML = ''
             + '<div><strong>Order:</strong> ' + esc(o.order_number) + '</div>'
             + '<div><strong>Status:</strong> ' + esc(o.status) + '</div>'
             + '<div><strong>Summa exkl. moms:</strong> ' + esc(fmt(ex, currency)) + '</div>'
-            + '<div><strong>Moms (' + esc(String(pct)) + '%):</strong> ' + esc(fmt(vat, currency)) + '</div>'
+            + '<div><strong>' + vatLabel + '</strong> ' + esc(fmt(vat, currency)) + '</div>'
             + '<div><strong>Summa inkl. moms:</strong> ' + esc(fmt(o.total_inc_vat, currency)) + '</div>';
 
           if (o.status === 'paid') msg.textContent = 'Betalning mottagen.';
