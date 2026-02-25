@@ -91,9 +91,10 @@ export const onRequestGet = async (context) => {
 };
 
 export const onRequestPost = async (context) => {
-  const { request, env } = context;
-  const db = assertDb(env);
-  const auth = await requireCustomer({ request, env }).catch(() => ({ ok: false }));
+  try {
+    const { request, env } = context;
+    const db = assertDb(env);
+    const auth = await requireCustomer({ request, env }).catch(() => ({ ok: false }));
 
   let body;
   try {
@@ -306,28 +307,40 @@ export const onRequestPost = async (context) => {
     });
   }
 
-  // Stripe
-  const { STRIPE_PUBLISHABLE_KEY } = getEnv(env);
-  if (!STRIPE_PUBLISHABLE_KEY) return badRequest("Stripe not configured");
+    // Stripe
+    const { STRIPE_PUBLISHABLE_KEY } = getEnv(env);
+    if (!STRIPE_PUBLISHABLE_KEY) return badRequest("Stripe not configured");
 
-  const pi = await createStripePaymentIntent({
-    env,
-    amount_minor: total_minor,
-    currency: "sek",
-    orderId: id,
-    orderNumber: order_number,
-    customerEmail: email,
-  });
+    let pi;
+    try {
+      pi = await createStripePaymentIntent({
+        env,
+        amount_minor: total_minor,
+        currency: "sek",
+        orderId: id,
+        orderNumber: order_number,
+        customerEmail: email,
+      });
+    } catch (err) {
+      const msg = String(err?.message || "Stripe error");
+      return badRequest(msg);
+    }
 
-  await exec(db, "UPDATE orders SET payment_provider = 'stripe', payment_reference = ?, status = 'awaiting_action', updated_at = ? WHERE id = ?", [String(pi.id || ""), nowIso(), id]);
+    await exec(db, "UPDATE orders SET payment_provider = 'stripe', payment_reference = ?, status = 'awaiting_action', updated_at = ? WHERE id = ?", [String(pi.id || ""), nowIso(), id]);
 
-  return json({
-    ok: true,
-    order: { id, order_number, currency, total_inc_vat, status: "awaiting_action", placed_at },
-    public_token,
-    stripe: {
-      publishable_key: STRIPE_PUBLISHABLE_KEY,
-      client_secret: String(pi.client_secret || ""),
-    },
-  });
+    return json({
+      ok: true,
+      order: { id, order_number, currency, total_inc_vat, status: "awaiting_action", placed_at },
+      public_token,
+      stripe: {
+        publishable_key: STRIPE_PUBLISHABLE_KEY,
+        client_secret: String(pi.client_secret || ""),
+      },
+    });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("/api/orders failed", err);
+    const msg = String(err?.message || "Internal error");
+    return json({ ok: false, error: msg }, { status: 500 });
+  }
 };

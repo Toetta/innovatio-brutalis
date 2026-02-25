@@ -48,9 +48,20 @@
       credentials: "include",
       cache: "no-store",
     });
-    const data = await res.json().catch(() => null);
+    const raw = await res.text().catch(() => "");
+    let data = null;
+    try {
+      data = raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      data = null;
+    }
+
     if (!res.ok) {
-      const msg = (data && data.error) ? data.error : "Request failed";
+      let msg = (data && data.error) ? String(data.error) : "";
+      if (!msg) {
+        const shortTxt = String(raw || "").trim().slice(0, 200);
+        msg = shortTxt ? `${res.status} ${res.statusText}: ${shortTxt}` : `${res.status} ${res.statusText}`;
+      }
       const err = new Error(msg);
       err.status = res.status;
       err.data = data;
