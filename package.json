@@ -4,5 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "node tools/build-shop-catalog.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.68.1"
   }
 }
