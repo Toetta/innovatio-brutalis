@@ -27,6 +27,9 @@
           const v = value.trim();
           if (!v) return null;
 
+          // Avoid infinite rewriting
+          if (v.startsWith(RAW_BASE)) return null;
+
           // Skip non-path URLs
           if (v.startsWith('data:') || v.startsWith('blob:')) return null;
           if (/^https?:\/\//i.test(v)) return null;
@@ -38,15 +41,22 @@
           return RAW_BASE + normalized + '?v=' + cacheBust;
         };
 
+        const maybeRewriteImg = (img) => {
+          try {
+            if (!img || img.tagName !== 'IMG') return;
+            const attr = img.getAttribute('src');
+            const next = rewriteUploadsSrc(attr);
+            if (next) img.setAttribute('src', next);
+          } catch (_) {}
+        };
+
         const fixImages = (root) => {
           try {
-            const imgs = (root || document).querySelectorAll?.('img[src]');
+            if (!root) root = document;
+            if (root.tagName === 'IMG') maybeRewriteImg(root);
+            const imgs = root.querySelectorAll?.('img[src]');
             if (!imgs) return;
-            for (const img of imgs) {
-              const attr = img.getAttribute('src');
-              const next = rewriteUploadsSrc(attr);
-              if (next) img.setAttribute('src', next);
-            }
+            for (const img of imgs) maybeRewriteImg(img);
           } catch (_) {}
         };
 
@@ -57,10 +67,12 @@
           const mo = new MutationObserver((mutations) => {
             for (const m of mutations) {
               if (m.type === 'attributes' && m.attributeName === 'src' && m.target?.tagName === 'IMG') {
-                fixImages(m.target);
+                maybeRewriteImg(m.target);
               } else if (m.type === 'childList') {
                 for (const n of m.addedNodes || []) {
-                  if (n && n.nodeType === 1) fixImages(n);
+                  if (!n || n.nodeType !== 1) continue;
+                  if (n.tagName === 'IMG') maybeRewriteImg(n);
+                  fixImages(n);
                 }
               }
             }
