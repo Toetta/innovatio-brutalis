@@ -1,6 +1,15 @@
 (() => {
   const qs = (sel) => document.querySelector(sel);
 
+  // Keep hostname consistent with /login/ so localStorage + cookies work across flows.
+  // Otherwise, users can end up with email stored on one origin and checkout running on another.
+  try {
+    if (location.hostname === "innovatio-brutalis.se") {
+      location.replace(`https://www.innovatio-brutalis.se${location.pathname}${location.search}${location.hash}`);
+      return;
+    }
+  } catch (_) {}
+
   const CART_KEY = "ib_shop_cart_v1";
   const LAST_EMAIL_KEY = "ib_last_login_email_v1";
   const readCart = () => {
