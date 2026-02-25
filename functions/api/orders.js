@@ -6,6 +6,13 @@ import { nowIso, uuid, sha256Hex, randomToken } from "./_lib/crypto.js";
 import { createStripePaymentIntent } from "./_lib/stripe.js";
 import { createKlarnaPaymentsSession } from "./_lib/klarna.js";
 
+const getOrdersSchemaInfo = async (db) => {
+  const rows = await all(db.prepare("PRAGMA table_info(orders)").all());
+  const cols = new Set(rows.map((r) => String(r?.name || "")).filter(Boolean));
+  const v2 = cols.has("customer_country") && cols.has("payment_provider") && cols.has("public_token_hash") && cols.has("subtotal_minor");
+  return { v2, cols: Array.from(cols).sort((a, b) => a.localeCompare(b)) };
+};
+
 const to2 = (n) => {
   const x = Number(n);
   if (!Number.isFinite(x)) return 0;
@@ -94,6 +101,19 @@ export const onRequestPost = async (context) => {
   try {
     const { request, env } = context;
     const db = assertDb(env);
+    // Guard against outdated schema (migration 0002 not applied)
+    const schema = await getOrdersSchemaInfo(db).catch(() => ({ v2: false, cols: [] }));
+    if (!schema.v2) {
+      const cfg = getEnv(env);
+      const details = cfg.DEV_MODE ? ` Existing columns: ${schema.cols.join(", ")}` : "";
+      return json(
+        {
+          ok: false,
+          error: "Database schema is outdated (orders table). Apply migrations/0002_payments_and_fu.sql to your D1 database." + details,
+        },
+        { status: 500 }
+      );
+    }
     const auth = await requireCustomer({ request, env }).catch(() => ({ ok: false }));
 
   let body;

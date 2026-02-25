@@ -34,6 +34,21 @@ export const onRequestGet = async (context) => {
     },
   };
 
+  if (hasD1) {
+    try {
+      const rows = await context.env.DB.prepare("PRAGMA table_info(orders)").all();
+      const list = Array.isArray(rows?.results) ? rows.results : [];
+      const cols = new Set(list.map((r) => String(r?.name || "")).filter(Boolean));
+      const ordersSchemaV2 = cols.has("customer_country") && cols.has("payment_provider") && cols.has("public_token_hash") && cols.has("subtotal_minor");
+      base.d1 = {
+        ordersSchemaV2,
+      };
+      if (cfg.DEV_MODE) base.d1.ordersColumns = Array.from(cols).sort((a, b) => a.localeCompare(b));
+    } catch (_) {
+      base.d1 = { ordersSchemaV2: false };
+    }
+  }
+
   if (cfg.DEV_MODE) {
     base.email.from = supportFrom;
     base.email.loginFrom = effectiveLoginFrom;

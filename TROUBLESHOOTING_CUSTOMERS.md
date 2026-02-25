@@ -5,6 +5,8 @@
 - Open: `/api/health`
 - Expected: `{ "ok": true, "hasD1": true, "ts": "..." }`
 
+If `d1.ordersSchemaV2` is `false`, the D1 database is missing migration `0002_payments_and_fu.sql`.
+
 If `hasD1` is `false`, your Cloudflare Pages project is missing the D1 binding named `DB`.
 
 ## Local development (wrangler)
@@ -107,3 +109,19 @@ curl "https://www.innovatio-brutalis.se/api/export/invoices?since=2026-01-01&bat
 - Turnstile missing: `/login/` requires a site key in meta tag `ib-turnstile-sitekey`.
 - Cookies blocked: `ib_session` is HttpOnly and requires HTTPS.
 - Wrong host: the main site runtime redirects `innovatio-brutalis.se` → `www.innovatio-brutalis.se` for consistency.
+
+## D1 schema/migrations
+
+If checkout fails with errors like:
+
+`D1_ERROR: table orders has no column named customer_country: SQLITE_ERROR`
+
+Then your D1 database is still on the initial schema (migration 0001), but the current code expects schema v2 (migration 0002).
+
+Apply migrations using Wrangler (remote):
+
+`wrangler d1 migrations apply <YOUR_D1_DB_NAME> --remote`
+
+After applying, verify:
+
+- `/api/health` shows `d1.ordersSchemaV2: true`
