@@ -39,6 +39,7 @@
   const countryEl = qs("#country");
   const vatIdWrap = qs("#vatIdWrap");
   const vatIdEl = qs("#vatId");
+  const payMethodBox = qs("#payMethodBox");
   const paymentEl = qs("#paymentElement");
   const swishBox = qs("#swishBox");
   const klarnaOption = qs("#klarnaOption");
@@ -340,6 +341,25 @@
   };
 
   let cartTotalSEK = 0;
+
+  const syncStartButtonWidth = () => {
+    try {
+      if (!startBtn) return;
+      startBtn.style.maxWidth = "100%";
+      startBtn.style.justifySelf = "center";
+      if (!payMethodBox || payMethodBox.hidden) {
+        startBtn.style.width = "";
+        return;
+      }
+      const boxW = payMethodBox.getBoundingClientRect().width;
+      const formW = startForm ? startForm.getBoundingClientRect().width : boxW;
+      const w = Math.max(0, Math.min(boxW, formW));
+      if (w > 0) startBtn.style.width = `${Math.round(w)}px`;
+    } catch (_) {
+      // no-op
+    }
+  };
+
   const computeCartTotal = async () => {
     const items = getCartItems();
     const slugs = Object.keys(items);
@@ -380,6 +400,7 @@
     }
 
     updatePreviewTaxSummary();
+    syncStartButtonWidth();
   };
 
   const renderCartSummary = async () => {
@@ -403,6 +424,7 @@
 
     refreshPaymentOptions();
     updatePreviewTaxSummary();
+    syncStartButtonWidth();
   };
 
   let stripe = null;
@@ -616,6 +638,17 @@
   });
 
   countryEl?.addEventListener("change", refreshPaymentOptions);
+
+  try {
+    window.addEventListener("resize", () => syncStartButtonWidth());
+  } catch (_) {}
+
+  // Initial sync (in case layout is already stable)
+  try {
+    syncStartButtonWidth();
+    setTimeout(syncStartButtonWidth, 0);
+    setTimeout(syncStartButtonWidth, 50);
+  } catch (_) {}
 
   // Best-effort prefill from profile/login email
   loadProfileAndPrefill().catch(() => {});
