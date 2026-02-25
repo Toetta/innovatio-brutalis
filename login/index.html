@@ -45,6 +45,8 @@
       import { apiPost } from '/assets/js/api.js';
       import { ensureShell, renderFooter, setStatus } from '/assets/js/ui.js';
 
+      const LAST_EMAIL_KEY = 'ib_last_login_email_v1';
+
       // Avoid Turnstile domain mismatch by always using the canonical hostname.
       try {
         if (location.hostname === 'innovatio-brutalis.se') {
@@ -72,6 +74,12 @@
         if (!t || t.length > 320) return false;
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
       };
+
+      // Prefill last used email (best-effort)
+      try {
+        const last = String(localStorage.getItem(LAST_EMAIL_KEY) || '').trim();
+        if (last && emailEl && !emailEl.value) emailEl.value = last;
+      } catch (_) {}
 
       const updateBtnState = () => {
         // Turnstile is best-effort. Only require a valid email to request a link.
@@ -192,7 +200,13 @@
 
       // Only enable when we have both a valid email and a Turnstile token.
       updateBtnState();
-      emailEl?.addEventListener('input', updateBtnState);
+      emailEl?.addEventListener('input', () => {
+        updateBtnState();
+        try {
+          const v = String(emailEl?.value || '').trim();
+          if (v) localStorage.setItem(LAST_EMAIL_KEY, v);
+        } catch (_) {}
+      });
 
       btn.addEventListener('click', async () => {
         try {
@@ -217,6 +231,11 @@
             turnstileToken,
             returnPath,
           });
+
+          try {
+            const v = String(emailEl?.value || '').trim();
+            if (v) localStorage.setItem(LAST_EMAIL_KEY, v);
+          } catch (_) {}
           setStatus(statusEl, 'Kolla din e-post för en login-länk.');
           if (data && data.debug_link) {
             devEl.innerHTML = `<a href="${data.debug_link}">DEV: öppna login-länken</a>`;

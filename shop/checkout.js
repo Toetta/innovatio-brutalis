@@ -2,6 +2,7 @@
   const qs = (sel) => document.querySelector(sel);
 
   const CART_KEY = "ib_shop_cart_v1";
+  const LAST_EMAIL_KEY = "ib_last_login_email_v1";
   const readCart = () => {
     try {
       const raw = localStorage.getItem(CART_KEY);
@@ -32,6 +33,65 @@
   const klarnaBtn = qs("#klarnaBtn");
   const klarnaErr = qs("#klarnaErr");
   const klarnaWidget = qs("#klarnaWidget");
+
+  let emailTouched = false;
+  let countryTouched = false;
+
+  const setSelectValueIfExists = (selectEl, value) => {
+    if (!selectEl) return false;
+    const v = String(value || "").trim().toUpperCase();
+    if (!v) return false;
+    const opt = Array.from(selectEl.options || []).find((o) => String(o.value || "").toUpperCase() === v);
+    if (!opt) return false;
+    selectEl.value = opt.value;
+    return true;
+  };
+
+  const loadProfileAndPrefill = async () => {
+    // Default: editable unless we detect an authenticated profile.
+    try {
+      if (emailEl) emailEl.readOnly = false;
+    } catch (_) {}
+
+    // 1) Prefill from last used login email (works even when logged out)
+    try {
+      if (emailEl && !emailEl.value) {
+        const last = String(localStorage.getItem(LAST_EMAIL_KEY) || "").trim();
+        if (last) emailEl.value = last;
+      }
+    } catch (_) {}
+
+    // 2) Prefill from profile if logged in
+    let me = null;
+    try {
+      const res = await fetch("/api/me", { headers: { accept: "application/json" }, credentials: "include", cache: "no-store" });
+      const raw = await res.text().catch(() => "");
+      me = raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      me = null;
+    }
+
+    if (!me || me.ok !== true) return;
+
+    const profileEmail = String(me?.customer?.email || "").trim();
+    if (emailEl && profileEmail && !emailTouched) {
+      emailEl.value = profileEmail;
+      try { localStorage.setItem(LAST_EMAIL_KEY, profileEmail); } catch (_) {}
+    }
+
+    // When logged in, lock email to profile value.
+    try {
+      if (emailEl && profileEmail) emailEl.readOnly = true;
+    } catch (_) {}
+
+    if (countryEl && !countryTouched) {
+      const addrs = Array.isArray(me?.addresses) ? me.addresses : [];
+      const shipping = addrs.find((a) => String(a?.type || "") === "shipping") || null;
+      const billing = addrs.find((a) => String(a?.type || "") === "billing") || null;
+      const c = String((shipping?.country || billing?.country || "")).trim();
+      if (c) setSelectValueIfExists(countryEl, c);
+    }
+  };
 
   const fmt = (amount, currency) => {
     const n = Number(amount);
@@ -69,6 +129,18 @@
     }
     return data;
   };
+
+  emailEl?.addEventListener("input", () => {
+    emailTouched = true;
+    try {
+      const v = String(emailEl.value || "").trim();
+      if (v) localStorage.setItem(LAST_EMAIL_KEY, v);
+    } catch (_) {}
+  });
+
+  countryEl?.addEventListener("change", () => {
+    countryTouched = true;
+  });
 
   const getCartItems = () => {
     const cart = readCart();
@@ -214,6 +286,9 @@
     }
 
     try {
+      try {
+        if (email) localStorage.setItem(LAST_EMAIL_KEY, email);
+      } catch (_) {}
       if (startBtn) startBtn.disabled = true;
       const data = await apiPost("/api/orders", {
         email,
@@ -359,6 +434,9 @@
   });
 
   countryEl?.addEventListener("change", refreshPaymentOptions);
+
+  // Best-effort prefill from profile/login email
+  loadProfileAndPrefill().catch(() => {});
 
   renderCartSummary().catch(() => {
     if (cartSummary) cartSummary.textContent = "Kunde inte läsa kundvagn.";
