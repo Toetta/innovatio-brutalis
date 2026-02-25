@@ -15,7 +15,7 @@ export const onRequestGet = async (context) => {
   const db = assertDb(env);
   const order = await one(
     db.prepare(
-      "SELECT id, order_number, status, currency, total_inc_vat, placed_at, paid_at, refunded_at FROM orders WHERE id = ? AND public_token_hash = ? LIMIT 1"
+      "SELECT id, order_number, status, customer_country, currency, subtotal_ex_vat, vat_total, shipping_ex_vat, shipping_vat, total_inc_vat, placed_at, paid_at, refunded_at FROM orders WHERE id = ? AND public_token_hash = ? LIMIT 1"
     ).bind(id, tokenHash).all()
   );
   if (!order) return notFound();

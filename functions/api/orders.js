@@ -267,7 +267,20 @@ export const onRequestPost = async (context) => {
     );
     return json({
       ok: true,
-      order: { id, order_number, currency, status: "pending_payment", total_inc_vat, placed_at },
+      order: {
+        id,
+        order_number,
+        currency,
+        status: "pending_payment",
+        customer_country,
+        vat_rate: vatRate,
+        subtotal_ex_vat,
+        vat_total,
+        shipping_ex_vat,
+        shipping_vat,
+        total_inc_vat,
+        placed_at,
+      },
       public_token,
       swish: {
         mode: "manual",
@@ -317,7 +330,20 @@ export const onRequestPost = async (context) => {
 
     return json({
       ok: true,
-      order: { id, order_number, currency, total_inc_vat, status: "awaiting_action", placed_at },
+      order: {
+        id,
+        order_number,
+        currency,
+        status: "awaiting_action",
+        customer_country,
+        vat_rate: vatRate,
+        subtotal_ex_vat,
+        vat_total,
+        shipping_ex_vat,
+        shipping_vat,
+        total_inc_vat,
+        placed_at,
+      },
       public_token,
       klarna: {
         mode: "test",
@@ -350,7 +376,20 @@ export const onRequestPost = async (context) => {
 
     return json({
       ok: true,
-      order: { id, order_number, currency, total_inc_vat, status: "awaiting_action", placed_at },
+      order: {
+        id,
+        order_number,
+        currency,
+        status: "awaiting_action",
+        customer_country,
+        vat_rate: vatRate,
+        subtotal_ex_vat,
+        vat_total,
+        shipping_ex_vat,
+        shipping_vat,
+        total_inc_vat,
+        placed_at,
+      },
       public_token,
       stripe: {
         publishable_key: STRIPE_PUBLISHABLE_KEY,
