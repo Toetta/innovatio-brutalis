@@ -23,6 +23,7 @@ collections:
     format: "json"
     extension: "json"
     slug: "{{fields.slug}}"
+    identifier_field: "slug"
     summary: "{{title_sv}} / {{title_en}} ({{slug}})"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
@@ -41,6 +42,7 @@ collections:
     format: "json"
     extension: "json"
     slug: "{{fields.slug}}"
+    identifier_field: "slug"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
       - { label: "Titel (SV)", name: "title_sv", widget: "string" }
