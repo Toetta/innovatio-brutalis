@@ -359,6 +359,28 @@
       orderId = data?.order?.id || "";
       publicToken = data?.public_token || "";
 
+      try {
+        const o = data?.order || {};
+        const currency = String(o?.currency || "SEK");
+        const customer_country = String(o?.customer_country || customer_country || "SE");
+        const subtotal_ex_vat = (o?.subtotal_ex_vat ?? null);
+        const vat_total = (o?.vat_total ?? null);
+        const total_inc_vat = (o?.total_inc_vat ?? null);
+        const vat_rate = (o?.vat_rate ?? null);
+
+        const fallback = calcVatFromInc({ total_inc_vat, customer_country });
+        const text = renderTaxSummaryText({
+          currency,
+          customer_country,
+          subtotal_ex_vat: Number.isFinite(Number(subtotal_ex_vat)) ? Number(subtotal_ex_vat) : fallback.subtotal_ex_vat,
+          vat_total: Number.isFinite(Number(vat_total)) ? Number(vat_total) : fallback.vat_total,
+          total_inc_vat: Number.isFinite(Number(total_inc_vat)) ? Number(total_inc_vat) : 0,
+          vat_rate: Number.isFinite(Number(vat_rate)) ? Number(vat_rate) : fallback.vat_rate,
+        });
+        if (taxSummary) taxSummary.textContent = text;
+        if (payTaxSummary) payTaxSummary.textContent = text;
+      } catch (_) {}
+
       const total = data?.order?.total_inc_vat;
       const currency = data?.order?.currency;
 
@@ -367,6 +389,7 @@
       // Swish manual
       if (data?.swish && data.swish.mode === "manual") {
         if (payForm) payForm.hidden = true;
+        if (payTaxSummary) payTaxSummary.textContent = "";
         if (swishBox) {
           swishBox.hidden = false;
           swishBox.className = "badge";
@@ -390,6 +413,7 @@
         if (swishBox) swishBox.hidden = true;
         if (klarnaForm) klarnaForm.hidden = false;
         if (klarnaErr) klarnaErr.textContent = "";
+        if (payTaxSummary) payTaxSummary.textContent = "";
 
         // Wait for Klarna JS
         for (let i = 0; i < 60; i++) {

@@ -46,6 +46,22 @@
         catch (_) { return n + ' ' + (currency || 'SEK'); }
       };
 
+      var to2 = function (n) {
+        var x = Number(n);
+        if (!isFinite(x)) return 0;
+        return Math.round(x * 100) / 100;
+      };
+
+      var calcVatFromInc = function (totalInc, country) {
+        var inc = Number(totalInc);
+        if (!isFinite(inc)) return { ex: 0, vat: 0, rate: 0 };
+        var c = String(country || 'SE').trim().toUpperCase();
+        var rate = c === 'SE' ? 0.25 : 0.0;
+        var ex = rate > 0 ? (inc / (1 + rate)) : inc;
+        var vat = inc - ex;
+        return { ex: to2(ex), vat: to2(vat), rate: rate };
+      };
+
       if (!orderId || !token) {
         msg.textContent = 'Saknar order-id eller token.';
         return;
@@ -75,10 +91,18 @@
         fetchStatus().then(function (data) {
           if (!data || !data.ok || !data.order) throw new Error('Bad response');
           var o = data.order;
+          var cc = String(o.customer_country || 'SE');
+          var currency = o.currency || 'SEK';
+          var calc = calcVatFromInc(o.total_inc_vat, cc);
+          var ex = isFinite(Number(o.subtotal_ex_vat)) ? Number(o.subtotal_ex_vat) : calc.ex;
+          var vat = isFinite(Number(o.vat_total)) ? Number(o.vat_total) : calc.vat;
+          var pct = Math.round((calc.rate || 0) * 100);
           details.innerHTML = ''
             + '<div><strong>Order:</strong> ' + esc(o.order_number) + '</div>'
             + '<div><strong>Status:</strong> ' + esc(o.status) + '</div>'
-            + '<div><strong>Summa:</strong> ' + esc(fmt(o.total_inc_vat, o.currency)) + '</div>';
+            + '<div><strong>Summa exkl. moms:</strong> ' + esc(fmt(ex, currency)) + '</div>'
+            + '<div><strong>Moms (' + esc(String(pct)) + '%):</strong> ' + esc(fmt(vat, currency)) + '</div>'
+            + '<div><strong>Summa inkl. moms:</strong> ' + esc(fmt(o.total_inc_vat, currency)) + '</div>';
 
           if (o.status === 'paid') msg.textContent = 'Betalning mottagen.';
           else if (o.status === 'failed') msg.textContent = 'Betalningen misslyckades.';
