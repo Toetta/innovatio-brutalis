@@ -27,10 +27,12 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 
   const cartSummary = qs("#cartSummary");
+  const taxSummary = qs("#taxSummary");
   const startForm = qs("#startForm");
   const startBtn = qs("#startBtn");
   const startErr = qs("#startErr");
   const payForm = qs("#payForm");
+  const payTaxSummary = qs("#payTaxSummary");
   const payBtn = qs("#payBtn");
   const payErr = qs("#payErr");
   const emailEl = qs("#email");
@@ -107,6 +109,51 @@
     if (!Number.isFinite(n)) return "";
     try { return new Intl.NumberFormat("sv-SE", { style: "currency", currency: currency || "SEK" }).format(n); }
     catch (_) { return `${n} ${currency || "SEK"}`; }
+  };
+
+  const to2 = (n) => {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return 0;
+    return Math.round(x * 100) / 100;
+  };
+
+  const calcVatFromInc = ({ total_inc_vat, customer_country }) => {
+    const inc = Number(total_inc_vat);
+    if (!Number.isFinite(inc)) return { subtotal_ex_vat: 0, vat_total: 0, vat_rate: 0 };
+    const c = String(customer_country || "SE").trim().toUpperCase();
+    const vat_rate = c === "SE" ? 0.25 : 0.0;
+    const ex = vat_rate > 0 ? (inc / (1 + vat_rate)) : inc;
+    const vat = inc - ex;
+    return { subtotal_ex_vat: to2(ex), vat_total: to2(vat), vat_rate };
+  };
+
+  const renderTaxSummaryText = ({ currency = "SEK", customer_country = "SE", subtotal_ex_vat, vat_total, total_inc_vat, vat_rate }) => {
+    const c = String(customer_country || "SE").trim().toUpperCase();
+    const rate = Number(vat_rate);
+    const pct = Number.isFinite(rate) ? Math.round(rate * 100) : 0;
+    const lines = [];
+    lines.push(`Summa exkl. moms: ${fmt(subtotal_ex_vat, currency)}`);
+    lines.push(`Moms (${pct}%${c ? `, ${c}` : ""}): ${fmt(vat_total, currency)}`);
+    lines.push(`Summa inkl. moms: ${fmt(total_inc_vat, currency)}`);
+    return lines.join("\n");
+  };
+
+  const updatePreviewTaxSummary = () => {
+    if (!taxSummary) return;
+    const country = String(countryEl?.value || "SE").trim().toUpperCase();
+    if (!cartTotalSEK || cartTotalSEK <= 0) {
+      taxSummary.textContent = country === "SE" ? "Priser visas inkl. moms." : "";
+      return;
+    }
+    const calc = calcVatFromInc({ total_inc_vat: cartTotalSEK, customer_country: country });
+    taxSummary.textContent = renderTaxSummaryText({
+      currency: "SEK",
+      customer_country: country,
+      subtotal_ex_vat: calc.subtotal_ex_vat,
+      vat_total: calc.vat_total,
+      total_inc_vat: cartTotalSEK,
+      vat_rate: calc.vat_rate,
+    });
   };
 
   const apiPost = async (path, body) => {
@@ -238,6 +285,8 @@
         if (stripeRadio) stripeRadio.checked = true;
       }
     }
+
+    updatePreviewTaxSummary();
   };
 
   const renderCartSummary = async () => {
@@ -260,6 +309,7 @@
     }
 
     refreshPaymentOptions();
+    updatePreviewTaxSummary();
   };
 
   let stripe = null;
