@@ -74,6 +74,13 @@ small{color:var(--text-muted)}
   background: rgba(var(--bg-rgb), .98);
   padding: 10px 0;
   border-bottom: 1px solid rgba(184,115,51,.18);
+
+
+  /* Desktop: keep Spotify in the header row to avoid extra vertical height */
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px;
 }
 
 /* Main content gets its own spacing below the header */
@@ -93,6 +100,10 @@ small{color:var(--text-muted)}
   justify-content:space-between;
   gap:16px;
   flex-wrap:wrap;
+
+
+  flex: 1 1 520px;
+  min-width: 0;
 }
 
 /* Site nav */
@@ -332,10 +343,15 @@ small{color:var(--text-muted)}
 
 /* Header-integrated Spotify bar */
 .spotify-bar{
-  margin-top: 6px;
+  margin-top: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
+
+
+  flex: 0 1 560px;
+  min-width: 260px;
+  margin-left: auto;
 }
 
 .spotify-toggle{
@@ -360,7 +376,7 @@ small{color:var(--text-muted)}
 }
 
 .spotify-panel{
-  margin-top: 4px;
+  margin-top: 0;
   width: 100%;
   display: flex;
   justify-content: flex-end;
@@ -372,7 +388,7 @@ small{color:var(--text-muted)}
 }
 
 @media (min-width: 769px){
-  .spotify-panel{ display:block !important; }
+  .spotify-panel{ display:flex !important; }
 }
 
 .ib-spotify-player iframe{
