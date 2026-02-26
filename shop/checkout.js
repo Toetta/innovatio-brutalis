@@ -12,6 +12,7 @@
 
   const CART_KEY = "ib_shop_cart_v1";
   const LAST_EMAIL_KEY = "ib_last_login_email_v1";
+  const LAST_ADDR_KEY = "ib_last_shipping_addr_v1";
   const readCart = () => {
     try {
       const raw = localStorage.getItem(CART_KEY);
@@ -68,6 +69,51 @@
   let shipPostalTouched = false;
   let shipCityTouched = false;
   let shipCountryTouched = false;
+
+  const readLastAddress = () => {
+    try {
+      const raw = String(localStorage.getItem(LAST_ADDR_KEY) || "").trim();
+      if (!raw) return null;
+      const j = JSON.parse(raw);
+      if (!j || typeof j !== "object") return null;
+      return {
+        line1: String(j.line1 || "").trim(),
+        line2: String(j.line2 || "").trim() || "",
+        postal_code: String(j.postal_code || "").trim(),
+        city: String(j.city || "").trim(),
+        country: String(j.country || "").trim().toUpperCase(),
+      };
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const writeLastAddress = (addr) => {
+    try {
+      if (!addr || typeof addr !== "object") return;
+      localStorage.setItem(LAST_ADDR_KEY, JSON.stringify({
+        line1: String(addr.line1 || "").trim(),
+        line2: String(addr.line2 || "").trim() || "",
+        postal_code: String(addr.postal_code || "").trim(),
+        city: String(addr.city || "").trim(),
+        country: String(addr.country || "").trim().toUpperCase(),
+      }));
+    } catch (_) {}
+  };
+
+  const isCompleteAddress = (a) => {
+    try {
+      return !!(
+        a &&
+        String(a.line1 || "").trim() &&
+        String(a.postal_code || "").trim() &&
+        String(a.city || "").trim() &&
+        String(a.country || "").trim()
+      );
+    } catch (_) {
+      return false;
+    }
+  };
 
   const getMe = async () => {
     try {
@@ -155,31 +201,66 @@
       if (emailEl && profileEmail) emailEl.readOnly = true;
     } catch (_) {}
 
+    const addrs = Array.isArray(me?.addresses) ? me.addresses : [];
+    const byType = (t) => {
+      const want = String(t || "").trim().toLowerCase();
+      return addrs.find((a) => String(a?.type || "").trim().toLowerCase() === want) || null;
+    };
+    const shippingAddr = byType("shipping");
+    const billingAddr = byType("billing");
+
     if (countryEl && !countryTouched) {
-      const addrs = Array.isArray(me?.addresses) ? me.addresses : [];
-      const shipping = addrs.find((a) => String(a?.type || "") === "shipping") || null;
-      const billing = addrs.find((a) => String(a?.type || "") === "billing") || null;
-      const c = String((shipping?.country || billing?.country || "")).trim();
+      const c = String((shippingAddr?.country || billingAddr?.country || "")).trim();
       if (c) setSelectValueIfExists(countryEl, c);
     }
 
-    // Prefill shipping fields (best-effort) from stored addresses.
+    // Prefill shipping fields (best-effort): prefer stored profile addresses,
+    // fall back to locally remembered last address.
+    let a = shippingAddr || billingAddr;
+    if (!a || !String(a?.line1 || "").trim()) {
+      const last = readLastAddress();
+      if (last) a = last;
+    }
+
     try {
-      const addrs = Array.isArray(me?.addresses) ? me.addresses : [];
-      const shipping = addrs.find((a) => String(a?.type || "") === "shipping") || null;
-      const billing = addrs.find((a) => String(a?.type || "") === "billing") || null;
-      const a = shipping || billing;
-      if (!a) return;
+      if (a) {
+        if (shipLine1El && a.line1 && !shipLine1Touched && !String(shipLine1El.value || "").trim()) shipLine1El.value = String(a.line1 || "").trim();
+        if (shipLine2El && ("line2" in a) && a.line2 && !shipLine2Touched && !String(shipLine2El.value || "").trim()) shipLine2El.value = String(a.line2 || "").trim();
+        if (shipPostalEl && a.postal_code && !shipPostalTouched && !String(shipPostalEl.value || "").trim()) shipPostalEl.value = String(a.postal_code || "").trim();
+        if (shipCityEl && a.city && !shipCityTouched && !String(shipCityEl.value || "").trim()) shipCityEl.value = String(a.city || "").trim();
 
-      if (shipLine1El && a.line1 && !shipLine1Touched && !String(shipLine1El.value || "").trim()) shipLine1El.value = String(a.line1 || "").trim();
-      if (shipLine2El && a.line2 && !shipLine2Touched && !String(shipLine2El.value || "").trim()) shipLine2El.value = String(a.line2 || "").trim();
-      if (shipPostalEl && a.postal_code && !shipPostalTouched && !String(shipPostalEl.value || "").trim()) shipPostalEl.value = String(a.postal_code || "").trim();
-      if (shipCityEl && a.city && !shipCityTouched && !String(shipCityEl.value || "").trim()) shipCityEl.value = String(a.city || "").trim();
+        const cc = String(a.country || "").trim().toUpperCase();
+        if (shipCountryEl && cc && !shipCountryTouched) {
+          const cur = String(shipCountryEl.value || "").trim().toUpperCase();
+          if (!cur || cur === "SE") shipCountryEl.value = cc;
+        }
+      }
+    } catch (_) {}
 
-      const cc = String(a.country || "").trim().toUpperCase();
-      if (shipCountryEl && cc && !shipCountryTouched) {
-        const cur = String(shipCountryEl.value || "").trim().toUpperCase();
-        if (!cur || cur === "SE") shipCountryEl.value = cc;
+    // If we are logged in but have no saved addresses yet,
+    // and we have a complete local fallback address, sync it.
+    try {
+      const hasAny = !!(shippingAddr || billingAddr);
+      const last = readLastAddress();
+      if (!hasAny && isCompleteAddress(last)) {
+        apiPut("/api/me-addresses", {
+          billing: {
+            line1: String(last.line1 || "").trim(),
+            line2: String(last.line2 || "").trim() || null,
+            postal_code: String(last.postal_code || "").trim(),
+            city: String(last.city || "").trim(),
+            region: null,
+            country: String(last.country || "").trim().toUpperCase(),
+          },
+          shipping: {
+            line1: String(last.line1 || "").trim(),
+            line2: String(last.line2 || "").trim() || null,
+            postal_code: String(last.postal_code || "").trim(),
+            city: String(last.city || "").trim(),
+            region: null,
+            country: String(last.country || "").trim().toUpperCase(),
+          },
+        }).catch(() => {});
       }
     } catch (_) {}
   };
@@ -376,6 +457,29 @@
   shipPostalEl?.addEventListener("input", () => { shipPostalTouched = true; });
   shipCityEl?.addEventListener("input", () => { shipCityTouched = true; });
   shipCountryEl?.addEventListener("input", () => { shipCountryTouched = true; });
+
+  // Remember last entered shipping address (helps prefill even if user leaves before submit).
+  const persistAddrFromInputs = () => {
+    try {
+      const addr = {
+        line1: String(shipLine1El?.value || "").trim(),
+        line2: String(shipLine2El?.value || "").trim(),
+        postal_code: String(shipPostalEl?.value || "").trim(),
+        city: String(shipCityEl?.value || "").trim(),
+        country: String(shipCountryEl?.value || (countryEl?.value || "SE")).trim().toUpperCase(),
+      };
+      // Store even if incomplete; it still helps for partial prefill.
+      writeLastAddress(addr);
+    } catch (_) {}
+  };
+
+  for (const el of [shipLine1El, shipLine2El, shipPostalEl, shipCityEl, shipCountryEl]) {
+    try {
+      el?.addEventListener("input", persistAddrFromInputs);
+      el?.addEventListener("change", persistAddrFromInputs);
+      el?.addEventListener("blur", persistAddrFromInputs);
+    } catch (_) {}
+  }
 
   const getCartItems = () => {
     const cart = readCart();
