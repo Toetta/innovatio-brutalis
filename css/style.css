@@ -64,55 +64,25 @@ a{color:var(--brass-light); text-decoration:none}
 a:hover{color:var(--brass-main); text-decoration:underline}
 small{color:var(--text-muted)}
 
-.container{max-width:var(--maxw); margin:0 auto; padding:28px 20px}
+.container{max-width:var(--maxw); margin:0 auto; padding:0 20px 28px}
 
-/* Fixed top navigation: content must never scroll under it */
-#site-topbar{
-  position: fixed;
+/* Global header: in normal flow (no overlay). Sticky is allowed and still reserves space. */
+.site-header{
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  max-width: var(--maxw);
-  margin: 0 auto;
-  padding: 0 20px;
-  transform: none;
   z-index: 60;
   background: rgba(var(--bg-rgb), .98);
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(184,115,51,.18);
 }
 
-/* Reserve space for fixed topbar + player so content never enters that area */
+/* Main content gets its own spacing below the header */
 #ib-main{
-  padding-top: calc(var(--ib-topbar-h, 56px) + 16px + var(--ib-player-h, 0px) + 24px);
+  padding-top: 28px;
 }
 
-/* When enabled by JS, make #ib-main the only scroll container below the fixed UI.
-   This guarantees no content can scroll behind the topbar/player area. */
-html.ib-fixed-ui body{
-  overflow: hidden;
-}
-
-html.ib-fixed-ui #ib-main{
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: calc(var(--ib-topbar-h, 56px) + 16px + var(--ib-player-h, 0px) + 24px);
-  bottom: 0;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-  width: 100%;
-  max-width: var(--maxw);
-  margin: 0 auto;
-  padding: 28px 20px;
-  padding-top: 18px;
-}
-
-/* Anchor jumps should land below the fixed UI */
+/* Anchor jumps: keep a small margin without relying on header height math */
 *[id]{
-  scroll-margin-top: calc(var(--ib-topbar-h, 56px) + 16px + var(--ib-player-h, 0px) + 24px);
-}
-
-html.ib-fixed-ui *[id]{
   scroll-margin-top: 16px;
 }
 
@@ -284,14 +254,14 @@ html.ib-fixed-ui *[id]{
 
 /* Persistent Spotify player (stays across internal navigation) */
 .ib-spotify-player{
-  position: fixed;
-  top: calc(var(--ib-topbar-h, 56px) + 16px);
-  left: 0;
-  right: 0;
+  position: static;
+  top: auto;
+  left: auto;
+  right: auto;
   transform: none;
-  z-index: 70;
-  width: min(420px, calc(100vw - 32px));
-  margin: 0 auto;
+  z-index: auto;
+  width: 100%;
+  margin: 0;
 }
 
 .ib-spotify-player__inner{
@@ -354,15 +324,50 @@ html.ib-fixed-ui *[id]{
 }
 
 .ib-spotify-next--floating{
-  position: absolute;
-  top: 50%;
-  right: -54px;
-  transform: translateY(-50%);
-  z-index: 75;
+  position: static;
+  top: auto;
+  right: auto;
+  transform: none;
+  z-index: auto;
 }
 
-@media (max-width: 520px){
-  .ib-spotify-next--floating{ right: 10px; }
+/* Header-integrated Spotify bar */
+.spotify-bar{
+  margin-top: 12px;
+}
+
+.spotify-toggle{
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(184,115,51,.35);
+  border-radius: 999px;
+  background: rgba(var(--card-rgb), .85);
+  color: var(--text-main);
+  font: inherit;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.spotify-toggle:hover{
+  background: rgba(184,115,51,.18);
+}
+
+.spotify-panel{
+  margin-top: 10px;
+}
+
+@media (max-width: 768px){
+  .spotify-toggle{ display: inline-flex; }
+  .spotify-panel.is-collapsed{ display:none; }
+}
+
+@media (min-width: 769px){
+  .spotify-panel{ display:block !important; }
 }
 
 .ib-spotify-player iframe{

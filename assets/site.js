@@ -124,15 +124,27 @@
       <a ${isEN ? 'class="active"' : ""} href="${enUrl}">EN</a>
     `;
 
+    const toggleLabel = isEN ? "Music" : "Musik";
+    const toggleTitle = isEN ? "Show/hide music player" : "Visa/dölj musikspelare";
+
     return `
-      <div class="topbar">
-        <nav class="site-nav" aria-label="Site">
-          ${navLinks}
-        </nav>
-        <nav class="lang" aria-label="Language">
-          ${langLinks}
-        </nav>
-      </div>
+      <header class="site-header" id="ib-site-header">
+        <div class="topbar">
+          <nav class="site-nav" aria-label="Site">
+            ${navLinks}
+          </nav>
+          <nav class="lang" aria-label="Language">
+            ${langLinks}
+          </nav>
+        </div>
+
+        <div class="spotify-bar" aria-label="Spotify">
+          <button id="ib-spotify-toggle" class="spotify-toggle" type="button" aria-expanded="false" aria-controls="ib-spotify-panel" title="${toggleTitle}">
+            ${toggleLabel}
+          </button>
+          <div id="ib-spotify-panel" class="spotify-panel is-collapsed"></div>
+        </div>
+      </header>
     `;
   };
 
@@ -165,6 +177,50 @@
     } catch (_) {}
   };
 
+  const wireSpotifyHeaderToggle = () => {
+    try {
+      const btn = document.getElementById("ib-spotify-toggle");
+      const panel = document.getElementById("ib-spotify-panel");
+      if (!btn || !panel) return;
+      if (btn.dataset.wired === "1") return;
+      btn.dataset.wired = "1";
+
+      const isMobile = () => {
+        try { return window.matchMedia && window.matchMedia("(max-width: 768px)").matches; }
+        catch (_) { return false; }
+      };
+
+      const setCollapsed = (collapsed) => {
+        try {
+          const c = Boolean(collapsed);
+          panel.classList.toggle("is-collapsed", c);
+          btn.setAttribute("aria-expanded", c ? "false" : "true");
+          try { updatePlayerHeightVar(); } catch (_) {}
+        } catch (_) {}
+      };
+
+      // Default: collapsed on mobile, expanded on desktop.
+      try { setCollapsed(isMobile()); } catch (_) {}
+
+      btn.addEventListener("click", () => {
+        try {
+          btn.dataset.userToggled = "1";
+          const isCollapsed = panel.classList.contains("is-collapsed");
+          setCollapsed(!isCollapsed);
+        } catch (_) {}
+      });
+
+      try {
+        window.addEventListener("resize", () => {
+          try {
+            if (btn.dataset.userToggled === "1") return;
+            setCollapsed(isMobile());
+          } catch (_) {}
+        }, { passive: true });
+      } catch (_) {}
+    } catch (_) {}
+  };
+
   const refreshTopbar = () => {
     // Inject into #site-topbar.
     // If a page forgot to include the mount node, create it at the top of the main container.
@@ -176,6 +232,8 @@
       container.insertBefore(mount, container.firstChild);
     }
     mount.innerHTML = buildTopbarHTML();
+    wireSpotifyHeaderToggle();
+    try { placeSpotifyPlayerInHeader(); } catch (_) {}
     updatePlayerControlsLabel();
   };
 
@@ -204,25 +262,13 @@
         container.appendChild(main);
       }
 
-      // Ensure ordering: topbar -> player (if any) -> main
+      // Ensure ordering: header -> main
       if (container.firstChild !== topbarMount) {
         container.insertBefore(topbarMount, container.firstChild);
       }
 
-      // IMPORTANT: don't force #ib-main directly under the topbar.
-      // If the Spotify player exists, it should live between topbar and main to avoid
-      // being moved around on every PJAX navigation (which can reset iframe playback).
-      if (player && player.parentNode === container) {
-        if (topbarMount.nextElementSibling !== player) {
-          container.insertBefore(player, topbarMount.nextSibling);
-        }
-        if (player.nextElementSibling !== main) {
-          container.insertBefore(main, player.nextSibling);
-        }
-      } else {
-        if (topbarMount.nextElementSibling !== main) {
-          container.insertBefore(main, topbarMount.nextSibling);
-        }
+      if (topbarMount.nextElementSibling !== main) {
+        container.insertBefore(main, topbarMount.nextSibling);
       }
 
       return { container, topbarMount, main };
@@ -231,16 +277,22 @@
     }
   };
 
-  const placeSpotifyPlayerUnderTopbar = () => {
+  const placeSpotifyPlayerInHeader = () => {
     try {
       const root = document.getElementById("ib-spotify-player");
       if (!root) return;
-      const shell = ensureMainRegion();
-      if (!shell) return;
 
-      const { container, topbarMount, main } = shell;
-      if (root.parentNode !== container) container.insertBefore(root, main);
-      if (topbarMount.nextElementSibling !== root) container.insertBefore(root, topbarMount.nextSibling);
+      const panel = document.getElementById("ib-spotify-panel");
+      if (panel) {
+        if (root.parentNode !== panel) panel.appendChild(root);
+      } else {
+        // Fallback: keep it just above the main content.
+        const shell = ensureMainRegion();
+        if (!shell) return;
+        const { container, topbarMount, main } = shell;
+        if (root.parentNode !== container) container.insertBefore(root, main);
+        if (topbarMount.nextElementSibling !== root) container.insertBefore(root, topbarMount.nextSibling);
+      }
     } catch (_) {}
   };
 
@@ -318,28 +370,6 @@
 
   refreshTopbar();
   ensureMainRegion();
-  try {
-    // Enables the "scroll only under topbar/player" layout mode in CSS.
-    // Kept behind a class so no-JS fallback still scrolls normally.
-    if (document.getElementById("ib-main")) {
-      // NOTE: On /shop/ we keep the reserved top padding, but avoid the fixed scroll container.
-      // Native <select> dropdowns can otherwise get clipped inside an overflow container.
-      const normalizedPath = (() => {
-        try {
-          // computeState().path normalizes directory-like paths to end with "/".
-          // This makes /shop and /shop/ behave the same.
-          return computeState().path || (window.location.pathname || "");
-        } catch (_) {
-          return window.location.pathname || "";
-        }
-      })();
-
-      const pathLower = lower(normalizedPath);
-      const shopPath = pathLower.replace(/^\/en\//, "/");
-      const isShop = shopPath === "/shop" || shopPath === "/shop/" || shopPath.startsWith("/shop/");
-      if (!isShop) document.documentElement.classList.add("ib-fixed-ui");
-    }
-  } catch (_) {}
   updateTopbarHeightVar();
   updatePlayerHeightVar();
   wireFixedUiAutoMeasure();
@@ -478,9 +508,9 @@
           <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
             <div class="ib-spotify-player__row">
               <div id="ib-spotify-embed" aria-label="Spotify player"></div>
+              ${NEXT_BUTTON_HTML}
             </div>
           </div>
-          ${NEXT_BUTTON_HTML}
         `;
         document.body.appendChild(wrap);
       }
@@ -490,7 +520,9 @@
         const host = document.getElementById("ib-spotify-player");
         const btn = document.getElementById("ib-spotify-next");
         if (host && !btn) {
-          host.insertAdjacentHTML("beforeend", NEXT_BUTTON_HTML);
+          const row = host.querySelector?.(".ib-spotify-player__row");
+          if (row) row.insertAdjacentHTML("beforeend", NEXT_BUTTON_HTML);
+          else host.insertAdjacentHTML("beforeend", NEXT_BUTTON_HTML);
         }
       } catch (_) {}
 
@@ -498,16 +530,6 @@
       try {
         const btn = document.getElementById("ib-spotify-next");
         if (btn) {
-          // If a previous version placed the button inside the inner row,
-          // move it out so it doesn't overlap or shrink the embed.
-          try {
-            const host = document.getElementById("ib-spotify-player");
-            if (host && btn.closest && btn.closest(".ib-spotify-player__row")) {
-              btn.remove();
-              host.insertAdjacentHTML("beforeend", NEXT_BUTTON_HTML);
-            }
-          } catch (_) {}
-
           btn.type = "button";
           btn.className = "ib-spotify-next ib-spotify-next--floating";
           btn.innerHTML = `
@@ -519,8 +541,8 @@
         }
       } catch (_) {}
 
-      // Place the player in-flow right under the topbar so content never goes behind it.
-      placeSpotifyPlayerUnderTopbar();
+      // Place the player inside the header Spotify bar (in normal flow).
+      placeSpotifyPlayerInHeader();
       updateTopbarHeightVar();
       updatePlayerHeightVar();
 
@@ -786,7 +808,7 @@
           try { setTimeout(() => { try { forceSpotifyEmbedsDark(); } catch (_) {} }, 120); } catch (_) {}
         }
         root.style.display = "";
-        placeSpotifyPlayerUnderTopbar();
+        placeSpotifyPlayerInHeader();
         updateTopbarHeightVar();
         updatePlayerHeightVar();
         try { sessionStorage.setItem("ib_spotify_embed_src", embed); } catch (_) {}
@@ -984,7 +1006,7 @@
             }
             const { root } = getEls();
             if (root) root.style.display = "";
-            placeSpotifyPlayerUnderTopbar();
+            placeSpotifyPlayerInHeader();
             updateTopbarHeightVar();
             updatePlayerHeightVar();
 
@@ -1017,7 +1039,7 @@
           const { root } = getEls();
           if (!root) return false;
           root.style.display = "";
-          placeSpotifyPlayerUnderTopbar();
+          placeSpotifyPlayerInHeader();
           updateTopbarHeightVar();
           updatePlayerHeightVar();
 
@@ -1268,15 +1290,6 @@
       }
     };
 
-    const applyFixedUiModeForPath = (pathname) => {
-      try {
-        if (!document.getElementById("ib-main")) return;
-        const isShop = isShopPathname(pathname);
-        if (isShop) document.documentElement.classList.remove("ib-fixed-ui");
-        else document.documentElement.classList.add("ib-fixed-ui");
-      } catch (_) {}
-    };
-
     const ensureStylesheet = (href) => {
       try {
         const h = String(href || "").trim();
@@ -1330,7 +1343,6 @@
     const afterNavigation = async (u) => {
       try {
         const url = (u instanceof URL) ? u : new URL(String(u), window.location.origin);
-        applyFixedUiModeForPath(url.pathname);
         if (isShopPathname(url.pathname)) {
           ensureStylesheet("/shop/shop.css");
           await loadScriptOnce("/shop/shop.js");
@@ -1455,8 +1467,7 @@
 
       refreshTopbar();
       ensureMainRegion();
-      placeSpotifyPlayerUnderTopbar();
-      applyFixedUiModeForPath(window.location.pathname);
+      placeSpotifyPlayerInHeader();
       updateTopbarHeightVar();
       refreshYear();
       try { window.SiteDeepLinks?.refresh?.(); } catch (_) {}
