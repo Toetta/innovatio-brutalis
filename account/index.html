@@ -169,13 +169,42 @@
         const region = String(get(prefix+'region')?.value || '').trim();
         const country = String(get(prefix+'country')?.value || '').trim();
 
+        const normalizeCountryCode = (v) => {
+          const s = String(v || '').trim();
+          if (!s) return '';
+          if (/^[A-Za-z]{2}$/.test(s)) return s.toUpperCase();
+          return s;
+        };
+
+        const countryDisplayName = (v) => {
+          const codeOrName = normalizeCountryCode(v);
+          if (!codeOrName) return '';
+          if (!/^[A-Z]{2}$/.test(codeOrName)) return codeOrName;
+
+          const lang = 'en';
+          try {
+            if (typeof Intl !== 'undefined' && Intl.DisplayNames) {
+              const dn = new Intl.DisplayNames([lang], { type: 'region' });
+              return dn.of(codeOrName) || codeOrName;
+            }
+          } catch (_) {}
+
+          if (codeOrName === 'SE') return 'Sweden';
+          return codeOrName;
+        };
+
         const lines = [];
         if (line1) lines.push(line1);
         if (line2) lines.push(line2);
         const pcCity = [postal, city].filter(Boolean).join(' ');
         if (pcCity) lines.push(pcCity);
-        if (region) lines.push(region);
-        if (country) lines.push(country);
+
+        const cc = normalizeCountryCode(country);
+        const showRegion = !!(region && cc && cc !== 'SE');
+        if (showRegion) lines.push(region);
+
+        const cdn = countryDisplayName(country);
+        if (cdn) lines.push(cdn);
         return lines;
       };
 
