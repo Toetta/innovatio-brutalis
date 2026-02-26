@@ -133,16 +133,18 @@
           <nav class="site-nav" aria-label="Site">
             ${navLinks}
           </nav>
-          <nav class="lang" aria-label="Language">
-            ${langLinks}
-          </nav>
-        </div>
+          <div class="topbar-right">
+            <nav class="lang" aria-label="Language">
+              ${langLinks}
+            </nav>
 
-        <div class="spotify-bar" aria-label="Spotify">
-          <button id="ib-spotify-toggle" class="spotify-toggle" type="button" aria-expanded="false" aria-controls="ib-spotify-panel" title="${toggleTitle}">
-            ${toggleLabel}
-          </button>
-          <div id="ib-spotify-panel" class="spotify-panel is-collapsed"></div>
+            <div class="spotify-bar" aria-label="Spotify">
+              <button id="ib-spotify-toggle" class="spotify-toggle" type="button" aria-expanded="false" aria-controls="ib-spotify-panel" title="${toggleTitle}">
+                ${toggleLabel}
+              </button>
+              <div id="ib-spotify-panel" class="spotify-panel is-collapsed"></div>
+            </div>
+          </div>
         </div>
       </header>
     `;
