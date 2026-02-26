@@ -688,6 +688,14 @@
             const okAddr = !!(String(a.line1 || "").trim() && String(a.postal_code || "").trim() && String(a.city || "").trim() && String(a.country || "").trim());
             if (okAddr) {
               await apiPut("/api/me-addresses", {
+                billing: {
+                  line1: String(a.line1 || "").trim(),
+                  line2: String(a.line2 || "").trim() || null,
+                  postal_code: String(a.postal_code || "").trim(),
+                  city: String(a.city || "").trim(),
+                  region: null,
+                  country: String(a.country || "").trim().toUpperCase(),
+                },
                 shipping: {
                   line1: String(a.line1 || "").trim(),
                   line2: String(a.line2 || "").trim() || null,
