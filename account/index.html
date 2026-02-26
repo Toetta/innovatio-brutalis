@@ -72,7 +72,7 @@
               <aside class="addr-preview" aria-label="Förhandsvisning fakturaadress">
                 <div class="addr-preview-title">Förhandsvisning</div>
                 <div id="b_preview" class="addr-preview-box"></div>
-                <small>Namn och företag hämtas från profilen ovan.</small>
+                <small>Namn, företag och kontaktuppgifter hämtas från profilen ovan.</small>
               </aside>
             </div>
           </div>
@@ -92,7 +92,7 @@
               <aside class="addr-preview" aria-label="Förhandsvisning leveransadress">
                 <div class="addr-preview-title">Förhandsvisning</div>
                 <div id="s_preview" class="addr-preview-box"></div>
-                <small>Leveransadressen använder ditt namn (och ev. företag) från profilen ovan.</small>
+                <small>Leveransadressen använder dina uppgifter från profilen ovan.</small>
               </aside>
             </div>
           </div>
@@ -147,12 +147,23 @@
         const lines = [];
         const fullName = String(get('full_name')?.value || '').trim();
         const company = String(get('company_name')?.value || '').trim();
+        const orgnr = String(get('orgnr')?.value || '').trim();
+        const vatId = String(get('vat_id')?.value || '').trim();
+        const phone = String(get('phone')?.value || '').trim();
+        const email = String(who?.textContent || '').trim();
         if (fullName) lines.push(fullName);
         if (company) {
           const fn = fullName.toLowerCase();
           const co = company.toLowerCase();
           if (!fn || fn !== co) lines.push(company);
         }
+
+        // Invoice-friendly identifiers when company is present.
+        if (company && orgnr) lines.push(`Org.nr: ${orgnr}`);
+        if (company && vatId) lines.push(`VAT: ${vatId}`);
+
+        if (phone) lines.push(`Tel: ${phone}`);
+        if (email) lines.push(`E-post: ${email}`);
         return lines;
       };
 
@@ -194,9 +205,9 @@
         const pcCity = [postal, city].filter(Boolean).join(' ');
         if (pcCity) lines.push(pcCity);
 
-        const cc = normalizeCountryCode(country);
-        const showRegion = !!(region && cc && cc !== 'SE');
-        if (showRegion) lines.push(region);
+        // Region/state should be shown when provided (important for many countries,
+        // and some users want it visible even for SE).
+        if (region) lines.push(region);
 
         const cdn = countryDisplayName(country);
         if (cdn) lines.push(cdn);
