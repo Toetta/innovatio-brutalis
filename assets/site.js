@@ -505,11 +505,11 @@
         wrap.className = "ib-spotify-player";
         wrap.style.display = "none";
         wrap.innerHTML = `
-          <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
-            <div class="ib-spotify-player__row">
+          <div class="ib-spotify-player__row">
+            <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
               <div id="ib-spotify-embed" aria-label="Spotify player"></div>
-              ${NEXT_BUTTON_HTML}
             </div>
+            ${NEXT_BUTTON_HTML}
           </div>
         `;
         document.body.appendChild(wrap);
