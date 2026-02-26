@@ -553,7 +553,8 @@
     const phone = String(phoneEl?.value || "").trim();
     const email = String(emailEl?.value || "").trim();
     const customer_country = String(countryEl?.value || "SE").trim().toUpperCase();
-    const payment_provider = String((qs("input[name='paymethod']:checked") || {}).value || "stripe");
+    let payment_provider = String((qs("input[name='paymethod']:checked") || {}).value || "stripe");
+    if (payment_provider !== "stripe" && payment_provider !== "klarna") payment_provider = "stripe";
     const vat_number = normalizeVatIdForSend(vatIdEl?.value || "");
 
     const delivery_method = getDeliveryMethod();
