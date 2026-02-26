@@ -60,6 +60,45 @@
 
   let emailTouched = false;
   let countryTouched = false;
+  let fullNameTouched = false;
+  let phoneTouched = false;
+  let vatIdTouched = false;
+  let shipLine1Touched = false;
+  let shipLine2Touched = false;
+  let shipPostalTouched = false;
+  let shipCityTouched = false;
+  let shipCountryTouched = false;
+
+  const getMe = async () => {
+    try {
+      const res = await fetch("/api/me", { headers: { accept: "application/json" }, credentials: "include", cache: "no-store" });
+      const raw = await res.text().catch(() => "");
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+      return null;
+    }
+  };
+
+  const apiPut = async (path, body) => {
+    const res = await fetch(path, {
+      method: "PUT",
+      headers: { "content-type": "application/json", "accept": "application/json" },
+      body: JSON.stringify(body),
+      credentials: "include",
+      cache: "no-store",
+    });
+    const raw = await res.text().catch(() => "");
+    let data = null;
+    try { data = raw ? JSON.parse(raw) : null; } catch (_) { data = null; }
+    if (!res.ok) {
+      const msg = (data && data.error) ? String(data.error) : `${res.status} ${res.statusText}`;
+      const err = new Error(msg);
+      err.status = res.status;
+      err.data = data;
+      throw err;
+    }
+    return data;
+  };
 
   const setSelectValueIfExists = (selectEl, value) => {
     if (!selectEl) return false;
@@ -86,16 +125,24 @@
     } catch (_) {}
 
     // 2) Prefill from profile if logged in
-    let me = null;
-    try {
-      const res = await fetch("/api/me", { headers: { accept: "application/json" }, credentials: "include", cache: "no-store" });
-      const raw = await res.text().catch(() => "");
-      me = raw ? JSON.parse(raw) : null;
-    } catch (_) {
-      me = null;
-    }
+    const me = await getMe();
 
     if (!me || me.ok !== true) return;
+
+    const profileName = String(me?.customer?.full_name || "").trim();
+    if (fullNameEl && profileName && !fullNameTouched && !String(fullNameEl.value || "").trim()) {
+      fullNameEl.value = profileName;
+    }
+
+    const profilePhone = String(me?.customer?.phone || "").trim();
+    if (phoneEl && profilePhone && !phoneTouched && !String(phoneEl.value || "").trim()) {
+      phoneEl.value = profilePhone;
+    }
+
+    const profileVatId = String(me?.customer?.vat_id || "").trim();
+    if (vatIdEl && profileVatId && !vatIdTouched && !String(vatIdEl.value || "").trim()) {
+      vatIdEl.value = profileVatId;
+    }
 
     const profileEmail = String(me?.customer?.email || "").trim();
     if (emailEl && profileEmail && !emailTouched) {
@@ -115,6 +162,26 @@
       const c = String((shipping?.country || billing?.country || "")).trim();
       if (c) setSelectValueIfExists(countryEl, c);
     }
+
+    // Prefill shipping fields (best-effort) from stored addresses.
+    try {
+      const addrs = Array.isArray(me?.addresses) ? me.addresses : [];
+      const shipping = addrs.find((a) => String(a?.type || "") === "shipping") || null;
+      const billing = addrs.find((a) => String(a?.type || "") === "billing") || null;
+      const a = shipping || billing;
+      if (!a) return;
+
+      if (shipLine1El && a.line1 && !shipLine1Touched && !String(shipLine1El.value || "").trim()) shipLine1El.value = String(a.line1 || "").trim();
+      if (shipLine2El && a.line2 && !shipLine2Touched && !String(shipLine2El.value || "").trim()) shipLine2El.value = String(a.line2 || "").trim();
+      if (shipPostalEl && a.postal_code && !shipPostalTouched && !String(shipPostalEl.value || "").trim()) shipPostalEl.value = String(a.postal_code || "").trim();
+      if (shipCityEl && a.city && !shipCityTouched && !String(shipCityEl.value || "").trim()) shipCityEl.value = String(a.city || "").trim();
+
+      const cc = String(a.country || "").trim().toUpperCase();
+      if (shipCountryEl && cc && !shipCountryTouched) {
+        const cur = String(shipCountryEl.value || "").trim().toUpperCase();
+        if (!cur || cur === "SE") shipCountryEl.value = cc;
+      }
+    } catch (_) {}
   };
 
   const fmt = (amount, currency) => {
@@ -292,8 +359,23 @@
   });
 
   vatIdEl?.addEventListener("input", () => {
+    vatIdTouched = true;
     updatePreviewTaxSummary();
   });
+
+  fullNameEl?.addEventListener("input", () => {
+    fullNameTouched = true;
+  });
+
+  phoneEl?.addEventListener("input", () => {
+    phoneTouched = true;
+  });
+
+  shipLine1El?.addEventListener("input", () => { shipLine1Touched = true; });
+  shipLine2El?.addEventListener("input", () => { shipLine2Touched = true; });
+  shipPostalEl?.addEventListener("input", () => { shipPostalTouched = true; });
+  shipCityEl?.addEventListener("input", () => { shipCityTouched = true; });
+  shipCountryEl?.addEventListener("input", () => { shipCountryTouched = true; });
 
   const getCartItems = () => {
     const cart = readCart();
@@ -585,6 +667,43 @@
       try {
         if (email) localStorage.setItem(LAST_EMAIL_KEY, email);
       } catch (_) {}
+
+      // Best-effort: keep FU-Bookkeeping profile in sync when logged in.
+      try {
+        const me = await getMe();
+        if (me && me.ok === true) {
+          try {
+            await apiPut("/api/me", {
+              full_name,
+              phone,
+              vat_id: vat_number || "",
+            });
+          } catch (_) {
+            // non-blocking
+          }
+
+          // Only upsert shipping address if it looks complete.
+          try {
+            const a = shipping_address || getShippingAddress();
+            const okAddr = !!(String(a.line1 || "").trim() && String(a.postal_code || "").trim() && String(a.city || "").trim() && String(a.country || "").trim());
+            if (okAddr) {
+              await apiPut("/api/me-addresses", {
+                shipping: {
+                  line1: String(a.line1 || "").trim(),
+                  line2: String(a.line2 || "").trim() || null,
+                  postal_code: String(a.postal_code || "").trim(),
+                  city: String(a.city || "").trim(),
+                  region: null,
+                  country: String(a.country || "").trim().toUpperCase(),
+                },
+              });
+            }
+          } catch (_) {
+            // non-blocking
+          }
+        }
+      } catch (_) {}
+
       if (startBtn) startBtn.disabled = true;
       const data = await apiPost("/api/orders/create", {
         full_name,
