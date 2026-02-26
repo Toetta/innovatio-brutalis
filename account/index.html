@@ -72,7 +72,7 @@
               <aside class="addr-preview" aria-label="Förhandsvisning fakturaadress">
                 <div class="addr-preview-title">Förhandsvisning</div>
                 <div id="b_preview" class="addr-preview-box"></div>
-                <small>Namn, företag, telefon och e-post hämtas från profilen ovan.</small>
+                <small>Namn och företag hämtas från profilen ovan.</small>
               </aside>
             </div>
           </div>
@@ -92,7 +92,7 @@
               <aside class="addr-preview" aria-label="Förhandsvisning leveransadress">
                 <div class="addr-preview-title">Förhandsvisning</div>
                 <div id="s_preview" class="addr-preview-box"></div>
-                <small>Leveransadressen använder ditt namn och dina kontaktuppgifter från profilen ovan.</small>
+                <small>Leveransadressen använder ditt namn (och ev. företag) från profilen ovan.</small>
               </aside>
             </div>
           </div>
@@ -147,17 +147,12 @@
         const lines = [];
         const fullName = String(get('full_name')?.value || '').trim();
         const company = String(get('company_name')?.value || '').trim();
-        const phone = String(get('phone')?.value || '').trim();
-        const email = String(who?.textContent || '').trim();
         if (fullName) lines.push(fullName);
         if (company) {
           const fn = fullName.toLowerCase();
           const co = company.toLowerCase();
           if (!fn || fn !== co) lines.push(company);
         }
-        // Keep contact info visible so users understand what “comes with” the address.
-        if (phone) lines.push(`Tel: ${phone}`);
-        if (email) lines.push(`E-post: ${email}`);
         return lines;
       };
 
