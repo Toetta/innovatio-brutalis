@@ -235,7 +235,29 @@
       mount.id = "site-topbar";
       container.insertBefore(mount, container.firstChild);
     }
+
+    // IMPORTANT: the Spotify player is a persistent DOM node.
+    // Since we re-render the topbar via innerHTML, detach the player first
+    // so it doesn't get destroyed when it's currently mounted inside the topbar.
+    let persistentSpotifyPlayer = null;
+    try {
+      persistentSpotifyPlayer = document.getElementById("ib-spotify-player");
+      if (persistentSpotifyPlayer && persistentSpotifyPlayer.parentNode) {
+        persistentSpotifyPlayer.parentNode.removeChild(persistentSpotifyPlayer);
+      }
+    } catch (_) {
+      persistentSpotifyPlayer = null;
+    }
+
     mount.innerHTML = buildTopbarHTML();
+
+    // Re-attach the persistent player (if it existed) before we try to place it.
+    try {
+      if (persistentSpotifyPlayer && !document.getElementById("ib-spotify-player")) {
+        document.body.appendChild(persistentSpotifyPlayer);
+      }
+    } catch (_) {}
+
     wireSpotifyHeaderToggle();
     try { placeSpotifyPlayerInHeader(); } catch (_) {}
     updatePlayerControlsLabel();
