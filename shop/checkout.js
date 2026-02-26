@@ -892,7 +892,10 @@
   countryEl?.addEventListener("change", refreshPaymentOptions);
 
   try {
-    window.addEventListener("resize", () => syncStartButtonWidth());
+    if (!window.__IB_CHECKOUT_RESIZE_WIRED) {
+      window.__IB_CHECKOUT_RESIZE_WIRED = true;
+      window.addEventListener("resize", () => syncStartButtonWidth());
+    }
   } catch (_) {}
 
   // Initial sync (in case layout is already stable)

@@ -1489,11 +1489,58 @@
       });
     };
 
+    // For PJAX-swapped pages that rely on a non-idempotent IIFE script (e.g. checkout.js),
+    // we need to re-execute the script after each navigation because <script> tags from
+    // destination pages are not executed when we swap DOM.
+    const reloadPageScript = (src) => {
+      return new Promise((resolve, reject) => {
+        try {
+          const s = String(src || "").trim();
+          if (!s) return resolve();
+          const base = new URL(s, window.location.origin);
+          const key = base.pathname;
+
+          // Remove any previously injected instance of this page script.
+          try {
+            const old = Array.from(document.querySelectorAll(`script[data-ib-page-src="${key}"]`));
+            for (const el of old) {
+              try { el.parentNode?.removeChild?.(el); } catch (_) {}
+            }
+          } catch (_) {}
+
+          // Cache-bust so browsers actually re-run the script.
+          const u = new URL(base.toString());
+          u.searchParams.set("ibv", String(Date.now()));
+
+          const el = document.createElement("script");
+          el.src = u.toString();
+          el.async = true;
+          el.defer = true;
+          el.setAttribute("data-ib-page-src", key);
+          el.onload = () => resolve();
+          el.onerror = () => reject(new Error(`Failed to load ${s}`));
+          document.head.appendChild(el);
+        } catch (err) {
+          reject(err);
+        }
+      });
+    };
+
     const afterNavigation = async (u) => {
       try {
         const url = (u instanceof URL) ? u : new URL(String(u), window.location.origin);
         if (isShopPathname(url.pathname)) {
           ensureStylesheet("/shop/shop.css");
+
+          const path = lower(String(url.pathname || ""));
+          const isCheckout = path.endsWith("/shop/checkout.html");
+
+          if (isCheckout) {
+            // Checkout is an IIFE and must re-run on each PJAX swap.
+            await reloadPageScript("/shop/checkout.js");
+            return;
+          }
+
           await loadScriptOnce("/shop/shop.js");
           try { window.IBShop?.init?.(); } catch (_) {}
         }
