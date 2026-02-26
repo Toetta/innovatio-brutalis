@@ -130,15 +130,17 @@
     return `
       <header class="site-header" id="ib-site-header">
         <div class="topbar">
-          <nav class="site-nav" aria-label="Site">
-            ${navLinks}
-          </nav>
-          <div class="topbar-right">
+          <div class="topbar-left">
+            <nav class="site-nav" aria-label="Site">
+              ${navLinks}
+            </nav>
             <nav class="lang" aria-label="Language">
               ${langLinks}
             </nav>
+          </div>
 
-            <div class="spotify-bar" aria-label="Spotify">
+          <div class="topbar-right" aria-label="Spotify">
+            <div class="spotify-bar">
               <button id="ib-spotify-toggle" class="spotify-toggle" type="button" aria-expanded="false" aria-controls="ib-spotify-panel" title="${toggleTitle}">
                 ${toggleLabel}
               </button>
