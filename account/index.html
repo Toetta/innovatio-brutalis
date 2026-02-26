@@ -150,7 +150,11 @@
         const phone = String(get('phone')?.value || '').trim();
         const email = String(who?.textContent || '').trim();
         if (fullName) lines.push(fullName);
-        if (company) lines.push(company);
+        if (company) {
+          const fn = fullName.toLowerCase();
+          const co = company.toLowerCase();
+          if (!fn || fn !== co) lines.push(company);
+        }
         // Keep contact info visible so users understand what “comes with” the address.
         if (phone) lines.push(`Tel: ${phone}`);
         if (email) lines.push(`E-post: ${email}`);

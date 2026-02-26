@@ -470,6 +470,29 @@
 		// Default: show login state until we know
 		setAuthUi(false);
 
+		const refreshAuthState = (() => {
+			let inFlight = null;
+			return () => {
+				if (inFlight) return inFlight;
+				inFlight = Promise.resolve()
+					.then(() => apiRequest("GET", "/api/me"))
+					.then((me) => {
+						try {
+							setAuthUi(!!(me && me.ok));
+						} catch (_) {}
+					})
+					.catch(() => {
+						try {
+							setAuthUi(false);
+						} catch (_) {}
+					})
+					.finally(() => {
+						inFlight = null;
+					});
+				return inFlight;
+			};
+		})();
+
 		// Login should return to this exact shop URL
 		const getLoginUrl = () => {
 			try {
@@ -484,8 +507,13 @@
 			if (authBtn) {
 				authBtn.addEventListener("click", async (e) => {
 					e.preventDefault();
-					const mode = authBtn.getAttribute("data-auth-mode") || "login";
+					let mode = authBtn.getAttribute("data-auth-mode") || "login";
 					if (mode !== "logout") {
+						// If login happened in another tab, the UI may be stale.
+						// Refresh once before navigating away.
+						try { await refreshAuthState(); } catch (_) {}
+						mode = authBtn.getAttribute("data-auth-mode") || "login";
+						if (mode === "logout") return;
 						window.location.href = getLoginUrl();
 						return;
 					}
@@ -503,18 +531,20 @@
 		} catch (_) {}
 
 		// Toggle login/logout based on /api/me (async; don't block page)
+		try { refreshAuthState(); } catch (_) {}
+
+		// If login happens in another tab (magic link), refresh when coming back.
 		try {
-			apiRequest("GET", "/api/me")
-				.then((me) => {
-					try {
-						setAuthUi(!!(me && me.ok));
-					} catch (_) {}
-				})
-				.catch(() => {
-					try {
-						setAuthUi(false);
-					} catch (_) {}
-				});
+			window.addEventListener("focus", () => {
+				try { setTimeout(() => refreshAuthState(), 50); } catch (_) {}
+			});
+		} catch (_) {}
+		try {
+			document.addEventListener("visibilitychange", () => {
+				try {
+					if (!document.hidden) refreshAuthState();
+				} catch (_) {}
+			});
 		} catch (_) {}
 
 		grid.innerHTML = `<div class="card">${esc(t("loading"))}</div>`;
