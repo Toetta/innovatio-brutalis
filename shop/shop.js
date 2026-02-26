@@ -506,17 +506,29 @@
 		try {
 			if (authBtn) {
 				authBtn.addEventListener("click", async (e) => {
-					e.preventDefault();
 					let mode = authBtn.getAttribute("data-auth-mode") || "login";
 					if (mode !== "logout") {
 						// If login happened in another tab, the UI may be stale.
-						// Refresh once before navigating away.
-						try { await refreshAuthState(); } catch (_) {}
+						// Do a short, bounded refresh so the first click always "reacts".
+						const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+						try {
+							await Promise.race([
+								refreshAuthState(),
+								delay(150),
+							]);
+						} catch (_) {}
 						mode = authBtn.getAttribute("data-auth-mode") || "login";
-						if (mode === "logout") return;
+						if (mode === "logout") {
+							// User clicked "login" but they are actually logged in.
+							// Take them to their account instead of requiring a second click.
+							window.location.href = "/account/";
+							return;
+						}
 						window.location.href = getLoginUrl();
 						return;
 					}
+
+					e.preventDefault();
 					try {
 						authBtn.disabled = true;
 						await apiRequest("POST", "/api/auth/logout", {});
