@@ -6,12 +6,23 @@ import { nowIso, uuid, sha256Hex, randomToken } from "./_lib/crypto.js";
 import { createStripePaymentIntent } from "./_lib/stripe.js";
 import { createKlarnaPaymentsSession } from "./_lib/klarna.js";
 import { decideVatForOrder } from "./_lib/vat.js";
+import { loadProducts } from "./_lib/catalog.js";
+import { calculatePostNordShipping, sumCartWeightGrams } from "./_lib/shipping/postnord-tiers.js";
 
 const getOrdersSchemaInfo = async (db) => {
   const rows = await all(db.prepare("PRAGMA table_info(orders)").all());
   const cols = new Set(rows.map((r) => String(r?.name || "")).filter(Boolean));
   const v2 = cols.has("customer_country") && cols.has("payment_provider") && cols.has("public_token_hash") && cols.has("subtotal_minor");
-  return { v2, cols: Array.from(cols).sort((a, b) => a.localeCompare(b)) };
+
+  const v3 = v2 &&
+    cols.has("delivery_method") &&
+    cols.has("shipping_provider") &&
+    cols.has("shipping_code") &&
+    cols.has("fu_payload_json") &&
+    cols.has("exported_to_fu") &&
+    cols.has("exported_to_fu_at");
+
+  return { v2, v3, cols: Array.from(cols).sort((a, b) => a.localeCompare(b)) };
 };
 
 const to2 = (n) => {
@@ -35,53 +46,85 @@ const genOrderNumber = async () => {
   return `IB-${y}${m}${day}-${rand}`;
 };
 
-const loadProducts = async ({ request, slugs = [] }) => {
-  const wanted = Array.isArray(slugs) ? slugs.map((s) => String(s || "").trim()).filter(Boolean) : [];
+const normalizeStr = (v, maxLen = 200) => {
+  const s = String(v ?? "").trim();
+  if (!s) return "";
+  return s.length > maxLen ? s.slice(0, maxLen) : s;
+};
 
-  const map = new Map();
+const normalizeCountry = (cc) => {
+  const c = String(cc || "").trim().toUpperCase();
+  return /^[A-Z]{2}$/.test(c) ? c : "";
+};
 
-  // Fast path: aggregated file (may be stale in some deploy setups)
-  try {
-    const url = new URL("/content/products.json", request.url);
-    const res = await fetch(url.toString(), { headers: { accept: "application/json" }, cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json().catch(() => null);
-      const products = Array.isArray(data?.products) ? data.products : [];
-      for (const p of products) {
-        const slug = String(p?.slug || "").trim();
-        if (!slug) continue;
-        if (!map.has(slug)) map.set(slug, p);
-      }
-    }
-  } catch (_) {
-    // ignore
+const normalizeAddress = (raw) => {
+  const obj = (raw && typeof raw === "object" && !Array.isArray(raw)) ? raw : null;
+  if (!obj) return null;
+  const line1 = normalizeStr(obj.line1, 200);
+  const line2 = normalizeStr(obj.line2, 200);
+  const postal_code = normalizeStr(obj.postal_code, 32);
+  const city = normalizeStr(obj.city, 100);
+  const country = normalizeCountry(obj.country);
+  return { line1, line2: line2 || null, postal_code, city, country };
+};
+
+const requireAddressFields = (addr) => {
+  if (!addr) return "Missing shipping_address";
+  if (!addr.line1) return "Missing shipping_address.line1";
+  if (!addr.postal_code) return "Missing shipping_address.postal_code";
+  if (!addr.city) return "Missing shipping_address.city";
+  if (!addr.country) return "Missing shipping_address.country";
+  return "";
+};
+
+const buildFuInvoicePayloadV1 = ({
+  order_id,
+  created_at,
+  currency,
+  customer,
+  delivery,
+  product_lines,
+  shipping_line,
+  totals,
+}) => {
+  const lines = [];
+  for (const l of product_lines) {
+    lines.push({
+      type: "product",
+      name: l.title,
+      sku: l.sku,
+      quantity: l.qty,
+      unit_price: l.unit_price_inc_vat,
+      vat_rate: l.vat_rate,
+      total: l.line_total_inc_vat,
+      account_suggestion: 3011,
+    });
   }
 
-  // Fallback: load missing products directly from folder-based JSON files
-  const missing = wanted.length ? wanted.filter((s) => !map.has(s)) : [];
-  if (missing.length) {
-    const base = new URL("/content/products/", request.url);
-    const docs = await Promise.all(
-      missing.map(async (slug) => {
-        try {
-          const url = new URL(`${encodeURIComponent(slug)}.json`, base);
-          const res = await fetch(url.toString(), { headers: { accept: "application/json" }, cache: "no-store" });
-          if (!res.ok) return null;
-          return await res.json();
-        } catch (_) {
-          return null;
-        }
-      })
-    );
-    for (const p of docs) {
-      const slug = String(p?.slug || "").trim();
-      if (!slug) continue;
-      if (!map.has(slug)) map.set(slug, p);
-    }
+  if (shipping_line && Number(shipping_line.unit_price) > 0) {
+    lines.push({
+      type: "shipping",
+      name: shipping_line.name,
+      sku: "SHIPPING",
+      quantity: 1,
+      unit_price: shipping_line.unit_price,
+      vat_rate: shipping_line.vat_rate,
+      total: shipping_line.total,
+      account_suggestion: 3520,
+    });
   }
 
-  if (!map.size) throw new Error("Could not load products");
-  return map;
+  return {
+    schema_version: "1.0",
+    source: "innovatio-brutalis-webshop",
+    order_id,
+    created_at,
+    currency,
+    customer,
+    delivery,
+    lines,
+    totals,
+  };
 };
 
 export const onRequestGet = async (context) => {
@@ -103,7 +146,7 @@ export const onRequestPost = async (context) => {
     const { request, env } = context;
     const db = assertDb(env);
     // Guard against outdated schema (migration 0002 not applied)
-    const schema = await getOrdersSchemaInfo(db).catch(() => ({ v2: false, cols: [] }));
+    const schema = await getOrdersSchemaInfo(db).catch(() => ({ v2: false, v3: false, cols: [] }));
     if (!schema.v2) {
       const cfg = getEnv(env);
       const details = cfg.DEV_MODE ? ` Existing columns: ${schema.cols.join(", ")}` : "";
@@ -111,6 +154,18 @@ export const onRequestPost = async (context) => {
         {
           ok: false,
           error: "Database schema is outdated (orders table). Apply migrations/0002_payments_and_fu.sql to your D1 database." + details,
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!schema.v3) {
+      const cfg = getEnv(env);
+      const details = cfg.DEV_MODE ? ` Existing columns: ${schema.cols.join(", ")}` : "";
+      return json(
+        {
+          ok: false,
+          error: "Database schema is outdated (shipping/FU fields). Apply migrations/0003_add_shipping_fields.sql to your D1 database." + details,
         },
         { status: 500 }
       );
@@ -126,6 +181,15 @@ export const onRequestPost = async (context) => {
 
   const email = String(body?.email || (auth.ok ? auth.customer.email : "")).trim().toLowerCase();
   if (!email || !email.includes("@")) return badRequest("Missing email");
+
+  const full_name = normalizeStr(body?.full_name, 200);
+  if (!full_name) return badRequest("Missing full_name");
+
+  const phone = normalizeStr(body?.phone, 64);
+  if (!phone) return badRequest("Missing phone");
+
+  const delivery_method = String(body?.delivery_method || "pickup").trim().toLowerCase();
+  if (!delivery_method || !["pickup", "postnord"].includes(delivery_method)) return badRequest("Unsupported delivery_method");
 
   const customer_country = String(body?.customer_country || "SE").trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(customer_country)) return badRequest("Invalid customer_country");
@@ -179,6 +243,9 @@ export const onRequestPost = async (context) => {
     const priceIncVat = Number(p?.price_sek);
     if (!Number.isFinite(priceIncVat) || priceIncVat < 0) return badRequest(`Invalid price: ${ci.slug}`);
 
+    const w = Number(p?.weight_grams);
+    if (!Number.isFinite(w) || Math.trunc(w) !== w || w <= 0) return badRequest(`Product missing weight_grams: ${ci.slug}`);
+
     // Pricing model:
     // - Stored prices are assumed to be VAT-inclusive for the home market (SE).
     // - For export / reverse charge, we remove home VAT so the customer pays net.
@@ -190,12 +257,15 @@ export const onRequestPost = async (context) => {
     const lineVat = lineEx * vatRate;
     const lineInc = lineEx + lineVat;
 
+    const unitInc = unitEx * (1 + vatRate);
+
     lines.push({
       product_id: null,
       sku,
       title,
       qty: ci.qty,
       unit_price_ex_vat: to2(unitEx),
+      unit_price_inc_vat: to2(unitInc),
       vat_rate: vatRate,
       line_total_ex_vat: to2(lineEx),
       line_vat: to2(lineVat),
@@ -203,14 +273,40 @@ export const onRequestPost = async (context) => {
     });
   }
 
-  const subtotal_ex_vat = to2(lines.reduce((s, l) => s + l.line_total_ex_vat, 0));
-  const vat_total = to2(lines.reduce((s, l) => s + l.line_vat, 0));
-  const shipping_ex_vat = 0;
-  const shipping_vat = 0;
-  const total_inc_vat = to2(lines.reduce((s, l) => s + l.line_total_inc_vat, 0));
+  // Shipping
+  const total_weight_grams = sumCartWeightGrams({ cartItems, productsBySlug: products });
+
+  let shippingProvider = null;
+  let shippingCode = null;
+  let shippingInc = 0;
+  let shippingTier = null;
+
+  if (delivery_method === "postnord") {
+    const addr = normalizeAddress(body?.shipping_address);
+    const addrErr = requireAddressFields(addr);
+    if (addrErr) return badRequest(addrErr);
+
+    const q = await calculatePostNordShipping({ totalWeightGrams: total_weight_grams, request });
+    shippingProvider = q.provider;
+    shippingCode = q.code;
+    shippingTier = q.tier;
+    shippingInc = Number(q.amount_sek) || 0;
+  }
+
+  const SHIPPING_VAT_RATE = 0.25;
+  const shipping_ex_vat = shippingInc > 0 ? to2(shippingInc / (1 + SHIPPING_VAT_RATE)) : 0;
+  const shipping_vat = shippingInc > 0 ? to2(shippingInc - shipping_ex_vat) : 0;
+
+  const goods_subtotal_ex_vat = to2(lines.reduce((s, l) => s + l.line_total_ex_vat, 0));
+  const goods_vat_total = to2(lines.reduce((s, l) => s + l.line_vat, 0));
+  const goods_total_inc_vat = to2(lines.reduce((s, l) => s + l.line_total_inc_vat, 0));
+
+  const subtotal_ex_vat = goods_subtotal_ex_vat;
+  const vat_total = to2(goods_vat_total + shipping_vat);
+  const total_inc_vat = to2(goods_total_inc_vat + shippingInc);
   const subtotal_minor = toMinor(subtotal_ex_vat);
   const vat_total_minor = toMinor(vat_total);
-  const shipping_minor = 0;
+  const shipping_minor = toMinor(shippingInc);
   const total_minor = toMinor(total_inc_vat);
 
   const currency = "SEK";
@@ -247,11 +343,69 @@ export const onRequestPost = async (context) => {
     vies: vatDecision?.vies || null,
   };
 
+  const shipping_address = normalizeAddress(body?.shipping_address);
+  const billing_address = normalizeAddress(body?.billing_address) || shipping_address;
+
+  metadataObj.customer = {
+    full_name,
+    phone,
+  };
+  metadataObj.delivery = {
+    method: delivery_method,
+    provider: shippingProvider,
+    code: shippingCode,
+    tier: shippingTier,
+    total_weight_grams,
+    shipping_address: delivery_method === "postnord" ? shipping_address : null,
+  };
+
+  // FU invoice payload (deterministic) - stored for downstream integration.
+  const fuPayloadObj = buildFuInvoicePayloadV1({
+    order_id: id,
+    created_at,
+    currency,
+    customer: {
+      full_name,
+      email,
+      phone,
+      billing_address,
+      shipping_address: delivery_method === "postnord" ? shipping_address : null,
+    },
+    delivery: {
+      delivery_method,
+      provider: shippingProvider,
+      shipping_code: shippingCode,
+    },
+    product_lines: lines.map((l) => ({
+      sku: l.sku,
+      title: l.title,
+      qty: l.qty,
+      unit_price_inc_vat: l.unit_price_inc_vat,
+      vat_rate: l.vat_rate,
+      line_total_inc_vat: l.line_total_inc_vat,
+    })),
+    shipping_line: delivery_method === "postnord" ? {
+      name: "Frakt (PostNord)",
+      unit_price: to2(shippingInc),
+      vat_rate: SHIPPING_VAT_RATE,
+      total: to2(shippingInc),
+    } : null,
+    totals: {
+      subtotal: goods_total_inc_vat,
+      shipping: to2(shippingInc),
+      vat_total,
+      grand_total: total_inc_vat,
+    },
+  });
+
+  const fu_payload_json = JSON.stringify(fuPayloadObj);
+  metadataObj.fu_payload_schema = "1.0";
+
   const metadata = JSON.stringify(metadataObj);
 
   await exec(
     db,
-    "INSERT INTO orders (id, order_number, customer_id, email, customer_country, currency, status, payment_provider, payment_reference, payment_method, subtotal_ex_vat, vat_total, shipping_ex_vat, shipping_vat, total_inc_vat, subtotal_minor, vat_total_minor, shipping_minor, total_minor, placed_at, paid_at, refunded_at, failed_at, created_at, updated_at, public_token_hash, fu_voucher_id, fu_sync_status, fu_sync_error, metadata) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+    "INSERT INTO orders (id, order_number, customer_id, email, customer_country, currency, status, payment_provider, payment_reference, payment_method, subtotal_ex_vat, vat_total, shipping_ex_vat, shipping_vat, total_inc_vat, subtotal_minor, vat_total_minor, shipping_minor, total_minor, placed_at, paid_at, refunded_at, failed_at, created_at, updated_at, public_token_hash, fu_voucher_id, fu_sync_status, fu_sync_error, metadata, delivery_method, shipping_provider, shipping_code, fu_payload_json, exported_to_fu, exported_to_fu_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
     [
       id,
       order_number,
@@ -283,6 +437,12 @@ export const onRequestPost = async (context) => {
       "not_required",
       null,
       metadata,
+      delivery_method,
+      shippingProvider,
+      shippingCode,
+      fu_payload_json,
+      0,
+      null,
     ]
   );
 
@@ -291,6 +451,26 @@ export const onRequestPost = async (context) => {
       db,
       "INSERT INTO order_lines (id, order_id, product_id, sku, title, qty, unit_price_ex_vat, vat_rate, line_total_ex_vat, line_vat, line_total_inc_vat) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
       [uuid(), id, l.product_id, l.sku, l.title, l.qty, l.unit_price_ex_vat, l.vat_rate, l.line_total_ex_vat, l.line_vat, l.line_total_inc_vat]
+    );
+  }
+
+  if (delivery_method === "postnord" && shippingInc > 0) {
+    await exec(
+      db,
+      "INSERT INTO order_lines (id, order_id, product_id, sku, title, qty, unit_price_ex_vat, vat_rate, line_total_ex_vat, line_vat, line_total_inc_vat) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+      [
+        uuid(),
+        id,
+        null,
+        "SHIPPING",
+        "Frakt (PostNord)",
+        1,
+        shipping_ex_vat,
+        SHIPPING_VAT_RATE,
+        shipping_ex_vat,
+        shipping_vat,
+        to2(shippingInc),
+      ]
     );
   }
 
@@ -309,6 +489,9 @@ export const onRequestPost = async (context) => {
         currency,
         status: "pending_payment",
         customer_country,
+        delivery_method,
+        shipping_provider: shippingProvider,
+        shipping_code: shippingCode,
         tax_mode,
         vies_status: vatDecision?.vies?.status || null,
         vat_rate: vatRate,
@@ -331,22 +514,33 @@ export const onRequestPost = async (context) => {
 
   if (payment_provider === "klarna") {
     // Build Klarna order lines (minor units, inc VAT)
-    const klarnaLines = cartItems.map((ci) => {
-      const p = products.get(ci.slug);
-      const title = String(p?.title || ci.slug);
-      const priceIncVat = Number(p?.price_sek);
-      const unit_price = toMinor(priceIncVat);
-      const total_amount = unit_price * ci.qty;
-      const total_tax_amount = Math.round((total_amount * (vatRate / (1 + vatRate))) || 0);
+    const klarnaLines = lines.map((l) => {
+      const unit_price = toMinor(l.unit_price_inc_vat);
+      const total_amount = unit_price * l.qty;
+      const total_tax_amount = Math.round((total_amount * (l.vat_rate / (1 + l.vat_rate))) || 0);
       return {
-        name: title,
-        quantity: ci.qty,
+        name: l.title,
+        quantity: l.qty,
         unit_price,
-        tax_rate: Math.round(vatRate * 10000),
+        tax_rate: Math.round(l.vat_rate * 10000),
         total_amount,
         total_tax_amount,
       };
     });
+
+    if (delivery_method === "postnord" && shippingInc > 0) {
+      const unit_price = toMinor(shippingInc);
+      const total_amount = unit_price;
+      const total_tax_amount = Math.round((total_amount * (SHIPPING_VAT_RATE / (1 + SHIPPING_VAT_RATE))) || 0);
+      klarnaLines.push({
+        name: "Frakt (PostNord)",
+        quantity: 1,
+        unit_price,
+        tax_rate: Math.round(SHIPPING_VAT_RATE * 10000),
+        total_amount,
+        total_tax_amount,
+      });
+    }
 
     const session = await createKlarnaPaymentsSession({
       env,
@@ -374,6 +568,9 @@ export const onRequestPost = async (context) => {
         currency,
         status: "awaiting_action",
         customer_country,
+        delivery_method,
+        shipping_provider: shippingProvider,
+        shipping_code: shippingCode,
         tax_mode,
         vies_status: vatDecision?.vies?.status || null,
         vat_rate: vatRate,
@@ -422,6 +619,9 @@ export const onRequestPost = async (context) => {
         currency,
         status: "awaiting_action",
         customer_country,
+        delivery_method,
+        shipping_provider: shippingProvider,
+        shipping_code: shippingCode,
         tax_mode,
         vies_status: vatDecision?.vies?.status || null,
         vat_rate: vatRate,

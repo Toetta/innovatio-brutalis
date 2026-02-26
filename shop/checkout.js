@@ -28,6 +28,7 @@
 
   const cartSummary = qs("#cartSummary");
   const taxSummary = qs("#taxSummary");
+  const deliverySummary = qs("#deliverySummary");
   const startForm = qs("#startForm");
   const startBtn = qs("#startBtn");
   const startErr = qs("#startErr");
@@ -35,10 +36,19 @@
   const payTaxSummary = qs("#payTaxSummary");
   const payBtn = qs("#payBtn");
   const payErr = qs("#payErr");
+  const fullNameEl = qs("#fullName");
+  const phoneEl = qs("#phone");
   const emailEl = qs("#email");
   const countryEl = qs("#country");
   const vatIdWrap = qs("#vatIdWrap");
   const vatIdEl = qs("#vatId");
+  const pickupInfo = qs("#pickupInfo");
+  const shippingAddressWrap = qs("#shippingAddressWrap");
+  const shipLine1El = qs("#shipLine1");
+  const shipLine2El = qs("#shipLine2");
+  const shipPostalEl = qs("#shipPostal");
+  const shipCityEl = qs("#shipCity");
+  const shipCountryEl = qs("#shipCountry");
   const payMethodBox = qs("#payMethodBox");
   const paymentEl = qs("#paymentElement");
   const swishBox = qs("#swishBox");
@@ -276,6 +286,9 @@
 
   countryEl?.addEventListener("change", () => {
     countryTouched = true;
+    try {
+      if (shipCountryEl && !shipCountryEl.value) shipCountryEl.value = String(countryEl.value || "SE").trim().toUpperCase();
+    } catch (_) {}
   });
 
   vatIdEl?.addEventListener("input", () => {
@@ -341,6 +354,77 @@
   };
 
   let cartTotalSEK = 0;
+  let shippingQuoteSEK = 0;
+
+  const getDeliveryMethod = () => {
+    const el = qs("input[name='delivery_method']:checked");
+    return String(el?.value || "pickup").trim().toLowerCase();
+  };
+
+  const getShippingAddress = () => {
+    return {
+      line1: String(shipLine1El?.value || "").trim(),
+      line2: String(shipLine2El?.value || "").trim() || undefined,
+      postal_code: String(shipPostalEl?.value || "").trim(),
+      city: String(shipCityEl?.value || "").trim(),
+      country: String(shipCountryEl?.value || (countryEl?.value || "SE")).trim().toUpperCase(),
+    };
+  };
+
+  const setAddressRequired = (required) => {
+    const req = Boolean(required);
+    for (const el of [shipLine1El, shipPostalEl, shipCityEl, shipCountryEl]) {
+      if (!el) continue;
+      try { el.required = req; } catch (_) {}
+    }
+  };
+
+  const refreshShippingQuote = async () => {
+    const items = getCartItems();
+    if (!Object.keys(items).length) {
+      shippingQuoteSEK = 0;
+      return { ok: true, delivery_method: "pickup", total_weight_grams: 0, shipping: { amount_sek: 0 } };
+    }
+
+    const delivery_method = getDeliveryMethod();
+    if (delivery_method === "pickup") {
+      shippingQuoteSEK = 0;
+      return { ok: true, delivery_method, total_weight_grams: null, shipping: { amount_sek: 0 } };
+    }
+
+    const data = await apiPost("/api/shipping/quote", { delivery_method, items });
+    const amount = Number(data?.shipping?.amount_sek);
+    shippingQuoteSEK = Number.isFinite(amount) ? amount : 0;
+    return data;
+  };
+
+  const updateDeliveryUI = async () => {
+    const method = getDeliveryMethod();
+    if (pickupInfo) pickupInfo.hidden = method !== "pickup";
+    if (shippingAddressWrap) shippingAddressWrap.hidden = method !== "postnord";
+    setAddressRequired(method === "postnord");
+
+    try {
+      if (deliverySummary) deliverySummary.textContent = method === "pickup"
+        ? "Avhämtning: Innovatio Brutalis, (adress enligt överenskommelse)\nFrakt: 0 kr"
+        : "PostNord frakt: beräknar…";
+    } catch (_) {}
+
+    try {
+      const q = await refreshShippingQuote();
+      if (!deliverySummary) return;
+      if (method === "pickup") {
+        deliverySummary.textContent = `Avhämtning: Innovatio Brutalis, (adress enligt överenskommelse)\nFrakt: 0 kr\nTotal (estimat): ${fmt(cartTotalSEK, 'SEK')}`;
+        return;
+      }
+      const shipTxt = Number(shippingQuoteSEK) > 0 ? fmt(shippingQuoteSEK, "SEK") : "0 kr";
+      const totalEstimate = (Number(cartTotalSEK) || 0) + (Number(shippingQuoteSEK) || 0);
+      const grams = q && Number.isFinite(Number(q?.total_weight_grams)) ? Number(q.total_weight_grams) : null;
+      deliverySummary.textContent = `PostNord frakt: ${shipTxt} (viktbaserat)\nTotalvikt: ${grams != null ? grams : "?"} g\nTotal (estimat): ${fmt(totalEstimate, 'SEK')}`;
+    } catch (err) {
+      if (deliverySummary) deliverySummary.textContent = `Leverans: fel vid fraktberäkning (${String(err?.message || err)})`;
+    }
+  };
 
   const syncStartButtonWidth = () => {
     try {
@@ -400,6 +484,7 @@
     }
 
     updatePreviewTaxSummary();
+    try { updateDeliveryUI(); } catch (_) {}
     syncStartButtonWidth();
   };
 
@@ -424,8 +509,21 @@
 
     refreshPaymentOptions();
     updatePreviewTaxSummary();
+    await updateDeliveryUI();
     syncStartButtonWidth();
   };
+
+  for (const el of Array.from(document.querySelectorAll("input[name='delivery_method']"))) {
+    el.addEventListener("change", () => {
+      updateDeliveryUI();
+    });
+  }
+
+  for (const el of [shipLine1El, shipLine2El, shipPostalEl, shipCityEl, shipCountryEl]) {
+    el?.addEventListener("input", () => {
+      if (getDeliveryMethod() === "postnord") updateDeliveryUI();
+    });
+  }
 
   let stripe = null;
   let elements = null;
@@ -451,13 +549,35 @@
       return;
     }
 
+    const full_name = String(fullNameEl?.value || "").trim();
+    const phone = String(phoneEl?.value || "").trim();
     const email = String(emailEl?.value || "").trim();
     const customer_country = String(countryEl?.value || "SE").trim().toUpperCase();
     const payment_provider = String((qs("input[name='paymethod']:checked") || {}).value || "stripe");
     const vat_number = normalizeVatIdForSend(vatIdEl?.value || "");
+
+    const delivery_method = getDeliveryMethod();
+    const shipping_address = delivery_method === "postnord" ? getShippingAddress() : undefined;
+
+    if (!full_name) {
+      if (startErr) startErr.textContent = "Fyll i namn.";
+      return;
+    }
+    if (!phone) {
+      if (startErr) startErr.textContent = "Fyll i telefon.";
+      return;
+    }
     if (!email || !email.includes("@")) {
       if (startErr) startErr.textContent = "Fyll i e-post.";
       return;
+    }
+
+    if (delivery_method === "postnord") {
+      const a = shipping_address || {};
+      if (!String(a.line1 || "").trim() || !String(a.postal_code || "").trim() || !String(a.city || "").trim() || !String(a.country || "").trim()) {
+        if (startErr) startErr.textContent = "Fyll i leveransadress (PostNord).";
+        return;
+      }
     }
 
     try {
@@ -465,11 +585,15 @@
         if (email) localStorage.setItem(LAST_EMAIL_KEY, email);
       } catch (_) {}
       if (startBtn) startBtn.disabled = true;
-      const data = await apiPost("/api/orders", {
+      const data = await apiPost("/api/orders/create", {
+        full_name,
+        phone,
         email,
         customer_country,
         vat_number: vat_number || undefined,
         payment_provider,
+        delivery_method,
+        shipping_address,
         items,
       });
 

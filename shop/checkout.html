@@ -22,8 +22,19 @@
 
           <div id="cartSummary" class="badge" style="margin-top:10px">Laddar kundvagn…</div>
           <div id="taxSummary" class="badge" style="margin-top:10px; white-space:pre-line"></div>
+          <div id="deliverySummary" class="badge" style="margin-top:10px; white-space:pre-line"></div>
 
           <form id="startForm" style="margin-top:14px; display:grid; gap:10px">
+            <label class="badge" style="display:grid; gap:6px">
+              <span>Namn</span>
+              <input id="fullName" type="text" autocomplete="name" required />
+            </label>
+
+            <label class="badge" style="display:grid; gap:6px">
+              <span>Telefon</span>
+              <input id="phone" type="tel" autocomplete="tel" inputmode="tel" required />
+            </label>
+
             <label class="badge" style="display:grid; gap:6px">
               <span>E-post</span>
               <input id="email" type="email" autocomplete="email" required />
@@ -74,6 +85,52 @@
                 Ange endast om du handlar som företag inom EU (utanför Sverige). VAT-ID valideras via VIES; vid giltigt VAT-ID tillämpas 0% moms (omvänd skattskyldighet).
               </div>
             </div>
+
+            <fieldset class="badge" style="display:grid; gap:8px; padding:12px">
+              <legend style="padding:0 6px">Leverans</legend>
+              <label style="display:flex; gap:10px; align-items:center">
+                <input type="radio" name="delivery_method" value="pickup" checked>
+                <span>Avhämtning (0 kr)</span>
+              </label>
+              <label style="display:flex; gap:10px; align-items:center">
+                <input type="radio" name="delivery_method" value="postnord">
+                <span>PostNord frakt (viktbaserat)</span>
+              </label>
+
+              <div id="pickupInfo" style="color:var(--text-muted)">
+                Avhämtning: Innovatio Brutalis, (adress enligt överenskommelse)
+              </div>
+
+              <div id="shippingAddressWrap" style="display:grid; gap:10px" hidden>
+                <div style="color:var(--text-muted)">PostNord frakt: leveransadress krävs.</div>
+
+                <label class="badge" style="display:grid; gap:6px">
+                  <span>Adress</span>
+                  <input id="shipLine1" type="text" autocomplete="shipping street-address" />
+                </label>
+
+                <label class="badge" style="display:grid; gap:6px">
+                  <span>Adressrad 2 (valfritt)</span>
+                  <input id="shipLine2" type="text" autocomplete="shipping address-line2" />
+                </label>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                  <label class="badge" style="display:grid; gap:6px">
+                    <span>Postnr</span>
+                    <input id="shipPostal" type="text" autocomplete="shipping postal-code" />
+                  </label>
+                  <label class="badge" style="display:grid; gap:6px">
+                    <span>Ort</span>
+                    <input id="shipCity" type="text" autocomplete="shipping address-level2" />
+                  </label>
+                </div>
+
+                <label class="badge" style="display:grid; gap:6px">
+                  <span>Land (2 bokstäver)</span>
+                  <input id="shipCountry" type="text" value="SE" inputmode="text" autocomplete="shipping country" />
+                </label>
+              </div>
+            </fieldset>
 
             <fieldset id="payMethodBox" class="badge" style="display:grid; gap:8px; padding:12px; width:fit-content; max-width:100%; justify-self:center">
               <legend style="padding:0 6px">Betalmetod</legend>

@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node tools/build-shop-catalog.mjs"
+    "build": "node tools/build-shop-catalog.mjs",
+    "test": "node tools/test-shipping.mjs"
   },
   "devDependencies": {
     "wrangler": "^4.68.1"

@@ -26,7 +26,8 @@ const clearingAccountForProvider = (provider) => {
 export const buildFuVoucherPayload = ({ order, kind }) => {
   const total = toAmount2(order.total_inc_vat);
   const vat = toAmount2(order.vat_total);
-  const subtotalExVat = toAmount2(order.subtotal_ex_vat);
+  const goodsExVat = toAmount2(order.subtotal_ex_vat);
+  const shippingExVat = toAmount2(order.shipping_ex_vat);
   const clearing = clearingAccountForProvider(order.payment_provider);
 
   let tax = null;
@@ -40,6 +41,42 @@ export const buildFuVoucherPayload = ({ order, kind }) => {
   const sign = kind === "refund" ? -1 : 1;
   const text = kind === "refund" ? `Refund ${order.order_number}` : `Order ${order.order_number}`;
 
+  const hasShipping = Number.isFinite(Number(shippingExVat)) && Number(shippingExVat) > 0;
+
+  const voucherLines = [
+    // Clearing account: money in (sale) / money out (refund)
+    {
+      account: clearing,
+      debit: sign === 1 ? total : 0,
+      credit: sign === 1 ? 0 : total,
+      text,
+    },
+    // Goods sales
+    {
+      account: 3011,
+      debit: sign === 1 ? 0 : goodsExVat,
+      credit: sign === 1 ? goodsExVat : 0,
+      text,
+    },
+  ];
+
+  if (hasShipping) {
+    voucherLines.push({
+      account: 3520,
+      debit: sign === 1 ? 0 : shippingExVat,
+      credit: sign === 1 ? shippingExVat : 0,
+      text,
+    });
+  }
+
+  voucherLines.push({
+    // VAT
+    account: 2611,
+    debit: sign === 1 ? 0 : vat,
+    credit: sign === 1 ? vat : 0,
+    text,
+  });
+
   return {
     schema_version: "1.0",
     source: "innovatio-brutalis-webshop",
@@ -48,29 +85,7 @@ export const buildFuVoucherPayload = ({ order, kind }) => {
     order_number: order.order_number,
     currency: order.currency,
     date: (order.paid_at || order.placed_at || nowIso()).slice(0, 10),
-    lines: [
-      // Clearing account: money in (sale) / money out (refund)
-      {
-        account: clearing,
-        debit: sign === 1 ? total : 0,
-        credit: sign === 1 ? 0 : total,
-        text,
-      },
-      // Sales (credit on sale / debit on refund)
-      {
-        account: 3010,
-        debit: sign === 1 ? 0 : subtotalExVat,
-        credit: sign === 1 ? subtotalExVat : 0,
-        text,
-      },
-      // VAT (credit on sale / debit on refund)
-      {
-        account: 2611,
-        debit: sign === 1 ? 0 : vat,
-        credit: sign === 1 ? vat : 0,
-        text,
-      },
-    ],
+    lines: voucherLines,
     meta: {
       payment_provider: order.payment_provider || null,
       payment_reference: order.payment_reference || null,

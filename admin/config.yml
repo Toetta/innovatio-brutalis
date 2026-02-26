@@ -52,6 +52,33 @@ collections:
         widget: "string"
         required: false
       - { label: "Pris (SEK)", name: "price_sek", widget: "number" }
+
+      - label: "Weight (grams)"
+        name: "weight_grams"
+        widget: "number"
+        required: true
+        min: 1
+
+      - label: "Length (mm)"
+        name: "length_mm"
+        widget: "number"
+        required: false
+        min: 1
+      - label: "Width (mm)"
+        name: "width_mm"
+        widget: "number"
+        required: false
+        min: 1
+      - label: "Height (mm)"
+        name: "height_mm"
+        widget: "number"
+        required: false
+        min: 1
+
+      - label: "Shipping class (future)"
+        name: "shipping_class"
+        widget: "string"
+        required: false
       - label: "Category / Kategori"
         name: "category"
         widget: "relation"
