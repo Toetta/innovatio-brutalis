@@ -322,6 +322,54 @@
     } catch (_) {}
   };
 
+  // Keep the persistent Spotify player mounted even if some other script
+  // re-renders the topbar or swaps DOM during navigation.
+  const wireSpotifyAutoRemount = () => {
+    try {
+      if (window.__IB_SPOTIFY_REMOUNT_WIRED) return;
+      window.__IB_SPOTIFY_REMOUNT_WIRED = true;
+
+      let scheduled = false;
+      const schedule = () => {
+        if (scheduled) return;
+        scheduled = true;
+        const run = () => {
+          scheduled = false;
+          try { placeSpotifyPlayerInHeader(); } catch (_) {}
+          try { updateTopbarHeightVar(); } catch (_) {}
+          try { updatePlayerHeightVar(); } catch (_) {}
+        };
+        try { requestAnimationFrame(run); } catch (_) { try { setTimeout(run, 0); } catch (_) {} }
+      };
+
+      // Re-mount on focus/visibility changes (common after magic-link/login and bfcache restores)
+      try { window.addEventListener("focus", schedule, { passive: true }); } catch (_) {}
+      try {
+        document.addEventListener("visibilitychange", () => {
+          try {
+            if (document.visibilityState === "visible") schedule();
+          } catch (_) {}
+        }, { passive: true });
+      } catch (_) {}
+
+      // Observe the topbar subtree; if it gets replaced, re-append the player to the new panel.
+      try {
+        if (typeof MutationObserver === "function") {
+          const mount = document.getElementById("site-topbar");
+          if (mount) {
+            const mo = new MutationObserver(() => {
+              schedule();
+            });
+            mo.observe(mount, { childList: true, subtree: true });
+          }
+        }
+      } catch (_) {}
+
+      // Initial best-effort mount.
+      schedule();
+    } catch (_) {}
+  };
+
   const updateTopbarHeightVar = () => {
     try {
       const topbar = document.querySelector("#site-topbar .topbar") || document.getElementById("site-topbar");
@@ -399,6 +447,7 @@
   updateTopbarHeightVar();
   updatePlayerHeightVar();
   wireFixedUiAutoMeasure();
+  wireSpotifyAutoRemount();
 
   // --- Analytics (GA4 via gtag) ---
   const gaEvent = (name, params = {}) => {
@@ -1142,11 +1191,37 @@
 
       const didRestore = restore();
       if (!didRestore) {
-        // Optional default
+        // Default: prefer page-provided meta, else show something sensible so the
+        // player doesn't remain hidden in fresh sessions.
         (async () => {
           try {
             const def = document.querySelector('meta[name="ib-spotify-default"]')?.getAttribute("content")?.trim();
-            if (!def) return;
+            if (!def) {
+              // Try a random track from the exported library list.
+              try {
+                const urls = await ensureTrackUrls();
+                const picked = pickRandom(urls);
+                if (picked) {
+                  show(picked, { autoplay: false });
+                  return;
+                }
+              } catch (_) {}
+
+              // Last resort: a stable playlist controller (or iframe fallback).
+              try {
+                const playlistUri = "spotify:playlist:7h1c4DGKumkFVXH2N8eMFu";
+                const c = await ensureController(playlistUri);
+                if (c) {
+                  show(playlistUri, { autoplay: false });
+                  return;
+                }
+              } catch (_) {}
+
+              try {
+                showFallbackIframe("spotify:playlist:7h1c4DGKumkFVXH2N8eMFu");
+              } catch (_) {}
+              return;
+            }
 
             // Prefer a random track from the playlist (minimal player), fallback to the playlist embed.
             const isPlaylist = /open\.spotify\.com\/playlist\/[A-Za-z0-9]+/.test(def);
