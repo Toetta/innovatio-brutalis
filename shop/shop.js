@@ -236,15 +236,131 @@
 				profile.setAttribute("title", t("nav_profile"));
 				profile.setAttribute("aria-label", t("nav_profile"));
 			}
-			const authBtn = qs("#authBtn");
-			const authText = qs("#authText");
-			if (authBtn) {
-				authBtn.setAttribute("title", t("nav_login"));
-				authBtn.setAttribute("aria-label", t("nav_login"));
-			}
-			if (authText) authText.textContent = t("nav_login");
+			// Auth button label is handled by wireAuthButton() so it can reflect login state.
 		} catch (_) {}
 	};
+
+	// --- Auth button (shared across shop pages) ---
+	const wireAuthButton = (() => {
+		let wired = false;
+		let inFlight = null;
+
+		const setAuthUi = (loggedIn) => {
+			try {
+				const authBtn = qs("#authBtn");
+				if (!authBtn) return;
+				const authText = qs("#authText");
+				const authIconLogin = qs("#authIconLogin");
+				const authIconLogout = qs("#authIconLogout");
+
+				const isLoggedIn = !!loggedIn;
+				IBShop._isLoggedIn = isLoggedIn;
+				authBtn.setAttribute("data-auth-mode", isLoggedIn ? "logout" : "login");
+				const label = isLoggedIn ? t("nav_logout") : t("nav_login");
+				authBtn.setAttribute("title", label);
+				authBtn.setAttribute("aria-label", label);
+				if (authText) authText.textContent = label;
+				if (authIconLogin) authIconLogin.hidden = isLoggedIn;
+				if (authIconLogout) authIconLogout.hidden = !isLoggedIn;
+			} catch (_) {}
+		};
+
+		const refreshAuthState = () => {
+			if (inFlight) return inFlight;
+			inFlight = Promise.resolve()
+				.then(() => apiRequest("GET", "/api/me"))
+				.then((me) => {
+					try { setAuthUi(!!(me && me.ok)); } catch (_) {}
+				})
+				.catch(() => {
+					try { setAuthUi(false); } catch (_) {}
+				})
+				.finally(() => { inFlight = null; });
+			return inFlight;
+		};
+
+		const getLoginUrl = () => {
+			try {
+				const returnTo = (window.location.pathname || "/shop/") + (window.location.search || "");
+				return `/login/?return=${encodeURIComponent(returnTo)}`;
+			} catch (_) {
+				return "/login/";
+			}
+		};
+
+		return () => {
+			const authBtn = qs("#authBtn");
+			if (!authBtn) return { refreshAuthState };
+
+			// Keep label in sync with current language even before async refresh.
+			try {
+				const mode = authBtn.getAttribute("data-auth-mode") || "login";
+				setAuthUi(mode === "logout");
+			} catch (_) {}
+
+			if (wired) {
+				try { refreshAuthState(); } catch (_) {}
+				return { refreshAuthState };
+			}
+			wired = true;
+
+			try {
+				authBtn.addEventListener("click", async (e) => {
+					let mode = authBtn.getAttribute("data-auth-mode") || "login";
+					if (mode !== "logout") {
+						// If login happened in another tab, the UI may be stale.
+						const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+						try { await Promise.race([refreshAuthState(), delay(150)]); } catch (_) {}
+						mode = authBtn.getAttribute("data-auth-mode") || "login";
+						if (mode === "logout") {
+							window.location.href = "/account/";
+							return;
+						}
+						window.location.href = getLoginUrl();
+						return;
+					}
+
+					e.preventDefault();
+					try {
+						authBtn.disabled = true;
+						await apiRequest("POST", "/api/auth/logout", {});
+					} catch (_) {
+						// Ignore; we'll fall back to checking /api/me.
+					} finally {
+						try { authBtn.disabled = false; } catch (_) {}
+					}
+					setAuthUi(false);
+					try { refreshAuthState(); } catch (_) {}
+				});
+			} catch (_) {}
+
+			// Refresh state without blocking page.
+			try { refreshAuthState(); } catch (_) {}
+
+			// If login happens in another tab (magic link), refresh when coming back.
+			try {
+				window.addEventListener("focus", () => {
+					try { setTimeout(() => refreshAuthState(), 50); } catch (_) {}
+				});
+			} catch (_) {}
+			try {
+				document.addEventListener("visibilitychange", () => {
+					try { if (!document.hidden) refreshAuthState(); } catch (_) {}
+				});
+			} catch (_) {}
+			try {
+				window.addEventListener("pageshow", (ev) => {
+					try {
+						// Covers BFCache restores where JS state/DOM may be stale.
+						if (ev && ev.persisted) refreshAuthState();
+						else refreshAuthState();
+					} catch (_) {}
+				});
+			} catch (_) {}
+
+			return { refreshAuthState };
+		};
+	})();
 
 	const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (ch) => ({
 		"&": "&amp;",
@@ -439,6 +555,7 @@
 
 	const renderShopIndex = async () => {
 		applyShopI18n();
+		wireAuthButton();
 
 		const categoryFilter = qs("#categoryFilter");
 		const searchInput = qs("#searchInput");
@@ -446,118 +563,9 @@
 		const cartCard = qs("#cartCard");
 		const cartBtn = qs("#cartBtn");
 		const cartCount = qs("#cartCount");
-		const authBtn = qs("#authBtn");
-		const authText = qs("#authText");
-		const authIconLogin = qs("#authIconLogin");
-		const authIconLogout = qs("#authIconLogout");
 		if (!categoryFilter || !searchInput || !grid) return;
 
-		let isLoggedIn = false;
-		const setAuthUi = (loggedIn) => {
-			isLoggedIn = !!loggedIn;
-			try {
-				if (!authBtn) return;
-				authBtn.setAttribute("data-auth-mode", isLoggedIn ? "logout" : "login");
-				const label = isLoggedIn ? t("nav_logout") : t("nav_login");
-				authBtn.setAttribute("title", label);
-				authBtn.setAttribute("aria-label", label);
-				if (authText) authText.textContent = label;
-				if (authIconLogin) authIconLogin.hidden = isLoggedIn;
-				if (authIconLogout) authIconLogout.hidden = !isLoggedIn;
-			} catch (_) {}
-		};
-
-		// Default: show login state until we know
-		setAuthUi(false);
-
-		const refreshAuthState = (() => {
-			let inFlight = null;
-			return () => {
-				if (inFlight) return inFlight;
-				inFlight = Promise.resolve()
-					.then(() => apiRequest("GET", "/api/me"))
-					.then((me) => {
-						try {
-							setAuthUi(!!(me && me.ok));
-						} catch (_) {}
-					})
-					.catch(() => {
-						try {
-							setAuthUi(false);
-						} catch (_) {}
-					})
-					.finally(() => {
-						inFlight = null;
-					});
-				return inFlight;
-			};
-		})();
-
-		// Login should return to this exact shop URL
-		const getLoginUrl = () => {
-			try {
-				const returnTo = (window.location.pathname || "/shop/") + (window.location.search || "");
-				return `/login/?return=${encodeURIComponent(returnTo)}`;
-			} catch (_) {
-				return "/login/";
-			}
-		};
-
-		try {
-			if (authBtn) {
-				authBtn.addEventListener("click", async (e) => {
-					let mode = authBtn.getAttribute("data-auth-mode") || "login";
-					if (mode !== "logout") {
-						// If login happened in another tab, the UI may be stale.
-						// Do a short, bounded refresh so the first click always "reacts".
-						const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-						try {
-							await Promise.race([
-								refreshAuthState(),
-								delay(150),
-							]);
-						} catch (_) {}
-						mode = authBtn.getAttribute("data-auth-mode") || "login";
-						if (mode === "logout") {
-							// User clicked "login" but they are actually logged in.
-							// Take them to their account instead of requiring a second click.
-							window.location.href = "/account/";
-							return;
-						}
-						window.location.href = getLoginUrl();
-						return;
-					}
-
-					e.preventDefault();
-					try {
-						authBtn.disabled = true;
-						await apiRequest("POST", "/api/auth/logout", {});
-					} catch (_) {
-						// Ignore; we'll fall back to checking /api/me.
-					} finally {
-						try { authBtn.disabled = false; } catch (_) {}
-					}
-					setAuthUi(false);
-				});
-			}
-		} catch (_) {}
-
-		// Toggle login/logout based on /api/me (async; don't block page)
-		try { refreshAuthState(); } catch (_) {}
-
-		// If login happens in another tab (magic link), refresh when coming back.
-		try {
-			window.addEventListener("focus", () => {
-				try { setTimeout(() => refreshAuthState(), 50); } catch (_) {}
-			});
-		} catch (_) {}
-		try {
-			document.addEventListener("visibilitychange", () => {
-				try {
-					if (!document.hidden) refreshAuthState();
-				} catch (_) {}
-			});
-		} catch (_) {}
+		// Auth button is handled globally for all shop pages.
 
 		grid.innerHTML = `<div class="card">${esc(t("loading"))}</div>`;
 
@@ -767,6 +775,7 @@
 
 	const renderProductPage = async () => {
 		applyShopI18n();
+		wireAuthButton();
 
 		const view = qs("#productView");
 		if (!view) return;
