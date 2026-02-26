@@ -152,6 +152,44 @@
     `;
   };
 
+  // Update existing topbar without re-rendering the whole header.
+  // This is critical to avoid detaching the Spotify iframe from the DOM,
+  // which can pause/stop playback in some browsers.
+  const updateTopbarInPlace = (mount) => {
+    try {
+      const m = mount || document.getElementById("site-topbar");
+      if (!m) return false;
+      const curHeader = m.querySelector("#ib-site-header");
+      if (!curHeader) return false;
+
+      const tmp = document.createElement("div");
+      tmp.innerHTML = buildTopbarHTML();
+      const nextHeader = tmp.querySelector("#ib-site-header");
+      if (!nextHeader) return false;
+
+      const curNav = curHeader.querySelector("nav.site-nav");
+      const nextNav = nextHeader.querySelector("nav.site-nav");
+      if (curNav && nextNav) curNav.innerHTML = nextNav.innerHTML;
+
+      const curLang = curHeader.querySelector("nav.lang");
+      const nextLang = nextHeader.querySelector("nav.lang");
+      if (curLang && nextLang) curLang.innerHTML = nextLang.innerHTML;
+
+      const curToggle = curHeader.querySelector("#ib-spotify-toggle");
+      const nextToggle = nextHeader.querySelector("#ib-spotify-toggle");
+      if (curToggle && nextToggle) {
+        // Preserve any wiring state on the existing button.
+        curToggle.textContent = nextToggle.textContent;
+        const title = nextToggle.getAttribute("title") || "";
+        if (title) curToggle.setAttribute("title", title);
+      }
+
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
   const updatePlayerControlsLabel = () => {
     try {
       const btn = document.getElementById("ib-spotify-next");
@@ -235,6 +273,16 @@
       mount.id = "site-topbar";
       container.insertBefore(mount, container.firstChild);
     }
+
+    // If we already have a topbar, update it in place to avoid interrupting Spotify.
+    try {
+      if (updateTopbarInPlace(mount)) {
+        wireSpotifyHeaderToggle();
+        try { placeSpotifyPlayerInHeader(); } catch (_) {}
+        updatePlayerControlsLabel();
+        return;
+      }
+    } catch (_) {}
 
     // IMPORTANT: the Spotify player is a persistent DOM node.
     // Since we re-render the topbar via innerHTML, detach the player first
