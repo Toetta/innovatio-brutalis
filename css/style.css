@@ -92,7 +92,12 @@ small{color:var(--text-muted)}
   align-items:flex-start;
   justify-content:space-between;
   gap:16px;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
+}
+
+.site-nav{
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .topbar-right{
@@ -100,6 +105,13 @@ small{color:var(--text-muted)}
   flex-direction:column;
   align-items:flex-end;
   gap:8px;
+  margin-left:auto;
+  flex: 0 0 auto;
+}
+
+@media (max-width: 768px){
+  .topbar{ flex-wrap:wrap; }
+  .topbar-right{ width:100%; margin-left:0; }
 }
 
 /* Site nav */
@@ -367,7 +379,7 @@ small{color:var(--text-muted)}
 
 .spotify-panel{
   margin-top: 0;
-  width: 100%;
+  width: auto;
   display: flex;
   justify-content: flex-end;
 }
