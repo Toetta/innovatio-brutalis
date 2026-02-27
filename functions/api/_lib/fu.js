@@ -1,6 +1,7 @@
 import { getEnv } from "./env.js";
 import { assertDb, exec, one } from "./db.js";
 import { nowIso, uuid } from "./crypto.js";
+import { getShippingZone } from "./shipping/postnord-tiers.js";
 
 export const requireFuKey = ({ request, env }) => {
   const { FU_SYNC_KEY } = getEnv(env);
@@ -91,6 +92,10 @@ export const buildFuVoucherPayload = ({ order, kind }) => {
       payment_reference: order.payment_reference || null,
       email: order.email || null,
       customer_country: order.customer_country || null,
+      shipping_zone: getShippingZone(order.customer_country || "") || null,
+      delivery_method: order.delivery_method || null,
+      shipping_provider: order.shipping_provider || null,
+      shipping_code: order.shipping_code || null,
       tax_mode: tax?.mode || null,
       vat_rate: tax?.vat_rate != null ? tax.vat_rate : null,
       vat_number: tax?.vat_number || null,

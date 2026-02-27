@@ -9,11 +9,14 @@
       ]
     },
     "EU": {
+      "provider": "PostNord",
+      "currency": "SEK",
+      "pickup_allowed": false,
+      "max_weight_grams": 5000,
       "tiers": [
-        { "max_grams": 250, "amount_sek": 49, "code": "PN_T1" },
-        { "max_grams": 1000, "amount_sek": 69, "code": "PN_T2" },
-        { "max_grams": 3000, "amount_sek": 99, "code": "PN_T3" },
-        { "max_grams": 10000, "amount_sek": 149, "code": "PN_T4" }
+        { "max_grams": 500, "amount": 149, "code": "PN_EU_T1" },
+        { "max_grams": 2000, "amount": 199, "code": "PN_EU_T2" },
+        { "max_grams": 5000, "amount": 299, "code": "PN_EU_T3" }
       ]
     },
     "UK": {

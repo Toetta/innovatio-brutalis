@@ -49,7 +49,12 @@ export const onRequestPost = async (context) => {
       });
     }
 
-    const shipping = await calculatePostNordShipping({ totalWeightGrams: total_weight_grams, request, countryCode: country_code });
+    let shipping;
+    try {
+      shipping = await calculatePostNordShipping({ totalWeightGrams: total_weight_grams, request, countryCode: country_code });
+    } catch (e) {
+      return badRequest(String(e?.message || "Could not calculate shipping"));
+    }
     return json({ ok: true, country_code, zone, delivery_method, total_weight_grams, shipping });
   } catch (err) {
     // eslint-disable-next-line no-console

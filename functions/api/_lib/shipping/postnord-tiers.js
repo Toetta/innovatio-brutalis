@@ -85,14 +85,22 @@ export const calculatePostNordTierShipping = (totalWeightGrams, config, zone = "
   const w = toInt(totalWeightGrams);
   if (!Number.isInteger(w) || w <= 0) throw new Error("Invalid totalWeightGrams");
 
-  const cfg = resolveTierConfig(config, zone);
+  const z = String(zone || "SE").trim().toUpperCase() || "SE";
+  const cfg = resolveTierConfig(config, z);
+
+  const maxWeight = toInt(cfg?.max_weight_grams);
+  if (Number.isInteger(maxWeight) && maxWeight > 0 && w > maxWeight) {
+    if (z === "EU" && maxWeight === 5000) throw new Error("EU shipping over 5kg – contact us");
+    throw new Error("Shipping over max weight – contact us");
+  }
+
   const tiers = Array.isArray(cfg?.tiers) ? cfg.tiers : [];
   if (!tiers.length) throw new Error("Shipping config missing tiers");
 
   const normalized = tiers
     .map((t) => {
       const max_grams = toInt(t?.max_grams);
-      const amount_sek = Number(t?.amount_sek);
+      const amount_sek = Number(t?.amount_sek ?? t?.amount);
       const code = String(t?.code || "").trim();
       if (!Number.isInteger(max_grams) || max_grams <= 0) return null;
       if (!Number.isFinite(amount_sek) || amount_sek < 0) return null;

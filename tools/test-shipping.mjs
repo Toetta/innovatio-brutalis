@@ -41,6 +41,14 @@ const run = async () => {
   }
 
   {
+    // EU max weight rule: > 5kg => contact us
+    assert.throws(
+      () => calculateDeliveryShipping({ delivery_method: "postnord", totalWeightGrams: 5001, config: cfg, countryCode: "DE" }),
+      (err) => String(err?.message || "") === "EU shipping over 5kg – contact us"
+    );
+  }
+
+  {
     // shipping_exempt products: weight may be 0 and should not throw
     const productsBySlug = new Map([
       ["p", { slug: "p", weight_grams: 200 }],

@@ -321,7 +321,12 @@ export const onRequestPost = async (context) => {
       shippingTier = null;
       shippingInc = 0;
     } else {
-      const q = await calculatePostNordShipping({ totalWeightGrams: total_weight_grams, request, countryCode: customer_country });
+      let q;
+      try {
+        q = await calculatePostNordShipping({ totalWeightGrams: total_weight_grams, request, countryCode: customer_country });
+      } catch (e) {
+        return badRequest(String(e?.message || "Could not calculate shipping"));
+      }
       shippingProvider = q.provider;
       shippingCode = q.code;
       shippingTier = q.tier;
@@ -329,7 +334,9 @@ export const onRequestPost = async (context) => {
     }
   }
 
-  const SHIPPING_VAT_RATE = 0.25;
+  // For now: apply the same VAT logic to shipping as to goods.
+  // (e.g. SE domestic => 25%, export => 0%)
+  const SHIPPING_VAT_RATE = Number.isFinite(Number(vatRate)) ? Number(vatRate) : 0;
   const shipping_ex_vat = shippingInc > 0 ? to2(shippingInc / (1 + SHIPPING_VAT_RATE)) : 0;
   const shipping_vat = shippingInc > 0 ? to2(shippingInc - shipping_ex_vat) : 0;
 
@@ -394,6 +401,8 @@ export const onRequestPost = async (context) => {
     provider: shippingProvider,
     code: shippingCode,
     tier: shippingTier,
+    zone: shippingZone,
+    destination_country: customer_country,
     total_weight_grams,
     shipping_address: delivery_method === "postnord" ? shipping_address : null,
   };
@@ -412,8 +421,12 @@ export const onRequestPost = async (context) => {
     },
     delivery: {
       delivery_method,
+      shipping_zone: shippingZone,
+      destination_country: customer_country,
       provider: shippingProvider,
       shipping_code: shippingCode,
+      shipping_tier: shippingTier,
+      total_weight_grams,
     },
     product_lines: lines.map((l) => ({
       sku: l.sku,
