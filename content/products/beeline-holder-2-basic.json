@@ -1,10 +1,13 @@
 {
-  "published": true,
-  "slug": "beeline-holder-2-basic",
-  "title_sv": "Beeline gen2 hållare, basmodell",
-  "title_en": "Beeline gen1 holder, basic",
-  "title": "",
   "price_sek": 247,
+  "title_sv": "Beeline gen2 hållare, basmodell",
+  "slug": "beeline-holder-2-basic",
+  "published": true,
+  "title_en": "Beeline gen1 holder, basic",
   "weight_grams": 200,
+  "title": "",
+  "height_mm": 100,
+  "length_mm": 150,
+  "width_mm": 100,
   "category": "lambretta"
 }
