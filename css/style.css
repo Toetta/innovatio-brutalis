@@ -594,6 +594,24 @@ li{margin:6px 0}
 .video-grid iframe{height:315px;}
 .video-grid video{aspect-ratio: 16 / 9; height:auto;}
 
+/* Compact variant (used on 3D print pages sidebar) */
+.video-grid.video-grid-compact{
+  grid-template-columns: 1fr;
+  justify-items:center;
+}
+.video-grid.video-grid-compact iframe,
+.video-grid.video-grid-compact video{
+  width: min(360px, 100%);
+}
+.video-grid.video-grid-compact iframe{height:203px;}
+
+.media-compact{
+  width: min(360px, 100%);
+  height: auto;
+  display:block;
+  margin: 12px auto 0;
+}
+
 .video-feature{
   margin-top:14px;
   display:flex;
