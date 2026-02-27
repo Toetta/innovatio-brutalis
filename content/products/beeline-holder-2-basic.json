@@ -1,15 +1,19 @@
 {
   "price_sek": 249,
-  "description_sv": "Beeline hållare för montering vid bagagekroken. Har man ingen bagagekrok (än) behöver man göra de 4 hålen och hållaren kan användas som borrmall.",
+  "description_sv": "Beeline hållare för montering vid bagagekroken. Har man ingen bagagekrok (än) behöver man göra de 4 hålen och hållaren kan användas som borrmall.\n\nKan får i olika varianter för att hålla varvräknare shift ligh eller andra instrument utöver Beeline",
   "title_sv": "Beeline gen2 hållare, basmodell",
   "slug": "beeline-holder-2-basic",
-  "description_en": "Beeline holder for mounting on the luggage hook. If you don't have a luggage hook (yet), you need to make the 4 holes and the holder can be used as a drilling template.",
+  "description_en": "Beeline holder for mounting on the luggage hook. If you don't have a luggage hook (yet), you need to make the 4 holes and the holder can be used as a drilling template. Can be obtained in different versions to hold tachometer shift light or other instruments in addition to Beeline",
   "published": true,
   "title_en": "Beeline gen1 holder, basic",
   "weight_grams": 200,
   "title": "",
+  "images": [
+    "/assets/uploads/img_3988.jpeg"
+  ],
   "height_mm": 100,
   "length_mm": 150,
   "width_mm": 100,
+  "image": "/assets/uploads/img_3988.jpeg",
   "category": "lambretta"
 }
