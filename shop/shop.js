@@ -636,11 +636,13 @@
 					<div class=\"card product\">
 						<a class=\"product-link\" href=\"${href}\">
 							${img ? `<img class=\"thumb\" src=\"${esc(img)}\" alt=\"\">` : `<div class=\"thumb\"></div>`}
-							<div>
-								<div style=\"font-weight:800\">${esc(title)}</div>
-								${excerpt ? `<div class=\"badge\">${esc(excerpt)}</div>` : ""}
+							<div class=\"product-body\">
+								<div class=\"product-title\">${esc(title)}</div>
+								${excerpt
+									? `<div class=\"badge product-excerpt\">${esc(excerpt)}</div>`
+									: `<div class=\"badge product-excerpt product-excerpt-empty\" aria-hidden=\"true\">&nbsp;</div>`}
 							</div>
-							<div class=\"meta\">
+							<div class=\"meta product-meta\">
 								<div class=\"badge\">${esc(catLabel || "")}</div>
 								<div style=\"text-align:right\">
 									<div class=\"price\">${esc(price)}</div>
