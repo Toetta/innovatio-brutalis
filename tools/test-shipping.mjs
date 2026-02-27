@@ -34,6 +34,24 @@ const run = async () => {
     const pickup = calculateDeliveryShipping({ delivery_method: "pickup", totalWeightGrams: grams, config: cfg });
     assert.equal(pickup.amount_sek, 0);
     assert.equal(pickup.provider, null);
+
+    // Zone-aware helper (EU)
+    const euShip = calculateDeliveryShipping({ delivery_method: "postnord", totalWeightGrams: grams, config: cfg, countryCode: "DE" });
+    assert.equal(euShip.provider, "PostNord");
+  }
+
+  {
+    // shipping_exempt products: weight may be 0 and should not throw
+    const productsBySlug = new Map([
+      ["p", { slug: "p", weight_grams: 200 }],
+      ["svc", { slug: "svc", shipping_exempt: true, weight_grams: 0 }],
+    ]);
+    const cartItems = [
+      { slug: "p", qty: 1 },
+      { slug: "svc", qty: 3 },
+    ];
+    const grams = sumCartWeightGrams({ cartItems, productsBySlug });
+    assert.equal(grams, 200);
   }
 
   {

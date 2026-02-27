@@ -1,8 +1,28 @@
 {
-  "tiers": [
-    { "max_grams": 250, "amount_sek": 49, "code": "PN_T1" },
-    { "max_grams": 1000, "amount_sek": 69, "code": "PN_T2" },
-    { "max_grams": 3000, "amount_sek": 99, "code": "PN_T3" },
-    { "max_grams": 10000, "amount_sek": 149, "code": "PN_T4" }
-  ]
+  "zones": {
+    "SE": {
+      "tiers": [
+        { "max_grams": 250, "amount_sek": 49, "code": "PN_T1" },
+        { "max_grams": 1000, "amount_sek": 69, "code": "PN_T2" },
+        { "max_grams": 3000, "amount_sek": 99, "code": "PN_T3" },
+        { "max_grams": 10000, "amount_sek": 149, "code": "PN_T4" }
+      ]
+    },
+    "EU": {
+      "tiers": [
+        { "max_grams": 250, "amount_sek": 49, "code": "PN_T1" },
+        { "max_grams": 1000, "amount_sek": 69, "code": "PN_T2" },
+        { "max_grams": 3000, "amount_sek": 99, "code": "PN_T3" },
+        { "max_grams": 10000, "amount_sek": 149, "code": "PN_T4" }
+      ]
+    },
+    "UK": {
+      "tiers": [
+        { "max_grams": 250, "amount_sek": 49, "code": "PN_T1" },
+        { "max_grams": 1000, "amount_sek": 69, "code": "PN_T2" },
+        { "max_grams": 3000, "amount_sek": 99, "code": "PN_T3" },
+        { "max_grams": 10000, "amount_sek": 149, "code": "PN_T4" }
+      ]
+    }
+  }
 }

@@ -1,13 +1,13 @@
 import { badRequest, json, unauthorized } from "./_lib/resp.js";
 import { requireCustomer } from "./_lib/auth.js";
-import { assertDb, all, exec } from "./_lib/db.js";
+import { assertDb, all, exec, one } from "./_lib/db.js";
 import { getEnv } from "./_lib/env.js";
 import { nowIso, uuid, sha256Hex, randomToken } from "./_lib/crypto.js";
 import { createStripePaymentIntent } from "./_lib/stripe.js";
 import { createKlarnaPaymentsSession } from "./_lib/klarna.js";
 import { decideVatForOrder } from "./_lib/vat.js";
 import { loadProducts } from "./_lib/catalog.js";
-import { calculatePostNordShipping, sumCartWeightGrams } from "./_lib/shipping/postnord-tiers.js";
+import { calculatePostNordShipping, getShippingZone, sumCartWeightGrams } from "./_lib/shipping/postnord-tiers.js";
 
 const getOrdersSchemaInfo = async (db) => {
   const rows = await all(db.prepare("PRAGMA table_info(orders)").all());
@@ -22,7 +22,16 @@ const getOrdersSchemaInfo = async (db) => {
     cols.has("exported_to_fu") &&
     cols.has("exported_to_fu_at");
 
-  return { v2, v3, cols: Array.from(cols).sort((a, b) => a.localeCompare(b)) };
+  let supportsNeedsShippingQuoteStatus = false;
+  try {
+    const row = await one(db.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'orders' LIMIT 1").all());
+    const sql = String(row?.sql || "").toLowerCase();
+    supportsNeedsShippingQuoteStatus = sql.includes("needs_shipping_quote");
+  } catch (_) {
+    supportsNeedsShippingQuoteStatus = false;
+  }
+
+  return { v2, v3, supportsNeedsShippingQuoteStatus, cols: Array.from(cols).sort((a, b) => a.localeCompare(b)) };
 };
 
 const to2 = (n) => {
@@ -194,6 +203,20 @@ export const onRequestPost = async (context) => {
   const customer_country = String(body?.customer_country || "SE").trim().toUpperCase();
   if (!/^[A-Z]{2}$/.test(customer_country)) return badRequest("Invalid customer_country");
 
+  const shippingZone = getShippingZone(customer_country);
+  if (shippingZone === "OTHER" && !schema.supportsNeedsShippingQuoteStatus) {
+    const cfg = getEnv(env);
+    const details = cfg.DEV_MODE ? ` Existing columns: ${schema.cols.join(", ")}` : "";
+    return json(
+      {
+        ok: false,
+        error: "Database schema is outdated (orders status constraint). Apply migrations/0004_add_needs_shipping_quote_status.sql to your D1 database." + details,
+      },
+      { status: 500 }
+    );
+  }
+  if (shippingZone !== "SE" && delivery_method === "pickup") return badRequest("Pickup only available in Sweden");
+
   const vat_number = body?.vat_number != null ? String(body.vat_number || "").trim() : "";
   if (vat_number && vat_number.length > 32) return badRequest("Invalid vat_number");
 
@@ -243,8 +266,11 @@ export const onRequestPost = async (context) => {
     const priceIncVat = Number(p?.price_sek);
     if (!Number.isFinite(priceIncVat) || priceIncVat < 0) return badRequest(`Invalid price: ${ci.slug}`);
 
+    const shippingExempt = p?.shipping_exempt === true;
     const w = Number(p?.weight_grams);
-    if (!Number.isFinite(w) || Math.trunc(w) !== w || w <= 0) return badRequest(`Product missing weight_grams: ${ci.slug}`);
+    if (!shippingExempt) {
+      if (!Number.isFinite(w) || Math.trunc(w) !== w || w <= 0) return badRequest(`Product missing weight_grams: ${ci.slug}`);
+    }
 
     // Pricing model:
     // - Stored prices are assumed to be VAT-inclusive for the home market (SE).
@@ -285,12 +311,22 @@ export const onRequestPost = async (context) => {
     const addr = normalizeAddress(body?.shipping_address);
     const addrErr = requireAddressFields(addr);
     if (addrErr) return badRequest(addrErr);
+    if (addr && addr.country && addr.country !== customer_country) {
+      return badRequest("shipping_address.country must match customer_country");
+    }
 
-    const q = await calculatePostNordShipping({ totalWeightGrams: total_weight_grams, request });
-    shippingProvider = q.provider;
-    shippingCode = q.code;
-    shippingTier = q.tier;
-    shippingInc = Number(q.amount_sek) || 0;
+    if (shippingZone === "OTHER") {
+      shippingProvider = null;
+      shippingCode = null;
+      shippingTier = null;
+      shippingInc = 0;
+    } else {
+      const q = await calculatePostNordShipping({ totalWeightGrams: total_weight_grams, request, countryCode: customer_country });
+      shippingProvider = q.provider;
+      shippingCode = q.code;
+      shippingTier = q.tier;
+      shippingInc = Number(q.amount_sek) || 0;
+    }
   }
 
   const SHIPPING_VAT_RATE = 0.25;
@@ -311,8 +347,11 @@ export const onRequestPost = async (context) => {
 
   const currency = "SEK";
 
+  // OTHER: manual shipping quote => no payment session/intent created.
+  const isManualShippingQuote = shippingZone === "OTHER" && delivery_method === "postnord";
+
   // Klarna guard (SE + <= KLARNA_MAX_SEK)
-  if (payment_provider === "klarna") {
+  if (!isManualShippingQuote && payment_provider === "klarna") {
     const { KLARNA_MAX_SEK, KLARNA_USERNAME, KLARNA_PASSWORD } = getEnv(env);
     if (String(customer_country) !== "SE") return badRequest("Klarna only available for SE");
     if (Number(total_inc_vat) > Number(KLARNA_MAX_SEK || 0)) return badRequest(`Klarna max ${Number(KLARNA_MAX_SEK || 0)} SEK`);
@@ -403,6 +442,10 @@ export const onRequestPost = async (context) => {
 
   const metadata = JSON.stringify(metadataObj);
 
+  const initialStatus = isManualShippingQuote ? "needs_shipping_quote" : "pending_payment";
+  const payment_provider_db = isManualShippingQuote ? null : (payment_provider === "swish_manual" ? "swish" : payment_provider);
+  const payment_method_db = isManualShippingQuote ? null : payment_provider;
+
   await exec(
     db,
     "INSERT INTO orders (id, order_number, customer_id, email, customer_country, currency, status, payment_provider, payment_reference, payment_method, subtotal_ex_vat, vat_total, shipping_ex_vat, shipping_vat, total_inc_vat, subtotal_minor, vat_total_minor, shipping_minor, total_minor, placed_at, paid_at, refunded_at, failed_at, created_at, updated_at, public_token_hash, fu_voucher_id, fu_sync_status, fu_sync_error, metadata, delivery_method, shipping_provider, shipping_code, fu_payload_json, exported_to_fu, exported_to_fu_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
@@ -413,10 +456,10 @@ export const onRequestPost = async (context) => {
       email,
       customer_country,
       currency,
-      "pending_payment",
-      payment_provider === "swish_manual" ? "swish" : payment_provider,
+      initialStatus,
+      payment_provider_db,
       null,
-      payment_provider,
+      payment_method_db,
       subtotal_ex_vat,
       vat_total,
       shipping_ex_vat,
@@ -472,6 +515,35 @@ export const onRequestPost = async (context) => {
         to2(shippingInc),
       ]
     );
+  }
+
+  if (isManualShippingQuote) {
+    return json({
+      ok: true,
+      order: {
+        id,
+        order_number,
+        currency,
+        status: "needs_shipping_quote",
+        customer_country,
+        delivery_method,
+        shipping_provider: shippingProvider,
+        shipping_code: shippingCode,
+        tax_mode,
+        vies_status: vatDecision?.vies?.status || null,
+        vat_rate: vatRate,
+        subtotal_ex_vat,
+        vat_total,
+        shipping_ex_vat,
+        shipping_vat,
+        total_inc_vat,
+        placed_at,
+      },
+      public_token,
+      contact: {
+        mode: "manual_shipping_quote",
+      },
+    });
   }
 
   if (payment_provider === "swish_manual") {

@@ -317,6 +317,15 @@
     return EU_COUNTRIES.has(c);
   };
 
+  const getShippingZone = (cc) => {
+    const c = String(cc || "").trim().toUpperCase();
+    if (c === "SE") return "SE";
+    if (c === "GB" || c === "UK") return "UK";
+    if (isEu(c)) return "EU";
+    if (/^[A-Z]{2}$/.test(c)) return "OTHER";
+    return "SE";
+  };
+
   const normalizeVatIdForSend = (raw) => {
     const s = String(raw || "").trim().toUpperCase();
     if (!s) return "";
@@ -435,7 +444,11 @@
   countryEl?.addEventListener("change", () => {
     countryTouched = true;
     try {
-      if (shipCountryEl && !shipCountryEl.value) shipCountryEl.value = String(countryEl.value || "SE").trim().toUpperCase();
+      const cc = String(countryEl.value || "SE").trim().toUpperCase();
+      if (shipCountryEl && !shipCountryTouched) {
+        const cur = String(shipCountryEl.value || "").trim().toUpperCase();
+        if (!cur || cur === "SE") shipCountryEl.value = cc;
+      }
     } catch (_) {}
   });
 
@@ -542,6 +555,35 @@
   let cartTotalSEK = 0;
   let shippingQuoteSEK = 0;
 
+  const setDeliveryOptionVisible = (value, visible) => {
+    const input = qs(`input[name='delivery_method'][value='${String(value || "").trim()}']`);
+    const label = input ? input.closest("label") : null;
+    if (label) label.style.display = visible ? "" : "none";
+    if (input) input.disabled = !visible;
+  };
+
+  const setDeliveryMethod = (value) => {
+    const input = qs(`input[name='delivery_method'][value='${String(value || "").trim()}']`);
+    if (input && !input.disabled) input.checked = true;
+  };
+
+  const applyDeliveryOptionsForZone = () => {
+    const country = String(countryEl?.value || "SE").trim().toUpperCase();
+    const zone = getShippingZone(country);
+
+    if (zone === "SE") {
+      setDeliveryOptionVisible("pickup", true);
+      setDeliveryOptionVisible("postnord", true);
+      return zone;
+    }
+
+    // EU/UK/OTHER: pickup not available
+    setDeliveryOptionVisible("pickup", false);
+    setDeliveryOptionVisible("postnord", true);
+    setDeliveryMethod("postnord");
+    return zone;
+  };
+
   const getDeliveryMethod = () => {
     const el = qs("input[name='delivery_method']:checked");
     return String(el?.value || "pickup").trim().toLowerCase();
@@ -572,28 +614,43 @@
       return { ok: true, delivery_method: "pickup", total_weight_grams: 0, shipping: { amount_sek: 0 } };
     }
 
+    const customer_country = String(countryEl?.value || "SE").trim().toUpperCase();
+    const zone = getShippingZone(customer_country);
+
     const delivery_method = getDeliveryMethod();
     if (delivery_method === "pickup") {
       shippingQuoteSEK = 0;
       return { ok: true, delivery_method, total_weight_grams: null, shipping: { amount_sek: 0 } };
     }
 
-    const data = await apiPost("/api/shipping/quote", { delivery_method, items });
+    if (zone === "OTHER") {
+      shippingQuoteSEK = 0;
+      return { ok: true, country_code: customer_country, zone, delivery_method, total_weight_grams: null, shipping: { amount_sek: 0 } };
+    }
+
+    const data = await apiPost("/api/shipping/quote", { delivery_method, country_code: customer_country, items });
     const amount = Number(data?.shipping?.amount_sek);
     shippingQuoteSEK = Number.isFinite(amount) ? amount : 0;
     return data;
   };
 
   const updateDeliveryUI = async () => {
+    const zone = applyDeliveryOptionsForZone();
     const method = getDeliveryMethod();
     if (pickupInfo) pickupInfo.hidden = method !== "pickup";
     if (shippingAddressWrap) shippingAddressWrap.hidden = method !== "postnord";
     setAddressRequired(method === "postnord");
 
     try {
-      if (deliverySummary) deliverySummary.textContent = method === "pickup"
-        ? "Avhämtning: Innovatio Brutalis, (adress enligt överenskommelse)\nFrakt: 0 kr"
-        : "PostNord frakt: beräknar…";
+      if (deliverySummary) {
+        if (zone === "OTHER") {
+          deliverySummary.textContent = "Leverans: frakt offereras manuellt efter beställning.\nFrakt: enligt överenskommelse";
+        } else {
+          deliverySummary.textContent = method === "pickup"
+            ? "Avhämtning: Innovatio Brutalis, (adress enligt överenskommelse)\nFrakt: 0 kr"
+            : "PostNord frakt: beräknar…";
+        }
+      }
     } catch (_) {}
 
     try {
@@ -603,6 +660,12 @@
         deliverySummary.textContent = `Avhämtning: Innovatio Brutalis, (adress enligt överenskommelse)\nFrakt: 0 kr\nTotal (estimat): ${fmt(cartTotalSEK, 'SEK')}`;
         return;
       }
+
+      if (zone === "OTHER") {
+        deliverySummary.textContent = "Leverans: frakt offereras manuellt efter beställning.\nFrakt: enligt överenskommelse\nTotal (utan frakt): " + fmt(cartTotalSEK, "SEK");
+        return;
+      }
+
       const shipTxt = Number(shippingQuoteSEK) > 0 ? fmt(shippingQuoteSEK, "SEK") : "0 kr";
       const totalEstimate = (Number(cartTotalSEK) || 0) + (Number(shippingQuoteSEK) || 0);
       const grams = q && Number.isFinite(Number(q?.total_weight_grams)) ? Number(q.total_weight_grams) : null;
@@ -648,6 +711,11 @@
 
   const refreshPaymentOptions = () => {
     const country = String(countryEl?.value || "SE").trim().toUpperCase();
+    const zone = applyDeliveryOptionsForZone();
+
+    // OTHER: contact-only flow (no payment)
+    if (payMethodBox) payMethodBox.hidden = zone === "OTHER";
+
     const showKlarna = country === "SE" && cartTotalSEK > 0 && cartTotalSEK <= 500;
     if (klarnaOption) klarnaOption.hidden = !showKlarna;
 
@@ -862,6 +930,23 @@
       const currency = data?.order?.currency;
 
       if (cartSummary) cartSummary.innerHTML = `Order <strong>${esc(data?.order?.order_number || "")}</strong> · ${esc(fmt(total, currency))}`;
+
+      // Contact-only flow (OTHER zone)
+      if (String(data?.order?.status || "") === "needs_shipping_quote") {
+        if (payForm) payForm.hidden = true;
+        if (payTaxSummary) payTaxSummary.textContent = "";
+        if (swishBox) {
+          swishBox.hidden = false;
+          swishBox.className = "badge";
+          swishBox.innerHTML = `
+            <div style="font-weight:800">Fraktförfrågan skickad</div>
+            <div style="margin-top:10px; color:var(--text-muted)">Vi återkommer med fraktkostnad och betalningsinstruktioner.</div>
+            <div style="margin-top:10px"><a class="btn" href="/shop/thanks.html?order=${encodeURIComponent(orderId)}&token=${encodeURIComponent(publicToken)}">Visa status</a></div>
+          `;
+        }
+        startForm.hidden = true;
+        return;
+      }
 
       // Swish manual
       if (data?.swish && data.swish.mode === "manual") {

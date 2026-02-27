@@ -4,6 +4,37 @@ const toInt = (n) => {
   return Math.trunc(x);
 };
 
+const EU_COUNTRIES = new Set([
+  "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR", "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK", "SI", "ES",
+]);
+
+export const getShippingZone = (countryCode) => {
+  const cc = String(countryCode || "").trim().toUpperCase();
+  if (cc === "SE") return "SE";
+  if (cc === "GB" || cc === "UK") return "UK";
+  if (EU_COUNTRIES.has(cc)) return "EU";
+  if (/^[A-Z]{2}$/.test(cc)) return "OTHER";
+  return "SE";
+};
+
+const resolveTierConfig = (config, zone) => {
+  const z = String(zone || "SE").trim().toUpperCase() || "SE";
+  const cfg = (config && typeof config === "object") ? config : null;
+  if (!cfg) return { tiers: [] };
+
+  // New format: { zones: { SE: { tiers: [...] }, EU: {...}, UK: {...} } }
+  const zones = (cfg.zones && typeof cfg.zones === "object") ? cfg.zones : null;
+  if (zones) {
+    const zoneCfg = (zones[z] && typeof zones[z] === "object") ? zones[z] : null;
+    if (zoneCfg && Array.isArray(zoneCfg.tiers)) return zoneCfg;
+    const fallback = (zones.SE && typeof zones.SE === "object") ? zones.SE : null;
+    if (fallback && Array.isArray(fallback.tiers)) return fallback;
+  }
+
+  // Legacy format: { tiers: [...] }
+  return cfg;
+};
+
 let cachedConfig = null;
 let cachedAt = 0;
 const CACHE_MS = 60_000;
@@ -36,18 +67,26 @@ export const sumCartWeightGrams = ({ cartItems, productsBySlug }) => {
     const p = productsBySlug.get(slug);
     if (!p) throw new Error(`Unknown product: ${slug}`);
 
+    const shippingExempt = p?.shipping_exempt === true;
     const w = toInt(p?.weight_grams);
+    if (shippingExempt) {
+      const grams = (Number.isInteger(w) && w > 0) ? w : 0;
+      total += grams * qty;
+      continue;
+    }
+
     if (!Number.isInteger(w) || w <= 0) throw new Error(`Product missing weight_grams: ${slug}`);
     total += w * qty;
   }
   return total;
 };
 
-export const calculatePostNordTierShipping = (totalWeightGrams, config) => {
+export const calculatePostNordTierShipping = (totalWeightGrams, config, zone = "SE") => {
   const w = toInt(totalWeightGrams);
   if (!Number.isInteger(w) || w <= 0) throw new Error("Invalid totalWeightGrams");
 
-  const tiers = Array.isArray(config?.tiers) ? config.tiers : [];
+  const cfg = resolveTierConfig(config, zone);
+  const tiers = Array.isArray(cfg?.tiers) ? cfg.tiers : [];
   if (!tiers.length) throw new Error("Shipping config missing tiers");
 
   const normalized = tiers
@@ -79,17 +118,31 @@ export const calculatePostNordTierShipping = (totalWeightGrams, config) => {
   };
 };
 
-export const calculatePostNordShipping = async ({ totalWeightGrams, request }) => {
+export const calculatePostNordShipping = async ({ totalWeightGrams, request, countryCode }) => {
+  const w = toInt(totalWeightGrams);
+  if (!Number.isInteger(w) || w < 0) throw new Error("Invalid totalWeightGrams");
+
   const cfg = await loadShippingConfig({ request });
-  return calculatePostNordTierShipping(totalWeightGrams, cfg);
+  const zone = getShippingZone(countryCode);
+
+  // If all products are shipping-exempt, allow 0g with 0 SEK shipping.
+  if (w === 0) {
+    return { amount_sek: 0, tier: null, code: null, provider: "PostNord" };
+  }
+
+  return calculatePostNordTierShipping(w, cfg, zone);
 };
 
 // Pure helper (no fetch/request) - useful for unit tests.
-export const calculateDeliveryShipping = ({ delivery_method, totalWeightGrams, config }) => {
+export const calculateDeliveryShipping = ({ delivery_method, totalWeightGrams, config, countryCode }) => {
   const method = String(delivery_method || "pickup").trim().toLowerCase();
   if (method === "pickup") {
     return { amount_sek: 0, tier: null, code: null, provider: null };
   }
   if (method !== "postnord") throw new Error("Unsupported delivery_method");
-  return calculatePostNordTierShipping(totalWeightGrams, config);
+  const w = toInt(totalWeightGrams);
+  if (!Number.isInteger(w) || w < 0) throw new Error("Invalid totalWeightGrams");
+  if (w === 0) return { amount_sek: 0, tier: null, code: null, provider: "PostNord" };
+  const zone = getShippingZone(countryCode);
+  return calculatePostNordTierShipping(w, config, zone);
 };

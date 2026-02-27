@@ -1,6 +1,6 @@
 import { badRequest, json } from "../_lib/resp.js";
 import { loadProducts } from "../_lib/catalog.js";
-import { calculatePostNordShipping, sumCartWeightGrams } from "../_lib/shipping/postnord-tiers.js";
+import { calculatePostNordShipping, getShippingZone, sumCartWeightGrams } from "../_lib/shipping/postnord-tiers.js";
 
 export const onRequestPost = async (context) => {
   try {
@@ -15,6 +15,13 @@ export const onRequestPost = async (context) => {
 
     const delivery_method = String(body?.delivery_method || "pickup").trim().toLowerCase();
     if (!delivery_method || !["pickup", "postnord"].includes(delivery_method)) return badRequest("Unsupported delivery_method");
+
+  const country_code = String(body?.country_code || body?.country || "SE").trim().toUpperCase();
+  if (!/^[A-Z]{2}$/.test(country_code)) return badRequest("Invalid country_code");
+  const zone = getShippingZone(country_code);
+
+  if (zone !== "SE" && delivery_method === "pickup") return badRequest("Pickup only available in Sweden");
+  if (zone === "OTHER" && delivery_method === "postnord") return badRequest("No automatic shipping quote for this country");
 
     const itemsRaw = body?.items;
     const itemsObj = (itemsRaw && typeof itemsRaw === "object" && !Array.isArray(itemsRaw)) ? itemsRaw : null;
@@ -34,14 +41,16 @@ export const onRequestPost = async (context) => {
     if (delivery_method === "pickup") {
       return json({
         ok: true,
+        country_code,
+        zone,
         delivery_method,
         total_weight_grams,
         shipping: { amount_sek: 0, tier: null, code: null, provider: null },
       });
     }
 
-    const shipping = await calculatePostNordShipping({ totalWeightGrams: total_weight_grams, request });
-    return json({ ok: true, delivery_method, total_weight_grams, shipping });
+    const shipping = await calculatePostNordShipping({ totalWeightGrams: total_weight_grams, request, countryCode: country_code });
+    return json({ ok: true, country_code, zone, delivery_method, total_weight_grams, shipping });
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("/api/shipping/quote failed", err);

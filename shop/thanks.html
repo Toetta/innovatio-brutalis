@@ -123,7 +123,8 @@
             + '<div><strong>' + vatLabel + '</strong> ' + esc(fmt(vat, currency)) + '</div>'
             + '<div><strong>Summa inkl. moms:</strong> ' + esc(fmt(o.total_inc_vat, currency)) + '</div>';
 
-          if (o.status === 'paid') msg.textContent = 'Betalning mottagen.';
+          if (o.status === 'needs_shipping_quote') msg.textContent = 'Frakt offereras manuellt. Vi kontaktar dig med fraktkostnad och betalningsinstruktioner.';
+          else if (o.status === 'paid') msg.textContent = 'Betalning mottagen.';
           else if (o.status === 'failed') msg.textContent = 'Betalningen misslyckades.';
           else if (o.status === 'cancelled') msg.textContent = 'Ordern avbröts.';
           else if (o.status === 'refunded') msg.textContent = 'Ordern är återbetalad.';

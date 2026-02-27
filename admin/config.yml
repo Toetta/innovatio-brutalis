@@ -53,11 +53,13 @@ collections:
         required: false
       - { label: "Pris (SEK)", name: "price_sek", widget: "number" }
 
+      - { label: "Shipping exempt (no physical shipping)", name: "shipping_exempt", widget: "boolean", default: false, required: false }
+
       - label: "Weight (grams)"
         name: "weight_grams"
         widget: "number"
         required: true
-        min: 1
+        min: 0
 
       - label: "Length (mm)"
         name: "length_mm"
@@ -77,6 +79,11 @@ collections:
 
       - label: "Shipping class (future)"
         name: "shipping_class"
+        widget: "string"
+        required: false
+
+      - label: "HS code (optional)"
+        name: "hs_code"
         widget: "string"
         required: false
       - label: "Category / Kategori"
