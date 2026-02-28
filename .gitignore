@@ -5,6 +5,9 @@
 # Node
 node_modules/
 
+# Wrangler / Cloudflare local state
+.wrangler/
+
 # OS / editor
 .DS_Store
 Thumbs.db
