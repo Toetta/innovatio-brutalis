@@ -548,6 +548,29 @@
       const PLAYLIST_HEIGHT_PX = 152;
       const PLAYER_GAP_PX = 12;
 
+      // If the bar is made wider (CSS tweak), the default 80px-height embed can look
+      // visually tiny (especially the play button). Bump height slightly on wider bars.
+      const PLAYER_HEIGHT_WIDE_PX = 96;
+      const PLAYER_WIDE_MIN_WIDTH_PX = 560;
+
+      const getPlayerEmbedWidth = () => {
+        try {
+          const inner = document.querySelector("#ib-spotify-player .ib-spotify-player__inner");
+          const w = inner?.getBoundingClientRect?.().width;
+          return Number(w || 0);
+        } catch (_) {
+          return 0;
+        }
+      };
+
+      const getPlayerHeightPx = () => {
+        try {
+          return getPlayerEmbedWidth() >= PLAYER_WIDE_MIN_WIDTH_PX ? PLAYER_HEIGHT_WIDE_PX : PLAYER_HEIGHT_PX;
+        } catch (_) {
+          return PLAYER_HEIGHT_PX;
+        }
+      };
+
       const NEXT_BUTTON_HTML = `
         <button id="ib-spotify-next" class="ib-spotify-next ib-spotify-next--floating" type="button" aria-label="Nästa slumpade låt" title="Nästa slumpade låt">
           <svg class="ib-spotify-next__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
@@ -920,7 +943,7 @@
         if (!root || !embedHost) return false;
 
         // Playlist embeds use a taller layout than track embeds.
-        const desiredHeight = embed.includes("/embed/playlist/") ? PLAYLIST_HEIGHT_PX : PLAYER_HEIGHT_PX;
+        const desiredHeight = embed.includes("/embed/playlist/") ? PLAYLIST_HEIGHT_PX : getPlayerHeightPx();
         try { root.style.setProperty("--ib-spotify-iframe-h", `${desiredHeight}px`); } catch (_) {}
 
         const prev = String(embedHost.dataset.src || "").trim();
@@ -1008,9 +1031,10 @@
 
         return new Promise((resolve) => {
           try {
+            const playerHeight = getPlayerHeightPx();
             try {
               const { root } = getEls();
-              if (root) root.style.setProperty("--ib-spotify-iframe-h", `${PLAYER_HEIGHT_PX}px`);
+              if (root) root.style.setProperty("--ib-spotify-iframe-h", `${playerHeight}px`);
             } catch (_) {}
 
             apiObj.createController(
@@ -1018,7 +1042,7 @@
               {
                 uri: initialUri,
                 width: "100%",
-                height: PLAYER_HEIGHT_PX,
+                height: playerHeight,
                 theme: 0,
               },
               (controller) => {

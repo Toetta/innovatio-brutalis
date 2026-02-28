@@ -312,6 +312,9 @@ small{color:var(--text-muted)}
   display:flex;
   align-items:center;
   gap:10px;
+  /* Let the next/play button scale with the bar width. */
+  container-type: inline-size;
+  container-name: ib-spotify-player-row;
 }
 
 #ib-spotify-embed{
@@ -329,8 +332,8 @@ small{color:var(--text-muted)}
 
 
 .ib-spotify-next{
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   padding: 0;
   line-height: 1;
   display: inline-flex;
@@ -343,14 +346,26 @@ small{color:var(--text-muted)}
   box-shadow: none;
 }
 
+/* Scale the button slightly as the player bar gets wider.
+   (If container queries aren't supported, defaults above apply.) */
+@container ib-spotify-player-row (min-width: 520px){
+  .ib-spotify-next{ width: 50px; height: 50px; }
+  .ib-spotify-next__icon{ width: 21px; height: 21px; }
+}
+
+@container ib-spotify-player-row (min-width: 680px){
+  .ib-spotify-next{ width: 54px; height: 54px; }
+  .ib-spotify-next__icon{ width: 22px; height: 22px; }
+}
+
 .ib-spotify-next:hover{
   background: rgba(184,115,51,.12);
 }
 
 .ib-spotify-next__icon{
   display:block;
-  width: 18px;
-  height: 18px;
+  width: 19px;
+  height: 19px;
   fill: currentColor;
 }
 
