@@ -162,6 +162,19 @@
 	};
 	const normalizeImages = (imagesField, legacyImage) => {
 		try {
+			const normalizeUploadPath = (value) => {
+				try {
+					const s = String(value || "").trim();
+					if (!s) return "";
+					if (/^https?:\/\//i.test(s) || s.startsWith("data:") || s.startsWith("blob:")) return s;
+					if (s.startsWith("/")) return s;
+					if (s.startsWith("assets/uploads/")) return "/" + s;
+					return s;
+				} catch (_) {
+					return "";
+				}
+			};
+
 			const arr = Array.isArray(imagesField) ? imagesField : [];
 			const out = arr
 				.map((x) => {
@@ -172,22 +185,43 @@
 					}
 					return "";
 				})
-				.map((s) => String(s || "").trim())
+				.map((s) => normalizeUploadPath(s))
 				.filter(Boolean);
 
 			if (legacyImage) {
-				const legacy = String(legacyImage || "").trim();
+				const legacy = normalizeUploadPath(legacyImage);
 				if (legacy && !out.includes(legacy)) out.push(legacy);
 			}
 			return out;
 		} catch (_) {
-			return legacyImage ? [String(legacyImage)] : [];
+			try {
+				const s = String(legacyImage || "").trim();
+				if (!s) return [];
+				if (s.startsWith("/")) return [s];
+				if (s.startsWith("assets/uploads/")) return ["/" + s];
+				return [s];
+			} catch (_) {
+				return [];
+			}
 		}
 	};
 	const normalizeMainImage = (mainImageField, imagesField, legacyImage) => {
 		try {
+			const normalizeUploadPath = (value) => {
+				try {
+					const s = String(value || "").trim();
+					if (!s) return "";
+					if (/^https?:\/\//i.test(s) || s.startsWith("data:") || s.startsWith("blob:")) return s;
+					if (s.startsWith("/")) return s;
+					if (s.startsWith("assets/uploads/")) return "/" + s;
+					return s;
+				} catch (_) {
+					return "";
+				}
+			};
+
 			// Explicit override wins
-			const direct = String(mainImageField || "").trim();
+			const direct = normalizeUploadPath(mainImageField);
 			if (direct) return direct;
 
 			// If images list contains objects, allow a checkbox to mark the main image.
@@ -197,12 +231,12 @@
 				if (!x || typeof x !== "object") continue;
 				const flagged = !!(x.is_main ?? x.isMain ?? x.main ?? false);
 				if (!flagged) continue;
-				const src = String(x.image || x.src || x.url || "").trim();
+				const src = normalizeUploadPath(x.image || x.src || x.url || "");
 				if (src) return src;
 			}
 
 			// Legacy single-image fallback
-			const legacy = String(legacyImage || "").trim();
+			const legacy = normalizeUploadPath(legacyImage);
 			if (legacy) return legacy;
 
 			// As a final fallback, use the first available image
@@ -554,6 +588,15 @@
 	};
 
 	const loadCatalog = async () => {
+		const RAW_BASE = "https://raw.githubusercontent.com/Toetta/innovatio-brutalis/main/";
+		const fetchJSONWithFallback = async (primaryUrl, fallbackUrl) => {
+			try {
+				return await fetchJSON(primaryUrl);
+			} catch (_) {
+				return await fetchJSON(fallbackUrl);
+			}
+		};
+
 		// Best effort auto-discovery: list the folders in the GitHub repo.
 		// This avoids having to manually keep content/shop-catalog.json in sync.
 		const loadViaGitHub = async () => {
@@ -596,12 +639,25 @@
 		// Preferred: manifest that lists folder-based slugs
 		//   { "categorySlugs": [..], "productSlugs": [..] }
 		try {
-			const manifest = await fetchJSON("/content/shop-catalog.json");
+			const manifest = await fetchJSONWithFallback(
+				RAW_BASE + "content/shop-catalog.json",
+				"/content/shop-catalog.json",
+			);
 			const categorySlugs = Array.isArray(manifest.categorySlugs) ? manifest.categorySlugs.map(String) : [];
 			const productSlugs = Array.isArray(manifest.productSlugs) ? manifest.productSlugs.map(String) : [];
 
-			const categoriesRaw = await Promise.all(categorySlugs.map((slug) => fetchJSON(`/content/categories/${encodeURIComponent(slug)}.json`).catch(() => null)));
-			const productsRaw = await Promise.all(productSlugs.map((slug) => fetchJSON(`/content/products/${encodeURIComponent(slug)}.json`).catch(() => null)));
+			const categoriesRaw = await Promise.all(categorySlugs.map((slug) => {
+				const repoPath = `content/categories/${encodeURIComponent(slug)}.json`;
+				const rawUrl = RAW_BASE + repoPath;
+				const siteUrl = `/content/categories/${encodeURIComponent(slug)}.json`;
+				return fetchJSONWithFallback(rawUrl, siteUrl).catch(() => null);
+			}));
+			const productsRaw = await Promise.all(productSlugs.map((slug) => {
+				const repoPath = `content/products/${encodeURIComponent(slug)}.json`;
+				const rawUrl = RAW_BASE + repoPath;
+				const siteUrl = `/content/products/${encodeURIComponent(slug)}.json`;
+				return fetchJSONWithFallback(rawUrl, siteUrl).catch(() => null);
+			}));
 
 			const categories = categoriesRaw.map(normalizeCategory).filter(Boolean);
 			const products = productsRaw.map(normalizeProduct).filter(Boolean);
