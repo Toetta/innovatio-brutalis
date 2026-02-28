@@ -612,6 +612,180 @@
         return null;
       };
 
+      const inferArtworkUrlFromPlaybackEvent = (e) => {
+        try {
+          const u = e?.data?.track?.imageUrl;
+          if (typeof u === "string" && u.startsWith("http")) return u;
+        } catch (_) {}
+        try {
+          const u = e?.data?.item?.images?.[0]?.url;
+          if (typeof u === "string" && u.startsWith("http")) return u;
+        } catch (_) {}
+        try {
+          const u = e?.data?.track?.album?.images?.[0]?.url;
+          if (typeof u === "string" && u.startsWith("http")) return u;
+        } catch (_) {}
+        return null;
+      };
+
+      const parseRgbTriplet = (s) => {
+        try {
+          const parts = String(s || "").trim().split(",").map((x) => Number(String(x).trim()));
+          if (parts.length < 3) return null;
+          const r = Math.max(0, Math.min(255, Math.round(parts[0] || 0)));
+          const g = Math.max(0, Math.min(255, Math.round(parts[1] || 0)));
+          const b = Math.max(0, Math.min(255, Math.round(parts[2] || 0)));
+          return [r, g, b];
+        } catch (_) {
+          return null;
+        }
+      };
+
+      const getCssRgbVar = (name, fallback) => {
+        try {
+          const v = getComputedStyle(document.documentElement).getPropertyValue(name);
+          return parseRgbTriplet(v) || fallback;
+        } catch (_) {
+          return fallback;
+        }
+      };
+
+      const rgbToHsl = (r, g, b) => {
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        let h = 0;
+        let s = 0;
+        const l = (max + min) / 2;
+        const d = max - min;
+        if (d !== 0) {
+          s = d / (1 - Math.abs(2 * l - 1));
+          switch (max) {
+            case r: h = ((g - b) / d) % 6; break;
+            case g: h = (b - r) / d + 2; break;
+            default: h = (r - g) / d + 4; break;
+          }
+          h *= 60;
+          if (h < 0) h += 360;
+        }
+        return { h, s, l };
+      };
+
+      const mixRgb = (a, b, t) => {
+        const tt = Math.max(0, Math.min(1, Number(t) || 0));
+        return [
+          Math.round(a[0] * (1 - tt) + b[0] * tt),
+          Math.round(a[1] * (1 - tt) + b[1] * tt),
+          Math.round(a[2] * (1 - tt) + b[2] * tt),
+        ];
+      };
+
+      const clampRgb = (rgb) => [
+        Math.max(0, Math.min(255, rgb[0] | 0)),
+        Math.max(0, Math.min(255, rgb[1] | 0)),
+        Math.max(0, Math.min(255, rgb[2] | 0)),
+      ];
+
+      const artworkThemeCache = new Map();
+      const extractThemeFromArtworkUrl = (artUrl) => {
+        const key = String(artUrl || "").trim();
+        if (!key) return Promise.resolve(null);
+        if (artworkThemeCache.has(key)) return Promise.resolve(artworkThemeCache.get(key));
+
+        return new Promise((resolve) => {
+          try {
+            const img = new Image();
+            try { img.crossOrigin = "anonymous"; } catch (_) {}
+            try { img.referrerPolicy = "no-referrer"; } catch (_) {}
+
+            const done = (res) => {
+              try { artworkThemeCache.set(key, res); } catch (_) {}
+              resolve(res);
+            };
+
+            img.onload = () => {
+              try {
+                const w = 40;
+                const h = 40;
+                const canvas = document.createElement("canvas");
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext("2d", { willReadFrequently: true });
+                if (!ctx) return done(null);
+                ctx.drawImage(img, 0, 0, w, h);
+                const data = ctx.getImageData(0, 0, w, h).data;
+
+                let sumR = 0, sumG = 0, sumB = 0, count = 0;
+                let best = null;
+                let bestScore = -1;
+
+                // Sample every other pixel to keep this cheap.
+                for (let i = 0; i < data.length; i += 8) {
+                  const r = data[i];
+                  const g = data[i + 1];
+                  const b = data[i + 2];
+                  const a = data[i + 3];
+                  if (a < 160) continue;
+
+                  sumR += r; sumG += g; sumB += b; count++;
+
+                  const hsl = rgbToHsl(r, g, b);
+                  // Prefer saturated mid-bright colors.
+                  const score = (hsl.s || 0) * (0.35 + (hsl.l || 0));
+                  if (score > bestScore) {
+                    bestScore = score;
+                    best = [r, g, b];
+                  }
+                }
+
+                if (!count) return done(null);
+                const avg = [Math.round(sumR / count), Math.round(sumG / count), Math.round(sumB / count)];
+                const vib = best || avg;
+
+                const base = getCssRgbVar("--card2-rgb", [40, 38, 38]);
+                // Blend towards base so it stays within the site's dark theme.
+                const c1 = clampRgb(mixRgb(avg, base, 0.58));
+                const c2 = clampRgb(mixRgb(vib, base, 0.66));
+                done({ c1, c2 });
+              } catch (_) {
+                done(null);
+              }
+            };
+
+            img.onerror = () => done(null);
+            img.src = key;
+            setTimeout(() => done(null), 2500);
+          } catch (_) {
+            resolve(null);
+          }
+        });
+      };
+
+      let lastArtworkUrl = null;
+      const applyArtworkTheme = (artUrl) => {
+        try {
+          const url = String(artUrl || "").trim();
+          if (!url || url === lastArtworkUrl) return;
+          lastArtworkUrl = url;
+
+          const root = document.getElementById("ib-spotify-player");
+          const inner = root?.querySelector?.(".ib-spotify-player__inner") || null;
+          const cover = document.getElementById("ib-spotify-cover");
+          if (cover) {
+            try { cover.src = url; } catch (_) {}
+          }
+
+          extractThemeFromArtworkUrl(url).then((res) => {
+            try {
+              if (!root || !inner || !res?.c1 || !res?.c2) return;
+              inner.style.setProperty("--ib-spotify-c1", `${res.c1[0]},${res.c1[1]},${res.c1[2]}`);
+              inner.style.setProperty("--ib-spotify-c2", `${res.c2[0]},${res.c2[1]},${res.c2[2]}`);
+              root.classList.add("ib-spotify-has-theme");
+            } catch (_) {}
+          });
+        } catch (_) {}
+      };
+
       if (!document.getElementById("ib-spotify-player")) {
         const wrap = document.createElement("div");
         wrap.id = "ib-spotify-player";
@@ -619,6 +793,9 @@
         wrap.style.display = "none";
         wrap.innerHTML = `
           <div class="ib-spotify-player__row">
+            <div class="ib-spotify-player__cover" aria-hidden="true">
+              <img id="ib-spotify-cover" alt="" decoding="async" />
+            </div>
             <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
               <div id="ib-spotify-embed" aria-label="Spotify player"></div>
             </div>
@@ -1025,6 +1202,12 @@
                         autoAdvanceLockUntil = now + 4000;
                         window.IBSpotifyPlayer?.nextRandom?.({ autoplay: true }).catch(() => {});
                       }
+                    } catch (_) {}
+
+                    // Visuals: update cover + background theme (best-effort)
+                    try {
+                      const art = inferArtworkUrlFromPlaybackEvent(e);
+                      if (art) applyArtworkTheme(art);
                     } catch (_) {}
 
                     // Analytics: play/pause + track changes (throttled + transition-based)

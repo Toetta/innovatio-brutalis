@@ -309,6 +309,34 @@ small{color:var(--text-muted)}
   min-width: 0;
 }
 
+.ib-spotify-player__cover{
+  display: none;
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(184,115,51,.22);
+  background: var(--card2);
+  box-shadow: var(--shadow);
+  flex: 0 0 auto;
+}
+
+.ib-spotify-player__cover img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ib-spotify-player.ib-spotify-has-theme .ib-spotify-player__cover{ display: block; }
+
+.ib-spotify-player.ib-spotify-has-theme .ib-spotify-player__inner{
+  background:
+    radial-gradient(120% 90% at 0% 0%, rgba(var(--ib-spotify-c1, var(--card2-rgb)), .55), transparent 62%),
+    radial-gradient(120% 90% at 100% 0%, rgba(var(--ib-spotify-c2, var(--card2-rgb)), .38), transparent 62%),
+    rgba(var(--card2-rgb), .98);
+}
+
 .ib-spotify-player__row{
   display:flex;
   align-items:center;
