@@ -4,10 +4,15 @@ import { nowIso, uuid } from "./crypto.js";
 import { getShippingZone } from "./shipping/postnord-tiers.js";
 
 export const requireFuKey = ({ request, env }) => {
-  const { FU_SYNC_KEY } = getEnv(env);
-  if (!FU_SYNC_KEY) return false;
-  const given = request.headers.get("X-FU-Key") || "";
-  return given && given === FU_SYNC_KEY;
+  const provided = (request.headers.get("X-FU-Key") ?? "").trim();
+
+  // Cloudflare Pages Functions secrets are exposed on `context.env`.
+  // Support both underscore and hyphen variants; keep backward-compat.
+  const expected = String(env?.FU_KEY || env?.["FU-KEY"] || env?.FU_SYNC_KEY || "").trim();
+
+  if (!expected) return false;
+  if (!provided) return false;
+  return provided === expected;
 };
 
 const toAmount2 = (n) => {

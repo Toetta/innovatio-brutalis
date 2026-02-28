@@ -7,6 +7,22 @@ This repo is a static site. Deep links are implemented as a *separate*, main-sit
 - JS: `/assets/site-deeplinks.js`
 - CSS: highlight class `.deep-link-highlight` in `/css/style.css`
 
+## FU API auth (pull/ack)
+
+The Cloudflare Pages Functions endpoints used by FU-Bookkeeping require an API key in the request header:
+
+- Header: `X-FU-Key: <key>`
+
+The server compares it against a secret from the Pages runtime environment (`context.env`). Supported secret names:
+
+- `FU_KEY` (preferred)
+- `FU-KEY` (supported)
+- `FU_SYNC_KEY` (legacy/backward compatible)
+
+If the header is missing/empty or does not match, the API returns:
+
+- `403 {"ok":false,"error":"Forbidden"}`
+
 ### Hard safety guard (FU-Bookkeeping)
 
 `site-deeplinks.js` is designed to be **completely harmless** to FU-Bookkeeping:
