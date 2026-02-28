@@ -1857,7 +1857,8 @@
         if (h.startsWith("mailto:") || h.startsWith("tel:")) return false;
         if (h.startsWith("#")) return false;
 
-        const url = new URL(h, window.location.origin);
+        const base = a.baseURI || window.location.href;
+        const url = new URL(h, base);
         if (url.origin !== window.location.origin) return false;
         const p = lower(url.pathname || "");
         if (p.startsWith("/assets/")) return false;
@@ -1998,26 +1999,49 @@
       }
     };
 
-    const closestAnchor = (target) => {
+    const findAnchorFromEvent = (e) => {
       try {
-        if (!target) return null;
-        // Some browsers/events can report a Text node as the target when clicking link text.
-        const el = (target.nodeType === Node.TEXT_NODE) ? target.parentElement : target;
-        if (!el) return null;
-        if (typeof el.closest === "function") return el.closest("a");
-        return null;
-      } catch (_) {
-        return null;
-      }
+        if (!e) return null;
+
+        // Prefer composedPath so clicks on SVG <path> inside <a> still resolve.
+        if (typeof e.composedPath === "function") {
+          const path = e.composedPath();
+          for (const n of path) {
+            if (!n) continue;
+            if (n.nodeType !== Node.ELEMENT_NODE) continue;
+            const el = /** @type {Element} */ (n);
+            if (String(el.tagName || "").toUpperCase() === "A") return /** @type {HTMLAnchorElement} */ (el);
+          }
+        }
+
+        // Fallback: walk up from target.
+        let cur = e.target;
+        if (cur && cur.nodeType === Node.TEXT_NODE) cur = cur.parentElement;
+        while (cur) {
+          if (cur.nodeType === Node.ELEMENT_NODE) {
+            const el = /** @type {Element} */ (cur);
+            if (String(el.tagName || "").toUpperCase() === "A") return /** @type {HTMLAnchorElement} */ (el);
+          }
+          cur = cur.parentNode;
+        }
+      } catch (_) {}
+      return null;
     };
 
     document.addEventListener("click", (e) => {
-      const a = closestAnchor(e.target);
+      // Respect normal browser behaviors: middle click, modifiers, etc.
+      try {
+        if (e.defaultPrevented) return;
+        if (typeof e.button === "number" && e.button !== 0) return;
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      } catch (_) {}
+
+      const a = findAnchorFromEvent(e);
       if (!isHijackableLink(a)) return;
       try {
         const href = a.getAttribute("href");
         if (!href) return;
-        const u = new URL(href, window.location.origin);
+        const u = new URL(href, a.baseURI || window.location.href);
         // If only the hash changes on the same page, let the browser handle it.
         if (u.pathname === window.location.pathname && u.search === window.location.search && u.hash) return;
 
