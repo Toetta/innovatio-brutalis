@@ -618,6 +618,13 @@
           if (typeof u === "string" && u.startsWith("http")) return u;
         } catch (_) {}
         try {
+          const uri = e?.data?.track?.imageUri;
+          if (typeof uri === "string" && uri.startsWith("spotify:image:")) {
+            const id = uri.split(":")[2];
+            if (id) return `https://i.scdn.co/image/${id}`;
+          }
+        } catch (_) {}
+        try {
           const u = e?.data?.item?.images?.[0]?.url;
           if (typeof u === "string" && u.startsWith("http")) return u;
         } catch (_) {}
@@ -762,6 +769,28 @@
       };
 
       let lastArtworkUrl = null;
+      const oEmbedCache = new Map();
+      const fetchOEmbedArtwork = async (trackUrl) => {
+        try {
+          const url = String(trackUrl || "").trim();
+          if (!url) return null;
+          if (oEmbedCache.has(url)) return oEmbedCache.get(url);
+          const oUrl = `https://open.spotify.com/oembed?url=${encodeURIComponent(url)}`;
+          const r = await fetch(oUrl, { cache: "force-cache" }).catch(() => null);
+          if (!r?.ok) {
+            oEmbedCache.set(url, null);
+            return null;
+          }
+          const j = await r.json().catch(() => null);
+          const art = String(j?.thumbnail_url || "").trim();
+          const ok = art && art.startsWith("http") ? art : null;
+          oEmbedCache.set(url, ok);
+          return ok;
+        } catch (_) {
+          return null;
+        }
+      };
+
       const applyArtworkTheme = (artUrl) => {
         try {
           const url = String(artUrl || "").trim();
@@ -775,6 +804,14 @@
             try { cover.src = url; } catch (_) {}
           }
 
+          try {
+            if (root) root.classList.add("ib-spotify-has-art");
+            if (inner) {
+              const safeUrl = url.replace(/"/g, "%22");
+              inner.style.setProperty("--ib-spotify-art", `url(\"${safeUrl}\")`);
+            }
+          } catch (_) {}
+
           extractThemeFromArtworkUrl(url).then((res) => {
             try {
               if (!root || !inner || !res?.c1 || !res?.c2) return;
@@ -783,6 +820,46 @@
               root.classList.add("ib-spotify-has-theme");
             } catch (_) {}
           });
+        } catch (_) {}
+      };
+
+      const trackUrlFromUri = (uri) => {
+        try {
+          const s = String(uri || "").trim();
+          if (s.startsWith("spotify:track:")) {
+            const id = s.split(":")[2];
+            return id ? `https://open.spotify.com/track/${id}` : null;
+          }
+          const m = s.match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/);
+          if (m?.[1]) return `https://open.spotify.com/track/${m[1]}`;
+          return null;
+        } catch (_) {
+          return null;
+        }
+      };
+
+      const HISTORY_KEY = "ib_spotify_history";
+      const HISTORY_POS_KEY = "ib_spotify_history_pos";
+      const loadHistory = () => loadJsonArrayFromSession(HISTORY_KEY).filter(Boolean);
+      const saveHistory = (arr) => saveJsonArrayToSession(HISTORY_KEY, (Array.isArray(arr) ? arr : []).filter(Boolean));
+      const getHistoryPos = () => {
+        try { return Math.max(0, Number(sessionStorage.getItem(HISTORY_POS_KEY) || 0) || 0); } catch (_) { return 0; }
+      };
+      const setHistoryPos = (pos) => {
+        try { sessionStorage.setItem(HISTORY_POS_KEY, String(Math.max(0, Number(pos) || 0))); } catch (_) {}
+      };
+      const recordHistoryUri = (uri) => {
+        try {
+          const u = String(uri || "").trim();
+          if (!u.startsWith("spotify:track:")) return;
+          const hist = loadHistory();
+          if (hist[0] === u) {
+            setHistoryPos(0);
+            return;
+          }
+          const next = [u, ...hist.filter((x) => x !== u)].slice(0, 50);
+          saveHistory(next);
+          setHistoryPos(0);
         } catch (_) {}
       };
 
@@ -796,6 +873,10 @@
             <div class="ib-spotify-player__cover" aria-hidden="true">
               <img id="ib-spotify-cover" alt="" decoding="async" />
             </div>
+            <div class="ib-spotify-player__controls" aria-label="Spotify controls">
+              <button id="ib-spotify-prev-mini" class="ib-spotify-player__btn" type="button" aria-label="Previous track">‹</button>
+              <button id="ib-spotify-next-mini" class="ib-spotify-player__btn" type="button" aria-label="Next track">›</button>
+            </div>
             <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
               <div id="ib-spotify-embed" aria-label="Spotify player"></div>
             </div>
@@ -803,6 +884,24 @@
         `;
         document.body.appendChild(wrap);
       }
+
+      // Wire up our minimal prev/next buttons (best-effort).
+      try {
+        const prevBtn = document.getElementById("ib-spotify-prev-mini");
+        const nextBtn = document.getElementById("ib-spotify-next-mini");
+        if (prevBtn && !prevBtn.dataset.bound) {
+          prevBtn.dataset.bound = "1";
+          prevBtn.addEventListener("click", () => {
+            try { window.IBSpotifyPlayer?.prev?.({ autoplay: true }); } catch (_) {}
+          });
+        }
+        if (nextBtn && !nextBtn.dataset.bound) {
+          nextBtn.dataset.bound = "1";
+          nextBtn.addEventListener("click", () => {
+            try { window.IBSpotifyPlayer?.nextRandom?.({ autoplay: true, userInitiated: true }); } catch (_) {}
+          });
+        }
+      } catch (_) {}
 
       // Ensure any Spotify iframe (fallback or controller) is hardened.
       try { wireSpotifyIframeHardening(); } catch (_) {}
@@ -1085,6 +1184,15 @@
         updatePlayerHeightVar();
         try { sessionStorage.setItem("ib_spotify_embed_src", embed); } catch (_) {}
 
+        // Visuals: best-effort cover/theme via oEmbed for track embeds.
+        try {
+          const uri = toSpotifyUri(urlOrUri);
+          const tu = trackUrlFromUri(uri);
+          if (tu) {
+            fetchOEmbedArtwork(tu).then((u) => { if (u) applyArtworkTheme(u); });
+          }
+        } catch (_) {}
+
         // Analytics: fallback iframe shown (cannot reliably detect play/pause there).
         if (gaThrottle("spotify_fallback_show", 1500)) {
           try {
@@ -1200,14 +1308,22 @@
                       const progressed = p >= prevPos;
                       if (pausedTransition && nearEnd && progressed) {
                         autoAdvanceLockUntil = now + 4000;
-                        window.IBSpotifyPlayer?.nextRandom?.({ autoplay: true }).catch(() => {});
+                        window.IBSpotifyPlayer?.nextRandom?.({ autoplay: true, userInitiated: false }).catch(() => {});
                       }
                     } catch (_) {}
 
                     // Visuals: update cover + background theme (best-effort)
                     try {
                       const art = inferArtworkUrlFromPlaybackEvent(e);
-                      if (art) applyArtworkTheme(art);
+                      if (art) {
+                        applyArtworkTheme(art);
+                      } else {
+                        const trackUri = inferTrackUriFromPlaybackEvent(e);
+                        const tu = trackUrlFromUri(trackUri);
+                        if (tu) {
+                          fetchOEmbedArtwork(tu).then((u) => { if (u) applyArtworkTheme(u); });
+                        }
+                      }
                     } catch (_) {}
 
                     // Analytics: play/pause + track changes (throttled + transition-based)
@@ -1262,9 +1378,13 @@
         });
       };
 
-      const show = (urlOrUri, { autoplay = false } = {}) => {
+      const show = (urlOrUri, { autoplay = false, recordHistory = true } = {}) => {
         const uri = toSpotifyUri(urlOrUri);
         if (!uri) return false;
+
+        try {
+          if (recordHistory) recordHistoryUri(uri);
+        } catch (_) {}
 
         // Persist intended content (best-effort)
         try {
@@ -1283,6 +1403,15 @@
             if (autoplay) {
               try { embedController.play(); } catch (_) {}
             }
+
+            // Visuals fallback: use oEmbed to fetch artwork for track URIs.
+            try {
+              const tu = trackUrlFromUri(uri);
+              if (tu) {
+                fetchOEmbedArtwork(tu).then((u) => { if (u) applyArtworkTheme(u); });
+              }
+            } catch (_) {}
+
             const { root } = getEls();
             if (root) root.style.display = "";
             placeSpotifyPlayerInHeader();
@@ -1359,7 +1488,7 @@
         }
       };
 
-      const nextRandom = async ({ autoplay = true } = {}) => {
+      const nextRandom = async ({ autoplay = true, userInitiated = false } = {}) => {
         try {
           const urls = await ensureTrackUrls();
           const picked = nextFromShuffleDeck(urls);
@@ -1367,7 +1496,7 @@
 
           // Analytics: user clicked next (or auto-advanced)
           try {
-            const reason = autoplay ? "autoplay" : "user";
+            const reason = userInitiated ? "user" : "autoplay";
             if (gaThrottle("spotify_next", 500)) {
               const id = String(picked).match(/open\.spotify\.com\/track\/([A-Za-z0-9]+)/)?.[1] || null;
               gaEvent("spotify_player_next", {
@@ -1377,7 +1506,7 @@
             }
 
             // Count a "use" for the first explicit user Next interaction.
-            if (!autoplay) {
+            if (userInitiated) {
               markSpotifyUsedOnce("next", { player_mode: embedController ? "controller" : "iframe" });
             }
           } catch (_) {}
@@ -1389,7 +1518,21 @@
         }
       };
 
-      window.IBSpotifyPlayer = { show, restore, nextRandom };
+      const prev = async ({ autoplay = true } = {}) => {
+        try {
+          const hist = loadHistory();
+          const pos = getHistoryPos();
+          const nextPos = pos + 1;
+          if (!hist || nextPos >= hist.length) return false;
+          const uri = hist[nextPos];
+          setHistoryPos(nextPos);
+          return show(uri, { autoplay, recordHistory: false });
+        } catch (_) {
+          return false;
+        }
+      };
+
+      window.IBSpotifyPlayer = { show, restore, nextRandom, prev };
 
       const didRestore = restore();
       if (!didRestore) {
