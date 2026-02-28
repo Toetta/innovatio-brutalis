@@ -473,6 +473,7 @@
 		// Folder-style placeholder schema
 		if (p.slug && (p.title_sv || p.title_en || p.title) && ("price_sek" in p || "category" in p || "published" in p)) {
 			const isActive = p.published !== false;
+			const isNews = !!(p.is_news ?? p.isNews ?? p.news ?? false);
 			const titles = pickLang(p.title_sv, p.title_en, p.title || p.slug);
 			const excerpts = pickLang(p.excerpt_sv, p.excerpt_en, p.excerpt || "");
 			const descriptions = pickLang(p.description_sv, p.description_en, p.description || "");
@@ -491,6 +492,7 @@
 				descriptionEN: descriptions.en,
 				images,
 				mainImage,
+				isNews,
 				tags,
 				isActive,
 			};
@@ -498,6 +500,7 @@
 
 		// Legacy aggregated schema
 		if (p.slug && (p.title_sv || p.title_en || p.title)) {
+			const isNews = !!(p.is_news ?? p.isNews ?? p.news ?? false);
 			const titles = pickLang(p.title_sv, p.title_en, p.title || p.slug);
 			const excerpts = pickLang(p.excerpt_sv, p.excerpt_en, p.excerpt || "");
 			const descriptions = pickLang(p.description_sv, p.description_en, p.description || "");
@@ -516,6 +519,7 @@
 				descriptionEN: descriptions.en,
 				images,
 				mainImage,
+				isNews,
 				tags,
 				isActive: p.isActive !== false,
 			};
@@ -671,6 +675,7 @@
 				const title = isEN() ? (p.titleEN || p.titleSV || p.slug) : (p.titleSV || p.titleEN || p.slug);
 				const excerpt = isEN() ? (p.excerptEN || p.excerptSV || "") : (p.excerptSV || p.excerptEN || "");
 				const img = pickMainImage(p);
+				const newsLabel = isEN() ? "NEW" : "NY";
 				const price = formatPrice(p.price, p.currency);
 				const priceNote = vatLabel("SE");
 				const href = withLangQuery(`/shop/product.html?slug=${encodeURIComponent(p.slug)}`);
@@ -678,7 +683,10 @@
 				return `
 					<div class=\"card product\">
 						<a class=\"product-link\" href=\"${href}\">
-							${img ? `<img class=\"thumb\" src=\"${esc(img)}\" alt=\"\">` : `<div class=\"thumb\"></div>`}
+							<div class=\"product-thumb-wrap\">
+								${img ? `<img class=\"thumb\" src=\"${esc(img)}\" alt=\"\">` : `<div class=\"thumb\"></div>`}
+								${p.isNews ? `<span class=\"product-badge-new\" title=\"${esc(newsLabel)}\">${esc(newsLabel)}</span>` : ""}
+							</div>
 							<div class=\"product-body\">
 								<div class=\"product-title\">${esc(title)}</div>
 								${excerpt
@@ -856,6 +864,7 @@
 
 		const title = isEN() ? (product.titleEN || product.titleSV || product.slug) : (product.titleSV || product.titleEN || product.slug);
 		const description = isEN() ? (product.descriptionEN || product.descriptionSV || "") : (product.descriptionSV || product.descriptionEN || "");
+		const newsLabel = isEN() ? "NEW" : "NY";
 		const gallery = getGalleryImages(product);
 		const mainImg = gallery[0] ? String(gallery[0]) : "";
 		const extraImages = gallery.slice(1);
@@ -871,7 +880,10 @@
 			</div>
 			${mainImg ? `
 				<div class=\"product-gallery\">
-					<img class=\"product-image-main\" src=\"${esc(mainImg)}\" alt=\"\" loading=\"eager\" data-product-image-main=\"1\">
+					<div class=\"product-main-wrap\">
+						<img class=\"product-image-main\" src=\"${esc(mainImg)}\" alt=\"\" loading=\"eager\" data-product-image-main=\"1\">
+						${product.isNews ? `<span class=\"product-badge-new\" title=\"${esc(newsLabel)}\">${esc(newsLabel)}</span>` : ""}
+					</div>
 					${extraImages.length ? `
 						<div class=\"product-gallery-grid\" aria-label=\"Product images\">
 							${extraImages.map((src) => `<img class=\"product-image-thumb\" src=\"${esc(src)}\" alt=\"\" loading=\"lazy\" data-product-image-thumb=\"1\">`).join("")}

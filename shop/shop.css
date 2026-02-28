@@ -126,6 +126,22 @@
 
 .shop .product-link{display:flex;flex-direction:column;gap:10px; flex:1}
 
+.shop .product-thumb-wrap{position:relative}
+
+.shop .product-badge-new{
+  position:absolute;
+  top:10px;
+  left:10px;
+  padding:6px 10px;
+  border-radius:999px;
+  border:1px solid var(--shop-accent);
+  background: var(--card2);
+  color: var(--shop-accent);
+  font-weight:800;
+  font-size:11px;
+  line-height:1;
+}
+
 .shop .product-body{flex:1; display:flex; flex-direction:column; gap:6px}
 .shop .product-title{font-weight:800; line-height:1.25}
 .shop .product-title,
@@ -179,6 +195,12 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.shop .product-main-wrap{
+  position: relative;
+  width: 100%;
+  max-width: 520px;
 }
 
 .shop .product-image-main{

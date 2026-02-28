@@ -101,6 +101,7 @@ collections:
       - { label: "Publicerad", name: "published", widget: "boolean", default: true }
       - { label: "Excerpt (SV)", name: "excerpt_sv", widget: "string", required: false }
       - { label: "Excerpt (EN)", name: "excerpt_en", widget: "string", required: false }
+      - { label: "Nyhet", name: "is_news", widget: "boolean", default: false, required: false }
       - { label: "Beskrivning (SV)", name: "description_sv", widget: "text", required: false }
       - { label: "Description (EN)", name: "description_en", widget: "text", required: false }
       - { label: "Bilder", name: "images", widget: "list", required: false, field: { label: "Bild", name: "image", widget: "image" } }
