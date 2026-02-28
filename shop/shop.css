@@ -206,4 +206,5 @@
   background: var(--card2);
   display: block;
   object-fit: contain;
+  cursor: pointer;
 }

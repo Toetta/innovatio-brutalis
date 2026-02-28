@@ -870,16 +870,40 @@
 			</div>
 			${mainImg ? `
 				<div class=\"product-gallery\">
-					<img class=\"product-image-main\" src=\"${esc(mainImg)}\" alt=\"\" loading=\"eager\">
+					<img class=\"product-image-main\" src=\"${esc(mainImg)}\" alt=\"\" loading=\"eager\" data-product-image-main=\"1\">
 					${extraImages.length ? `
 						<div class=\"product-gallery-grid\" aria-label=\"Product images\">
-							${extraImages.map((src) => `<img class=\"product-image-thumb\" src=\"${esc(src)}\" alt=\"\" loading=\"lazy\">`).join("")}
+							${extraImages.map((src) => `<img class=\"product-image-thumb\" src=\"${esc(src)}\" alt=\"\" loading=\"lazy\" data-product-image-thumb=\"1\">`).join("")}
 						</div>
 					` : ""}
 				</div>
 			` : ""}
 			${description ? `<div style=\"margin-top:14px; white-space:pre-wrap\">${esc(description)}</div>` : ""}
 		`;
+
+		try {
+			if (String(view.getAttribute("data-gallery-wired") || "") !== "1") {
+				view.setAttribute("data-gallery-wired", "1");
+				view.addEventListener("click", (e) => {
+					try {
+						const target = e.target;
+						if (!target || !target.matches || !target.matches(".product-image-thumb")) return;
+						const thumbSrc = String(target.getAttribute("src") || "").trim();
+						if (!thumbSrc) return;
+						const main = view.querySelector(".product-image-main");
+						if (!main) return;
+						const mainSrc = String(main.getAttribute("src") || "").trim();
+						if (!mainSrc) {
+							main.setAttribute("src", thumbSrc);
+							return;
+						}
+						if (mainSrc === thumbSrc) return;
+						main.setAttribute("src", thumbSrc);
+						target.setAttribute("src", mainSrc);
+					} catch (_) {}
+				});
+			}
+		} catch (_) {}
 
 		try {
 			const btn = qs("[data-add-to-cart-product]");
