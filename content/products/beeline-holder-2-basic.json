@@ -8,11 +8,20 @@
   "published": true,
   "title_en": "Beeline gen1 holder, basic",
   "weight_grams": 200,
+  "main_image": "/assets/uploads/img_3988.jpeg",
   "title": "",
-  "images": [],
+  "images": [
+    "/assets/uploads/img_3997.jpeg"
+  ],
   "height_mm": 100,
+  "tags": [
+    "beeline",
+    "holder",
+    "bracket",
+    "lambretta"
+  ],
   "length_mm": 150,
   "width_mm": 100,
-  "image": "/assets/uploads/img_3988.jpeg",
+  "image": "/assets/uploads/img_3992.jpeg",
   "category": "lambretta"
 }
