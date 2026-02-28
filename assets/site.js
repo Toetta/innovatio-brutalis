@@ -1998,8 +1998,21 @@
       }
     };
 
+    const closestAnchor = (target) => {
+      try {
+        if (!target) return null;
+        // Some browsers/events can report a Text node as the target when clicking link text.
+        const el = (target.nodeType === Node.TEXT_NODE) ? target.parentElement : target;
+        if (!el) return null;
+        if (typeof el.closest === "function") return el.closest("a");
+        return null;
+      } catch (_) {
+        return null;
+      }
+    };
+
     document.addEventListener("click", (e) => {
-      const a = e.target?.closest?.("a");
+      const a = closestAnchor(e.target);
       if (!isHijackableLink(a)) return;
       try {
         const href = a.getAttribute("href");
