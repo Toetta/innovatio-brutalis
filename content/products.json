@@ -1,13 +1,59 @@
 {
   "products": [
     {
-      "published": true,
-      "slug": "beeline-holder-1-basic",
+      "price_sek": 249,
+      "description_sv": "Beeline hållare för montering vid bagagekroken. Har man ingen bagagekrok (än) behöver man göra de 4 hålen och hållaren kan användas som borrmall.",
       "title_sv": "Beeline gen1 hållare basmodell",
+      "slug": "beeline-holder-1-basic",
+      "description_en": "Beeline holder for mounting on the luggage hook. If you don't have a luggage hook (yet), you need to make the 4 holes and the holder can be used as a drilling template.",
+      "published": true,
       "title_en": "Beeline gen1 holder basic",
+      "weight_grams": 200,
       "title": "Beeline holder",
-      "price_sek": 247,
+      "height_mm": 100,
+      "length_mm": 150,
+      "width_mm": 100,
       "category": "lambretta"
+    },
+    {
+      "price_sek": 249,
+      "description_sv": "Beeline hållare för montering vid bagagekroken. Har man ingen bagagekrok (än) behöver man göra de 4 hålen och hållaren kan användas som borrmall.\n\nKan får i olika varianter för att hålla varvräknare shift ligh eller andra instrument utöver Beeline",
+      "title_sv": "Beeline gen2 hållare, basmodell",
+      "slug": "beeline-holder-2-basic",
+      "description_en": "Beeline holder for mounting on the luggage hook. If you don't have a luggage hook (yet), you need to make the 4 holes and the holder can be used as a drilling template. Can be obtained in different versions to hold tachometer shift light or other instruments in addition to Beeline",
+      "published": true,
+      "title_en": "Beeline gen1 holder, basic",
+      "weight_grams": 200,
+      "title": "",
+      "images": [
+        "/assets/uploads/img_3988.jpeg"
+      ],
+      "height_mm": 100,
+      "length_mm": 150,
+      "width_mm": 100,
+      "image": "/assets/uploads/img_3988.jpeg",
+      "category": "lambretta"
+    },
+    {
+      "price_sek": 299,
+      "description_sv": "Hållare för instrument för infästning vid rattstång. Kan fås med eller utan  \"shift -light\" monteringsörat. I bild sitter där en Innovate PSB-1 bredbandslambda och mapsensor ihop med en knacksensor vis shift light positionen. OBS, instrument medföljer ej, artikeln avser endast hållaren.",
+      "title_sv": "Instrumenthållare för rattstång",
+      "slug": "mini-gauge-cluster",
+      "description_en": "Holder for instruments for attachment to the steering column. Available with or without the \"shift light\" mounting ear. In the picture there is an Innovate PSB-1 ​​broadband lambda and map sensor together with a knock sensor showing the shift light position. NOTE, instruments are not included, the article only refers to the holder",
+      "published": true,
+      "shipping_exempt": false,
+      "title_en": "Instrumenthållare för rattstång",
+      "weight_grams": 200,
+      "title": "Gauge cluster / holder for steering column",
+      "images": [
+        "/assets/uploads/img_3985.jpg",
+        "/assets/uploads/mini-guage.png"
+      ],
+      "height_mm": 150,
+      "length_mm": 200,
+      "width_mm": 200,
+      "image": "/assets/uploads/cluster-cad.jpg",
+      "category": "mini-parts"
     },
     {
       "price_sek": 458,
@@ -16,6 +62,7 @@
       "published": true,
       "title_en": "Inlet manifold for M210 Quattrini",
       "title": "M210 Quattrini Inlet ",
+      "weight_grams": 350,
       "images": [
         "/assets/uploads/inlet1.jpg"
       ],

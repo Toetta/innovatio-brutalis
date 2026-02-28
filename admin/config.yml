@@ -104,6 +104,7 @@ collections:
       - { label: "Beskrivning (SV)", name: "description_sv", widget: "text", required: false }
       - { label: "Description (EN)", name: "description_en", widget: "text", required: false }
       - { label: "Bilder", name: "images", widget: "list", required: false, field: { label: "Bild", name: "image", widget: "image" } }
+      - { label: "Huvudbild (används i listan)", name: "main_image", widget: "image", required: false }
       - { label: "Bild (legacy)", name: "image", widget: "image", required: false }
 
   - name: "services"

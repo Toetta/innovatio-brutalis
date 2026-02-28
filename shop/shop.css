@@ -172,3 +172,38 @@
 .shop h1,
 .shop h2,
 .shop h3{margin:0}
+
+/* Product detail gallery */
+.shop .product-gallery{
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.shop .product-image-main{
+  width: 100%;
+  max-width: 520px;
+  border-radius: 14px;
+  border: 1px solid var(--shop-line);
+  background: var(--card2);
+  display: block;
+  object-fit: contain;
+}
+
+.shop .product-gallery-grid{
+  max-width: 520px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.shop .product-image-thumb{
+  width: 100%;
+  aspect-ratio: 4/3;
+  border-radius: 14px;
+  border: 1px solid var(--shop-line);
+  background: var(--card2);
+  display: block;
+  object-fit: contain;
+}

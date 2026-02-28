@@ -2,10 +2,23 @@
   "categories": [
     {
       "order": 1,
+      "slug": "General-automotive",
+      "title_sv": "Generella fordonsdetaljer",
+      "title_en": "General automotive parts",
+      "title": "General automotive parts"
+    },
+    {
+      "order": 1,
       "title": "Lambretta",
       "slug": "lambretta",
       "title_sv": "Lambrettadelar och verktyg",
       "title_en": "Lambretta Tools and Parts"
+    },
+    {
+      "order": 3,
+      "slug": "mini-parts",
+      "title_sv": "Delar till klassika mini",
+      "title_en": "Parts for classic mini"
     },
     {
       "order": 2,

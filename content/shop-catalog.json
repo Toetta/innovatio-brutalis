@@ -1,11 +1,15 @@
 {
   "categorySlugs": [
+    "general-automotive",
     "lambretta",
+    "mini-parts",
     "nyheter",
     "service-area"
   ],
   "productSlugs": [
     "beeline-holder-1-basic",
+    "beeline-holder-2-basic",
+    "mini-gauge-cluster",
     "quattrini-inlet"
   ]
 }

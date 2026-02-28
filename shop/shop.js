@@ -183,6 +183,44 @@
 			return legacyImage ? [String(legacyImage)] : [];
 		}
 	};
+	const normalizeMainImage = (mainImageField) => {
+		try {
+			const s = String(mainImageField || "").trim();
+			return s ? s : "";
+		} catch (_) {
+			return "";
+		}
+	};
+	const pickMainImage = (product) => {
+		try {
+			const main = String(product?.mainImage || "").trim();
+			if (main) return main;
+			const first = (product?.images && product.images[0]) ? String(product.images[0]) : "";
+			return String(first || "");
+		} catch (_) {
+			return "";
+		}
+	};
+	const getGalleryImages = (product) => {
+		try {
+			const main = pickMainImage(product);
+			const images = Array.isArray(product?.images) ? product.images : [];
+			const out = [];
+			const seen = new Set();
+			const add = (src) => {
+				const s = String(src || "").trim();
+				if (!s) return;
+				if (seen.has(s)) return;
+				seen.add(s);
+				out.push(s);
+			};
+			add(main);
+			for (const img of images) add(img);
+			return out;
+		} catch (_) {
+			return [];
+		}
+	};
 	const withLangQuery = (url) => {
 		try {
 			const u = new URL(String(url), window.location.origin);
@@ -438,6 +476,7 @@
 			const excerpts = pickLang(p.excerpt_sv, p.excerpt_en, p.excerpt || "");
 			const descriptions = pickLang(p.description_sv, p.description_en, p.description || "");
 			const images = normalizeImages(p.images, p.image);
+			const mainImage = normalizeMainImage(p.main_image || p.mainImage);
 			return {
 				slug: String(p.slug),
 				titleSV: titles.sv,
@@ -450,6 +489,7 @@
 				descriptionSV: descriptions.sv,
 				descriptionEN: descriptions.en,
 				images,
+				mainImage,
 				tags,
 				isActive,
 			};
@@ -461,6 +501,7 @@
 			const excerpts = pickLang(p.excerpt_sv, p.excerpt_en, p.excerpt || "");
 			const descriptions = pickLang(p.description_sv, p.description_en, p.description || "");
 			const images = normalizeImages(p.images, p.image);
+			const mainImage = normalizeMainImage(p.main_image || p.mainImage);
 			return {
 				slug: String(p.slug),
 				titleSV: titles.sv,
@@ -473,6 +514,7 @@
 				descriptionSV: descriptions.sv,
 				descriptionEN: descriptions.en,
 				images,
+				mainImage,
 				tags,
 				isActive: p.isActive !== false,
 			};
@@ -627,7 +669,7 @@
 			grid.innerHTML = products.map((p) => {
 				const title = isEN() ? (p.titleEN || p.titleSV || p.slug) : (p.titleSV || p.titleEN || p.slug);
 				const excerpt = isEN() ? (p.excerptEN || p.excerptSV || "") : (p.excerptSV || p.excerptEN || "");
-				const img = (p.images && p.images[0]) ? String(p.images[0]) : "";
+				const img = pickMainImage(p);
 				const price = formatPrice(p.price, p.currency);
 				const priceNote = vatLabel("SE");
 				const href = withLangQuery(`/shop/product.html?slug=${encodeURIComponent(p.slug)}`);
@@ -813,8 +855,9 @@
 
 		const title = isEN() ? (product.titleEN || product.titleSV || product.slug) : (product.titleSV || product.titleEN || product.slug);
 		const description = isEN() ? (product.descriptionEN || product.descriptionSV || "") : (product.descriptionSV || product.descriptionEN || "");
-
-		const img = (product.images && product.images[0]) ? String(product.images[0]) : "";
+		const gallery = getGalleryImages(product);
+		const mainImg = gallery[0] ? String(gallery[0]) : "";
+		const extraImages = gallery.slice(1);
 		const price = formatPrice(product.price, product.currency);
 		const priceNote = vatLabel("SE");
 
@@ -825,7 +868,16 @@
 			<div style=\"margin-bottom:14px\">
 				<button class=\"btn primary\" type=\"button\" data-add-to-cart-product=\"${esc(product.slug)}\">${esc(t("add_to_cart"))}</button>
 			</div>
-			${img ? `<img class=\"thumb\" src=\"${esc(img)}\" alt=\"\" style=\"max-width:520px\">` : ""}
+			${mainImg ? `
+				<div class=\"product-gallery\">
+					<img class=\"product-image-main\" src=\"${esc(mainImg)}\" alt=\"\" loading=\"eager\">
+					${extraImages.length ? `
+						<div class=\"product-gallery-grid\" aria-label=\"Product images\">
+							${extraImages.map((src) => `<img class=\"product-image-thumb\" src=\"${esc(src)}\" alt=\"\" loading=\"lazy\">`).join("")}
+						</div>
+					` : ""}
+				</div>
+			` : ""}
 			${description ? `<div style=\"margin-top:14px; white-space:pre-wrap\">${esc(description)}</div>` : ""}
 		`;
 
