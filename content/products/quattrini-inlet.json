@@ -1,14 +1,17 @@
 {
-  "price_sek": 458,
+  "price_sek": 459,
   "title_sv": "Insug till M210 Quattrini",
   "slug": "quattrini-inlet",
   "published": true,
   "title_en": "Inlet manifold for M210 Quattrini",
-  "title": "M210 Quattrini Inlet ",
   "weight_grams": 350,
+  "title": "M210 Quattrini Inlet ",
   "images": [
     "/assets/uploads/inlet1.jpg"
   ],
+  "height_mm": 200,
+  "length_mm": 200,
+  "width_mm": 200,
   "image": "",
   "category": "lambretta"
 }
