@@ -5,13 +5,17 @@
   "published": true,
   "title_en": "Inlet manifold for M210 Quattrini",
   "weight_grams": 350,
+  "main_image": "/assets/uploads/inlet3.jpg",
   "title": "M210 Quattrini Inlet ",
   "images": [
-    "/assets/uploads/inlet1.jpg"
+    "/assets/uploads/inlet1.jpg",
+    "/assets/uploads/inlet2.jpg",
+    "/assets/uploads/quattrini-anvisning.jpg"
   ],
   "height_mm": 200,
+  "tags": [],
   "length_mm": 200,
   "width_mm": 200,
-  "image": "",
+  "image": "/assets/uploads/inlet4.jpg",
   "category": "lambretta"
 }
