@@ -149,6 +149,16 @@
     `;
   };
 
+  const updatePlayerControlsLabel = () => {
+    try {
+      const { isEN } = computeState();
+      const prevBtn = document.getElementById("ib-spotify-prev-mini");
+      const nextBtn = document.getElementById("ib-spotify-next-mini");
+      if (prevBtn) prevBtn.setAttribute("aria-label", isEN ? "Previous track" : "Föregående låt");
+      if (nextBtn) nextBtn.setAttribute("aria-label", isEN ? "Next track" : "Nästa låt");
+    } catch (_) {}
+  };
+
   // Update existing topbar without re-rendering the whole header.
   // This is critical to avoid detaching the Spotify iframe from the DOM,
   // which can pause/stop playback in some browsers.
@@ -210,7 +220,7 @@
       if (updateTopbarInPlace(mount)) {
         wireSpotifyHeaderToggle();
         try { placeSpotifyPlayerInHeader(); } catch (_) {}
-        updatePlayerControlsLabel();
+        try { updatePlayerControlsLabel(); } catch (_) {}
         return;
       }
     } catch (_) {}
