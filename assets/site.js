@@ -187,34 +187,7 @@
     }
   };
 
-  const updatePlayerControlsLabel = () => {
-    try {
-      const btn = document.getElementById("ib-spotify-next");
-      if (!btn) return;
-      const { isEN } = computeState();
-      const title = isEN ? "Next random track" : "Nästa slumpade låt";
-      btn.setAttribute("title", title);
-      btn.setAttribute("aria-label", title);
-    } catch (_) {}
-  };
-
-  const wireSpotifyNextButton = () => {
-    try {
-      const btn = document.getElementById("ib-spotify-next");
-      if (!btn) return;
-      if (btn.dataset.wired === "1") return;
-      btn.dataset.wired = "1";
-      btn.addEventListener("click", async () => {
-        try {
-          const ok = await window.IBSpotifyPlayer?.nextRandom?.();
-          if (!ok) {
-            // no-op: missing track list or player not ready
-          }
-        } catch (_) {}
-      });
-      updatePlayerControlsLabel();
-    } catch (_) {}
-  };
+  // Removed: external "next" button (>>) – Spotify's own player controls are used.
 
   const wireSpotifyHeaderToggle = () => {
     // The Spotify player should always be visible; no toggle button.
@@ -266,7 +239,6 @@
 
     wireSpotifyHeaderToggle();
     try { placeSpotifyPlayerInHeader(); } catch (_) {}
-    updatePlayerControlsLabel();
   };
 
   const ensureMainRegion = () => {
@@ -529,15 +501,6 @@
         }
       };
 
-      const NEXT_BUTTON_HTML = `
-        <button id="ib-spotify-next" class="ib-spotify-next ib-spotify-next--floating" type="button" aria-label="Nästa slumpade låt" title="Nästa slumpade låt">
-          <svg class="ib-spotify-next__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-            <path d="M6 6v12l8.5-6L6 6z"></path>
-            <path d="M14.5 6v12l8.5-6-8.5-6z"></path>
-          </svg>
-        </button>
-      `.trim();
-
       let cachedTrackUrls = null;
       let cachedTrackUrlsPromise = null;
 
@@ -613,36 +576,15 @@
             <div class="ib-spotify-player__inner" role="region" aria-label="Spotify">
               <div id="ib-spotify-embed" aria-label="Spotify player"></div>
             </div>
-            ${NEXT_BUTTON_HTML}
           </div>
         `;
         document.body.appendChild(wrap);
       }
 
-      // Ensure the Next button exists even if the player was created by an older build.
-      try {
-        const host = document.getElementById("ib-spotify-player");
-        const btn = document.getElementById("ib-spotify-next");
-        if (host && !btn) {
-          const row = host.querySelector?.(".ib-spotify-player__row");
-          if (row) row.insertAdjacentHTML("beforeend", NEXT_BUTTON_HTML);
-          else host.insertAdjacentHTML("beforeend", NEXT_BUTTON_HTML);
-        }
-      } catch (_) {}
-
-      // Normalize button markup (no emoji) even if it already existed.
+      // Clean up any leftover external-next button from older builds.
       try {
         const btn = document.getElementById("ib-spotify-next");
-        if (btn) {
-          btn.type = "button";
-          btn.className = "ib-spotify-next ib-spotify-next--floating";
-          btn.innerHTML = `
-            <svg class="ib-spotify-next__icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">
-              <path d="M6 6v12l8.5-6L6 6z"></path>
-              <path d="M14.5 6v12l8.5-6-8.5-6z"></path>
-            </svg>
-          `.trim();
-        }
+        if (btn && btn.parentNode) btn.parentNode.removeChild(btn);
       } catch (_) {}
 
       // Place the player inside the header Spotify bar (in normal flow).
@@ -1216,9 +1158,6 @@
       };
 
       window.IBSpotifyPlayer = { show, restore, nextRandom };
-
-      // Wire up controls (player lives outside PJAX swaps)
-      wireSpotifyNextButton();
 
       const didRestore = restore();
       if (!didRestore) {
