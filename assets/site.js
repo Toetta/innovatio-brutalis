@@ -221,8 +221,13 @@
     let persistentSpotifyPlayer = null;
     try {
       persistentSpotifyPlayer = document.getElementById("ib-spotify-player");
+      // NOTE: Do NOT fully detach the iframe/controller from the DOM; that can
+      // cause playback to stop/restart in some browsers. Move it to <body>
+      // temporarily so re-rendering the topbar won't destroy it.
       if (persistentSpotifyPlayer && persistentSpotifyPlayer.parentNode) {
-        persistentSpotifyPlayer.parentNode.removeChild(persistentSpotifyPlayer);
+        if (persistentSpotifyPlayer.parentNode !== document.body) {
+          document.body.appendChild(persistentSpotifyPlayer);
+        }
       }
     } catch (_) {
       persistentSpotifyPlayer = null;
@@ -230,12 +235,7 @@
 
     mount.innerHTML = buildTopbarHTML();
 
-    // Re-attach the persistent player (if it existed) before we try to place it.
-    try {
-      if (persistentSpotifyPlayer && !document.getElementById("ib-spotify-player")) {
-        document.body.appendChild(persistentSpotifyPlayer);
-      }
-    } catch (_) {}
+    // The player is already in the DOM (moved to body above); just place it.
 
     wireSpotifyHeaderToggle();
     try { placeSpotifyPlayerInHeader(); } catch (_) {}
