@@ -8,10 +8,12 @@
   "shipping_exempt": false,
   "title_en": "Instrumenthållare för rattstång",
   "weight_grams": 200,
+  "main_image": "/assets/uploads/img_3985.jpg",
   "title": "Gauge cluster / holder for steering column",
   "images": [
     "/assets/uploads/img_3985.jpg",
-    "/assets/uploads/mini-guage.png"
+    "/assets/uploads/mini-guage.png",
+    "/assets/uploads/cluster-baksida.jpg"
   ],
   "height_mm": 150,
   "length_mm": 200,
