@@ -175,8 +175,9 @@
 				.map((s) => String(s || "").trim())
 				.filter(Boolean);
 
-			if (!out.length && legacyImage) {
-				out.push(String(legacyImage));
+			if (legacyImage) {
+				const legacy = String(legacyImage || "").trim();
+				if (legacy && !out.includes(legacy)) out.push(legacy);
 			}
 			return out;
 		} catch (_) {
