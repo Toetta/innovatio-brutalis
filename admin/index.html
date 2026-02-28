@@ -22,41 +22,98 @@
         const RAW_BASE = 'https://raw.githubusercontent.com/Toetta/innovatio-brutalis/main/';
         const cacheBust = String(Date.now());
 
-        const rewriteUploadsSrc = (value) => {
+        const toRaw = (path, query) => {
+          try {
+            const p = String(path || '').trim();
+            if (!p) return null;
+            const normalized = p.startsWith('/') ? p.slice(1) : p;
+            if (!normalized.startsWith('assets/uploads/')) return null;
+            const q = String(query || '');
+            const bust = (q && q.includes('?')) ? ('&v=' + cacheBust) : ('?v=' + cacheBust);
+            return RAW_BASE + normalized + (q || '') + bust;
+          } catch (_) {
+            return null;
+          }
+        };
+
+        const rewriteUploadsInText = (value) => {
           if (!value || typeof value !== 'string') return null;
           const v = value.trim();
           if (!v) return null;
 
           // Avoid infinite rewriting
-          if (v.startsWith(RAW_BASE)) return null;
+          if (v.includes(RAW_BASE)) return null;
 
-          // Skip non-path URLs
+          // Skip non-path URLs that Decap uses for immediate previews.
           if (v.startsWith('data:') || v.startsWith('blob:')) return null;
           if (/^https?:\/\//i.test(v)) return null;
 
-          // Normalize common variants
-          const normalized = v.startsWith('/') ? v.slice(1) : v;
-          if (!normalized.startsWith('assets/uploads/')) return null;
+          // Replace any occurrence of /assets/uploads/... inside the string
+          // (covers src, href, srcset, and inline styles like background-image).
+          const re = /(^|[\s"'()])\/?(assets\/uploads\/[^\s"')]+)(\?[^\s"')]+)?/gi;
+          let changed = false;
+          const out = v.replace(re, (m, lead, path, query) => {
+            const next = toRaw(path, query);
+            if (!next) return m;
+            changed = true;
+            return String(lead || '') + next;
+          });
 
-          return RAW_BASE + normalized + '?v=' + cacheBust;
+          return changed ? out : null;
+        };
+
+        const maybeRewriteElAttr = (el, attrName) => {
+          try {
+            if (!el || el.nodeType !== 1) return;
+            const cur = el.getAttribute?.(attrName);
+            if (!cur) return;
+            const next = rewriteUploadsInText(String(cur));
+            if (next) el.setAttribute(attrName, next);
+          } catch (_) {}
+        };
+
+        const maybeRewriteInlineStyle = (el) => {
+          try {
+            if (!el || el.nodeType !== 1) return;
+            const styleAttr = el.getAttribute?.('style');
+            if (!styleAttr) return;
+            const next = rewriteUploadsInText(String(styleAttr));
+            if (next) el.setAttribute('style', next);
+          } catch (_) {}
         };
 
         const maybeRewriteImg = (img) => {
           try {
             if (!img || img.tagName !== 'IMG') return;
-            const attr = img.getAttribute('src');
-            const next = rewriteUploadsSrc(attr);
-            if (next) img.setAttribute('src', next);
+            maybeRewriteElAttr(img, 'src');
+            maybeRewriteElAttr(img, 'srcset');
           } catch (_) {}
         };
 
         const fixImages = (root) => {
           try {
             if (!root) root = document;
-            if (root.tagName === 'IMG') maybeRewriteImg(root);
-            const imgs = root.querySelectorAll?.('img[src]');
-            if (!imgs) return;
-            for (const img of imgs) maybeRewriteImg(img);
+
+            // Single element
+            if (root.nodeType === 1) {
+              if (root.tagName === 'IMG') maybeRewriteImg(root);
+              maybeRewriteInlineStyle(root);
+              maybeRewriteElAttr(root, 'href');
+              maybeRewriteElAttr(root, 'srcset');
+              maybeRewriteElAttr(root, 'src');
+            }
+
+            // Descendants
+            const nodes = root.querySelectorAll?.('img[src], img[srcset], [style*="uploads"], [href]');
+            if (!nodes) return;
+            for (const el of nodes) {
+              if (!el || el.nodeType !== 1) continue;
+              if (el.tagName === 'IMG') maybeRewriteImg(el);
+              maybeRewriteInlineStyle(el);
+              maybeRewriteElAttr(el, 'href');
+              maybeRewriteElAttr(el, 'srcset');
+              maybeRewriteElAttr(el, 'src');
+            }
           } catch (_) {}
         };
 
@@ -66,8 +123,17 @@
         try {
           const mo = new MutationObserver((mutations) => {
             for (const m of mutations) {
-              if (m.type === 'attributes' && m.attributeName === 'src' && m.target?.tagName === 'IMG') {
-                maybeRewriteImg(m.target);
+              if (m.type === 'attributes') {
+                const t = m.target;
+                if (!t || t.nodeType !== 1) continue;
+                if (m.attributeName === 'src' || m.attributeName === 'srcset') {
+                  if (t.tagName === 'IMG') maybeRewriteImg(t);
+                  else maybeRewriteElAttr(t, m.attributeName);
+                } else if (m.attributeName === 'href') {
+                  maybeRewriteElAttr(t, 'href');
+                } else if (m.attributeName === 'style') {
+                  maybeRewriteInlineStyle(t);
+                }
               } else if (m.type === 'childList') {
                 for (const n of m.addedNodes || []) {
                   if (!n || n.nodeType !== 1) continue;
@@ -77,10 +143,109 @@
               }
             }
           });
-          mo.observe(document.documentElement, { subtree: true, childList: true, attributes: true, attributeFilter: ['src'] });
+          mo.observe(document.documentElement, {
+            subtree: true,
+            childList: true,
+            attributes: true,
+            attributeFilter: ['src', 'srcset', 'href', 'style'],
+          });
         } catch (_) {}
       })();
     </script>
     <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
+    <script>
+      (function () {
+        // Enforce "exactly one" main image selection in the editor UI.
+        // Decap's list widget uses checkboxes, so we implement "radio" behavior:
+        // when one is checked, all others are unchecked.
+        var guard = false;
+        document.addEventListener('change', function (e) {
+          try {
+            if (guard) return;
+            var t = e && e.target;
+            if (!t || t.tagName !== 'INPUT') return;
+            if (t.type !== 'checkbox') return;
+            var name = String(t.getAttribute('name') || '');
+            if (!name) return;
+            // Match the products images list field: images.*.is_main
+            if (!/\bimages\.[0-9]+\.is_main\b/.test(name)) return;
+            if (!t.checked) return;
+
+            guard = true;
+            var all = document.querySelectorAll('input[type="checkbox"][name]');
+            for (var i = 0; i < all.length; i++) {
+              var cb = all[i];
+              if (cb === t) continue;
+              var n = String(cb.getAttribute('name') || '');
+              if (!/\bimages\.[0-9]+\.is_main\b/.test(n)) continue;
+              if (cb.checked) {
+                // Use click so React/Decap state updates correctly.
+                try { cb.click(); } catch (_) {}
+              }
+            }
+          } catch (_) {
+            // ignore
+          } finally {
+            guard = false;
+          }
+        }, true);
+
+        // Safety net: enforce the rule on save too.
+        try {
+          if (!window.CMS || typeof window.CMS.registerEventListener !== 'function') return;
+          window.CMS.registerEventListener({
+            name: 'preSave',
+            handler: function (payload) {
+              try {
+                var entry = payload && payload.entry;
+                if (!entry || typeof entry.get !== 'function') return entry;
+                var data = entry.get('data');
+                if (!data || typeof data.get !== 'function') return entry;
+
+                var images = data.get('images');
+                if (!images || typeof images.size !== 'number' || typeof images.get !== 'function') return data;
+
+                // Find the last selected image (treat as "senast valda" if multiple).
+                var lastIdx = -1;
+                for (var idx = 0; idx < images.size; idx++) {
+                  var it = images.get(idx);
+                  if (!it || typeof it.get !== 'function') continue;
+                  var flagged = !!(it.get('is_main') || it.get('isMain') || it.get('main'));
+                  if (flagged) lastIdx = idx;
+                }
+
+                if (lastIdx < 0) return data;
+
+                // Clear all flags except lastIdx.
+                var nextImages = images;
+                for (var j = 0; j < images.size; j++) {
+                  var cur = images.get(j);
+                  if (!cur || typeof cur.set !== 'function') continue;
+                  var should = (j === lastIdx);
+                  nextImages = nextImages.set(j, cur.set('is_main', should));
+                }
+
+                var nextData = data.set('images', nextImages);
+
+                // If main_image override is empty, populate it from the selected image for compatibility.
+                try {
+                  var curMain = String(nextData.get('main_image') || '').trim();
+                  if (!curMain) {
+                    var sel = nextImages.get(lastIdx);
+                    var src = sel && typeof sel.get === 'function' ? String(sel.get('image') || sel.get('url') || '') : '';
+                    src = (src || '').trim();
+                    if (src) nextData = nextData.set('main_image', src);
+                  }
+                } catch (_) {}
+
+                return nextData;
+              } catch (_) {
+                return payload && payload.entry ? payload.entry.get('data') : payload;
+              }
+            },
+          });
+        } catch (_) {}
+      })();
+    </script>
   </body>
 </html>

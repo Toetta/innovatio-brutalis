@@ -184,12 +184,37 @@
 			return legacyImage ? [String(legacyImage)] : [];
 		}
 	};
-	const normalizeMainImage = (mainImageField) => {
+	const normalizeMainImage = (mainImageField, imagesField, legacyImage) => {
 		try {
-			const s = String(mainImageField || "").trim();
-			return s ? s : "";
+			// Explicit override wins
+			const direct = String(mainImageField || "").trim();
+			if (direct) return direct;
+
+			// If images list contains objects, allow a checkbox to mark the main image.
+			const arr = Array.isArray(imagesField) ? imagesField : [];
+			for (let i = arr.length - 1; i >= 0; i--) {
+				const x = arr[i];
+				if (!x || typeof x !== "object") continue;
+				const flagged = !!(x.is_main ?? x.isMain ?? x.main ?? false);
+				if (!flagged) continue;
+				const src = String(x.image || x.src || x.url || "").trim();
+				if (src) return src;
+			}
+
+			// Legacy single-image fallback
+			const legacy = String(legacyImage || "").trim();
+			if (legacy) return legacy;
+
+			// As a final fallback, use the first available image
+			const normalized = normalizeImages(imagesField, legacyImage);
+			return normalized[0] ? String(normalized[0]) : "";
 		} catch (_) {
-			return "";
+			try {
+				const legacy = String(legacyImage || "").trim();
+				return legacy || "";
+			} catch (_) {
+				return "";
+			}
 		}
 	};
 	const pickMainImage = (product) => {
@@ -478,7 +503,7 @@
 			const excerpts = pickLang(p.excerpt_sv, p.excerpt_en, p.excerpt || "");
 			const descriptions = pickLang(p.description_sv, p.description_en, p.description || "");
 			const images = normalizeImages(p.images, p.image);
-			const mainImage = normalizeMainImage(p.main_image || p.mainImage);
+			const mainImage = normalizeMainImage(p.main_image || p.mainImage, p.images, p.image);
 			return {
 				slug: String(p.slug),
 				titleSV: titles.sv,
@@ -505,7 +530,7 @@
 			const excerpts = pickLang(p.excerpt_sv, p.excerpt_en, p.excerpt || "");
 			const descriptions = pickLang(p.description_sv, p.description_en, p.description || "");
 			const images = normalizeImages(p.images, p.image);
-			const mainImage = normalizeMainImage(p.main_image || p.mainImage);
+			const mainImage = normalizeMainImage(p.main_image || p.mainImage, p.images, p.image);
 			return {
 				slug: String(p.slug),
 				titleSV: titles.sv,

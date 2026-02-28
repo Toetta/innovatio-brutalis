@@ -1,14 +1,29 @@
 /* Decap CMS preview iframe only.
-   Keep it minimal: constrain media so previews aren't gigantic. */
+   Keep it minimal: make media scale nicely within the right-side preview pane. */
 
-img {
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 12px;
+  height: 100%;
+}
+
+img,
+video,
+iframe {
   max-width: 100%;
   height: auto;
   display: block;
 }
 
-/* Product/article images should not dominate the preview pane */
+/* Product/article images should not dominate the preview pane.
+   Use viewport-based sizing so it adapts to different screen heights. */
 img {
-  max-height: 520px;
+  max-height: calc(100vh - 24px);
   object-fit: contain;
+  margin: 0 auto;
 }
