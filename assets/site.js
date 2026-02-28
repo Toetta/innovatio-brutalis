@@ -501,6 +501,52 @@
         }
       };
 
+      // Best-effort: make it harder to click through the embed and open Spotify.
+      // NOTE: This cannot fully hide the underlying Spotify URL (it exists in iframe src),
+      // but sandboxing can block popups/top-navigation from inside the iframe in most browsers.
+      const SPOTIFY_IFRAME_SANDBOX = "allow-scripts allow-same-origin allow-forms";
+      const hardenSpotifyIframe = (iframe) => {
+        try {
+          if (!iframe || iframe.tagName !== "IFRAME") return;
+          iframe.setAttribute("sandbox", SPOTIFY_IFRAME_SANDBOX);
+          iframe.setAttribute("referrerpolicy", "no-referrer");
+        } catch (_) {}
+      };
+      const wireSpotifyIframeHardening = (() => {
+        let wired = false;
+        let observer = null;
+        return () => {
+          if (wired) return;
+          wired = true;
+          try {
+            const host = document.getElementById("ib-spotify-embed");
+            if (!host) return;
+
+            try {
+              const existing = host.querySelectorAll("iframe");
+              for (const iframe of existing) hardenSpotifyIframe(iframe);
+            } catch (_) {}
+
+            observer = new MutationObserver((mutations) => {
+              try {
+                for (const m of mutations || []) {
+                  for (const node of m.addedNodes || []) {
+                    try {
+                      if (node && node.tagName === "IFRAME") hardenSpotifyIframe(node);
+                      else if (node && node.querySelectorAll) {
+                        const iframes = node.querySelectorAll("iframe");
+                        for (const iframe of iframes) hardenSpotifyIframe(iframe);
+                      }
+                    } catch (_) {}
+                  }
+                }
+              } catch (_) {}
+            });
+            observer.observe(host, { childList: true, subtree: true });
+          } catch (_) {}
+        };
+      })();
+
       let cachedTrackUrls = null;
       let cachedTrackUrlsPromise = null;
 
@@ -580,6 +626,9 @@
         `;
         document.body.appendChild(wrap);
       }
+
+      // Ensure any Spotify iframe (fallback or controller) is hardened.
+      try { wireSpotifyIframeHardening(); } catch (_) {}
 
       // Clean up any leftover external-next button from older builds.
       try {
@@ -848,7 +897,7 @@
 
         const prev = String(embedHost.dataset.src || "").trim();
         if (prev !== embed) {
-          embedHost.innerHTML = `<iframe title="Spotify" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${embed}"></iframe>`;
+          embedHost.innerHTML = `<iframe title="Spotify" sandbox="${SPOTIFY_IFRAME_SANDBOX}" referrerpolicy="no-referrer" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" src="${embed}"></iframe>`;
           embedHost.dataset.src = embed;
           try { forceSpotifyEmbedsDark(); } catch (_) {}
           try { setTimeout(() => { try { forceSpotifyEmbedsDark(); } catch (_) {} }, 120); } catch (_) {}
