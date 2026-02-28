@@ -1021,12 +1021,27 @@
 
 	const init = async () => {
 		const initKey = `${window.location.pathname}${window.location.search}`;
-		if (IBShop._lastInitKey === initKey) return;
-		IBShop._lastInitKey = initKey;
+		const grid = qs("#productGrid");
+		const view = qs("#productView");
+
+		const gridKey = grid ? String(grid.getAttribute("data-ib-init-key") || "") : "";
+		const viewKey = view ? String(view.getAttribute("data-ib-init-key") || "") : "";
+
+		const shouldRenderIndex = !!grid && gridKey !== initKey;
+		const shouldRenderProduct = !!view && viewKey !== initKey;
+
+		// If we're on neither shop index nor product page, do nothing.
+		// If we're on one of them, only re-run when the DOM was swapped (PJAX) or URL changed.
+		if (!shouldRenderIndex && !shouldRenderProduct) return;
 
 		try {
-			await renderShopIndex();
-			await renderProductPage();
+			if (shouldRenderIndex) grid.setAttribute("data-ib-init-key", initKey);
+			if (shouldRenderProduct) view.setAttribute("data-ib-init-key", initKey);
+		} catch (_) {}
+
+		try {
+			if (shouldRenderIndex) await renderShopIndex();
+			if (shouldRenderProduct) await renderProductPage();
 		} catch (_) {
 			// no-op
 		}
