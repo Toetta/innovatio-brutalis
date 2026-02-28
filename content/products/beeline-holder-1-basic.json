@@ -7,7 +7,11 @@
   "published": true,
   "title_en": "Beeline gen1 holder basic",
   "weight_grams": 200,
+  "main_image": "/assets/uploads/img_3999.jpeg",
   "title": "Beeline holder",
+  "images": [
+    "/assets/uploads/img_3998.jpeg"
+  ],
   "height_mm": 100,
   "length_mm": 150,
   "width_mm": 100,
