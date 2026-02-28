@@ -132,13 +132,13 @@
   position:absolute;
   top:10px;
   left:10px;
-  padding:6px 10px;
+  padding:7px 12px;
   border-radius:999px;
-  border:1px solid var(--shop-accent);
+  border:1px solid var(--brass-main);
   background: var(--card2);
-  color: var(--shop-accent);
+  color: var(--brass-light);
   font-weight:800;
-  font-size:11px;
+  font-size:13px;
   line-height:1;
 }
 
