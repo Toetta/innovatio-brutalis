@@ -1212,7 +1212,8 @@
                   showFallbackIframe(picked);
                   return;
                 }
-                // If we can't load tracks, avoid showing the playlist fallback in the compact player.
+                // If we can't load tracks, show the playlist anyway rather than leaving a blank player.
+                showFallbackIframe(embed);
                 return;
               }
             } catch (_) {}
@@ -1316,8 +1317,10 @@
                 }
               } catch (_) {}
 
-              // If we can't load tracks and controller is unavailable, don't show the playlist embed
-              // in the compact persistent player.
+              // Last resort: show the playlist embed rather than leaving the player hidden.
+              try {
+                showFallbackIframe(def);
+              } catch (_) {}
               return;
             }
 
