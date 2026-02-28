@@ -1,8 +1,14 @@
 -- Innovatio Brutalis: Add needs_shipping_quote order status (D1)
+--
+-- Remote D1 migrations may execute statements in a way that makes PRAGMA
+-- foreign_keys toggles unreliable across the whole migration.
+--
+-- Since both order_lines and fu_sync_payloads have FOREIGN KEY(order_id)
+-- REFERENCES orders(id), we rebuild ALL tables that reference orders in the
+-- same migration to avoid FK violations when dropping the old orders table.
 
-PRAGMA foreign_keys = OFF;
-
--- Rebuild orders so we can update the status CHECK constraint safely.
+ALTER TABLE order_lines RENAME TO order_lines_old;
+ALTER TABLE fu_sync_payloads RENAME TO fu_sync_payloads_old;
 ALTER TABLE orders RENAME TO orders_old;
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -150,9 +156,93 @@ SELECT
   exported_to_fu_at
 FROM orders_old;
 
+CREATE TABLE IF NOT EXISTS order_lines (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL,
+  product_id TEXT,
+  sku TEXT,
+  title TEXT NOT NULL,
+  qty REAL NOT NULL,
+  unit_price_ex_vat REAL NOT NULL,
+  vat_rate REAL NOT NULL,
+  line_total_ex_vat REAL NOT NULL,
+  line_vat REAL NOT NULL,
+  line_total_inc_vat REAL NOT NULL,
+  FOREIGN KEY(order_id) REFERENCES orders(id)
+);
+
+INSERT INTO order_lines (
+  id,
+  order_id,
+  product_id,
+  sku,
+  title,
+  qty,
+  unit_price_ex_vat,
+  vat_rate,
+  line_total_ex_vat,
+  line_vat,
+  line_total_inc_vat
+)
+SELECT
+  id,
+  order_id,
+  product_id,
+  sku,
+  title,
+  qty,
+  unit_price_ex_vat,
+  vat_rate,
+  line_total_ex_vat,
+  line_vat,
+  line_total_inc_vat
+FROM order_lines_old;
+
+CREATE TABLE IF NOT EXISTS fu_sync_payloads (
+  id TEXT PRIMARY KEY,
+  order_id TEXT NOT NULL,
+  kind TEXT NOT NULL CHECK(kind IN ('sale','refund')),
+  status TEXT NOT NULL DEFAULT 'queued' CHECK(status IN ('queued','sent','acked','error')),
+  payload TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  sent_at TEXT,
+  acked_at TEXT,
+  voucher_id TEXT,
+  error TEXT,
+  UNIQUE(order_id, kind),
+  FOREIGN KEY(order_id) REFERENCES orders(id)
+);
+
+INSERT INTO fu_sync_payloads (
+  id,
+  order_id,
+  kind,
+  status,
+  payload,
+  created_at,
+  sent_at,
+  acked_at,
+  voucher_id,
+  error
+)
+SELECT
+  id,
+  order_id,
+  kind,
+  status,
+  payload,
+  created_at,
+  sent_at,
+  acked_at,
+  voucher_id,
+  error
+FROM fu_sync_payloads_old;
+
+DROP TABLE order_lines_old;
+DROP TABLE fu_sync_payloads_old;
 DROP TABLE orders_old;
 
 CREATE INDEX IF NOT EXISTS idx_orders_customer_id_placed_at ON orders(customer_id, placed_at);
 CREATE INDEX IF NOT EXISTS idx_orders_exported_to_fu ON orders(exported_to_fu, placed_at);
-
-PRAGMA foreign_keys = ON;
+CREATE INDEX IF NOT EXISTS idx_order_lines_order_id ON order_lines(order_id);
+CREATE INDEX IF NOT EXISTS idx_fu_sync_payloads_status_created_at ON fu_sync_payloads(status, created_at);

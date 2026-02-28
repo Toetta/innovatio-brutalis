@@ -91,3 +91,55 @@ export const createStripePaymentIntent = async ({ env, amount_minor, currency = 
 
   return data;
 };
+
+export const stripeBalanceTotalsForPayout = async ({ env, payoutId }) => {
+  const { STRIPE_SECRET_KEY } = getEnv(env);
+  if (!STRIPE_SECRET_KEY) throw new Error("Stripe secret key not configured");
+
+  const pid = String(payoutId || "").trim();
+  if (!pid) throw new Error("Missing payoutId");
+
+  let amount_minor = 0;
+  let fee_minor = 0;
+  let net_minor = 0;
+  let count = 0;
+
+  let starting_after = "";
+  for (let page = 0; page < 50; page++) {
+    const url = new URL("https://api.stripe.com/v1/balance_transactions");
+    url.searchParams.set("payout", pid);
+    url.searchParams.set("limit", "100");
+    if (starting_after) url.searchParams.set("starting_after", starting_after);
+
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: {
+        "authorization": `Bearer ${STRIPE_SECRET_KEY}`,
+      },
+    });
+
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+      const msg = data?.error?.message || "Stripe error";
+      const err = new Error(msg);
+      err.data = data;
+      err.status = res.status;
+      throw err;
+    }
+
+    const list = Array.isArray(data?.data) ? data.data : [];
+    for (const bt of list) {
+      amount_minor += Number(bt?.amount || 0) || 0;
+      fee_minor += Number(bt?.fee || 0) || 0;
+      net_minor += Number(bt?.net || 0) || 0;
+      count++;
+    }
+
+    if (!data?.has_more) break;
+    const last = list[list.length - 1];
+    starting_after = String(last?.id || "");
+    if (!starting_after) break;
+  }
+
+  return { payoutId: pid, amount_minor, fee_minor, net_minor, count };
+};

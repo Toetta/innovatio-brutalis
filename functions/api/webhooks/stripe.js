@@ -2,7 +2,8 @@ import { json, badRequest, text } from "../_lib/resp.js";
 import { assertDb, exec, one } from "../_lib/db.js";
 import { nowIso, uuid } from "../_lib/crypto.js";
 import { verifyStripeWebhook } from "../_lib/stripe.js";
-import { queueFuPayloadForOrder } from "../_lib/fu.js";
+import { stripeBalanceTotalsForPayout } from "../_lib/stripe.js";
+import { queueFuPayloadForOrder, queueFuPayloadForStripePayout } from "../_lib/fu.js";
 
 const recordEvent = async ({ db, event, rawBody, order_id }) => {
   try {
@@ -86,6 +87,20 @@ export const onRequestPost = async (context) => {
         [ts, ts, order_id]
       );
       await queueFuPayloadForOrder({ env, orderId: order_id, kind: "refund" }).catch(() => null);
+    }
+    return text("ok", { status: 200 });
+  }
+
+  // Queue Stripe payout voucher (bank settlement + fees)
+  if (type === "payout.paid") {
+    const payoutId = String(obj?.id || "");
+    if (payoutId) {
+      try {
+        const totals = await stripeBalanceTotalsForPayout({ env, payoutId });
+        await queueFuPayloadForStripePayout({ env, payout: obj, totals }).catch(() => null);
+      } catch (_) {
+        // Non-fatal: still accept webhook
+      }
     }
     return text("ok", { status: 200 });
   }

@@ -19,6 +19,11 @@ export const getEnv = (env) => {
   // FU pull/ack sync
   const FU_SYNC_KEY = String(env?.FU_SYNC_KEY || "");
 
+  // Optional bookkeeping account config (used for Stripe payout vouchers)
+  const FU_BANK_ACCOUNT = Number(env?.FU_BANK_ACCOUNT || 1930) || 1930;
+  const FU_STRIPE_CLEARING_ACCOUNT = Number(env?.FU_STRIPE_CLEARING_ACCOUNT || 1580) || 1580;
+  const FU_STRIPE_FEE_ACCOUNT = Number(env?.FU_STRIPE_FEE_ACCOUNT || 6570) || 6570;
+
   // Klarna/Swish guards (MVP defaults)
   const KLARNA_MAX_SEK = Number(env?.KLARNA_MAX_SEK || 500) || 500;
   const KLARNA_USERNAME = String(env?.KLARNA_USERNAME || "");
@@ -43,6 +48,9 @@ export const getEnv = (env) => {
     STRIPE_WEBHOOK_SECRET,
 
     FU_SYNC_KEY,
+    FU_BANK_ACCOUNT,
+    FU_STRIPE_CLEARING_ACCOUNT,
+    FU_STRIPE_FEE_ACCOUNT,
     KLARNA_MAX_SEK,
     KLARNA_USERNAME,
     KLARNA_PASSWORD,

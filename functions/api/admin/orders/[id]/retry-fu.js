@@ -21,7 +21,7 @@ export const onRequestPost = async (context) => {
   if (!kind) return badRequest("Order not in paid/refunded");
 
   const existing = await one(
-    db.prepare("SELECT id FROM fu_sync_payloads WHERE order_id = ? AND kind = ? LIMIT 1").bind(id, kind).all()
+    db.prepare("SELECT id FROM fu_sync_payloads WHERE entity_type = 'order' AND entity_id = ? AND kind = ? LIMIT 1").bind(id, kind).all()
   );
 
   if (existing?.id) {

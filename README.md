@@ -264,6 +264,20 @@ Set these in your hosting platform (Cloudflare Pages/Workers env vars):
 - `STRIPE_WEBHOOK_SECRET`
 - `FU_SYNC_KEY` (used as `X-FU-Key` header for pull/ack)
 
+Optional (browser-based FU import button / CORS):
+
+- `CORS_ALLOW_ORIGINS` (comma-separated allowlist for `Origin`)
+   - Example: `CORS_ALLOW_ORIGINS=https://toetta.github.io,null`
+   - Use `*` only if you understand the security implications.
+
+Optional (Stripe payout vouchers / fees automation):
+
+- Ensure your Stripe webhook also sends `payout.paid` to `/api/webhooks/stripe`.
+- Account config (defaults shown):
+   - `FU_BANK_ACCOUNT=1930`
+   - `FU_STRIPE_CLEARING_ACCOUNT=1580`
+   - `FU_STRIPE_FEE_ACCOUNT=6570`
+
 Optional (Swish manual display):
 
 - `SWISH_PAYEE_ALIAS` (your Swish number/alias; shown to customers)
