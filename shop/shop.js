@@ -867,7 +867,7 @@
 		const newsLabel = isEN() ? "NEW" : "NY";
 		const gallery = getGalleryImages(product);
 		const mainImg = gallery[0] ? String(gallery[0]) : "";
-		const extraImages = gallery.slice(1);
+		const thumbImages = gallery;
 		const price = formatPrice(product.price, product.currency);
 		const priceNote = vatLabel("SE");
 
@@ -884,9 +884,12 @@
 						<img class=\"product-image-main\" src=\"${esc(mainImg)}\" alt=\"\" loading=\"eager\" data-product-image-main=\"1\">
 						${product.isNews ? `<span class=\"product-badge-new\" title=\"${esc(newsLabel)}\">${esc(newsLabel)}</span>` : ""}
 					</div>
-					${extraImages.length ? `
+					${thumbImages.length > 1 ? `
 						<div class=\"product-gallery-grid\" aria-label=\"Product images\">
-							${extraImages.map((src) => `<img class=\"product-image-thumb\" src=\"${esc(src)}\" alt=\"\" loading=\"lazy\" data-product-image-thumb=\"1\">`).join("")}
+							${thumbImages.map((src, i) => {
+								const active = i === 0;
+								return `<img class=\"product-image-thumb${active ? " is-active" : ""}\" src=\"${esc(src)}\" alt=\"\" loading=\"lazy\" data-product-image-thumb=\"1\" ${active ? "aria-current=\"true\"" : ""}>`;
+							}).join("")}
 						</div>
 					` : ""}
 				</div>
@@ -900,19 +903,25 @@
 				view.addEventListener("click", (e) => {
 					try {
 						const target = e.target;
-						if (!target || !target.matches || !target.matches(".product-image-thumb")) return;
-						const thumbSrc = String(target.getAttribute("src") || "").trim();
+						const thumb = target && target.closest ? target.closest(".product-image-thumb") : null;
+						if (!thumb) return;
+						const thumbSrc = String(thumb.getAttribute("src") || "").trim();
 						if (!thumbSrc) return;
 						const main = view.querySelector(".product-image-main");
 						if (!main) return;
 						const mainSrc = String(main.getAttribute("src") || "").trim();
-						if (!mainSrc) {
-							main.setAttribute("src", thumbSrc);
-							return;
-						}
-						if (mainSrc === thumbSrc) return;
-						main.setAttribute("src", thumbSrc);
-						target.setAttribute("src", mainSrc);
+						if (mainSrc !== thumbSrc) main.setAttribute("src", thumbSrc);
+
+						// Keep thumbnails fixed; only update selected state.
+						try {
+							const all = Array.from(view.querySelectorAll(".product-image-thumb"));
+							for (const el of all) {
+								try { el.classList.remove("is-active"); } catch (_) {}
+								try { el.removeAttribute("aria-current"); } catch (_) {}
+							}
+							try { thumb.classList.add("is-active"); } catch (_) {}
+							try { thumb.setAttribute("aria-current", "true"); } catch (_) {}
+						} catch (_) {}
 					} catch (_) {}
 				});
 			}

@@ -230,3 +230,7 @@
   object-fit: contain;
   cursor: pointer;
 }
+
+.shop .product-image-thumb.is-active{
+  border-color: var(--shop-accent);
+}
