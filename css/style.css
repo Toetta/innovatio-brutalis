@@ -292,7 +292,8 @@ small{color:var(--text-muted)}
   right: auto;
   transform: none;
   z-index: auto;
-  width: min(520px, 100%);
+  width: 520px;
+  max-width: 100%;
   margin: 0 0 0 auto;
 }
 
@@ -413,8 +414,8 @@ small{color:var(--text-muted)}
 }
 
 @media (max-width: 768px){
-  .spotify-toggle{ display: inline-flex; }
-  .spotify-panel.is-collapsed{ display:none; }
+  /* No toggle; keep the player visible on mobile as well. */
+  .spotify-toggle{ display: none; }
 }
 
 @media (min-width: 769px){

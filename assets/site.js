@@ -141,10 +141,7 @@
 
           <div class="topbar-right" aria-label="Spotify">
             <div class="spotify-bar">
-              <button id="ib-spotify-toggle" class="spotify-toggle" type="button" aria-expanded="false" aria-controls="ib-spotify-panel" title="${toggleTitle}">
-                ${toggleLabel}
-              </button>
-              <div id="ib-spotify-panel" class="spotify-panel is-collapsed"></div>
+              <div id="ib-spotify-panel" class="spotify-panel"></div>
             </div>
           </div>
         </div>
@@ -220,47 +217,8 @@
   };
 
   const wireSpotifyHeaderToggle = () => {
-    try {
-      const btn = document.getElementById("ib-spotify-toggle");
-      const panel = document.getElementById("ib-spotify-panel");
-      if (!btn || !panel) return;
-      if (btn.dataset.wired === "1") return;
-      btn.dataset.wired = "1";
-
-      const isMobile = () => {
-        try { return window.matchMedia && window.matchMedia("(max-width: 768px)").matches; }
-        catch (_) { return false; }
-      };
-
-      const setCollapsed = (collapsed) => {
-        try {
-          const c = Boolean(collapsed);
-          panel.classList.toggle("is-collapsed", c);
-          btn.setAttribute("aria-expanded", c ? "false" : "true");
-          try { updatePlayerHeightVar(); } catch (_) {}
-        } catch (_) {}
-      };
-
-      // Default: collapsed on mobile, expanded on desktop.
-      try { setCollapsed(isMobile()); } catch (_) {}
-
-      btn.addEventListener("click", () => {
-        try {
-          btn.dataset.userToggled = "1";
-          const isCollapsed = panel.classList.contains("is-collapsed");
-          setCollapsed(!isCollapsed);
-        } catch (_) {}
-      });
-
-      try {
-        window.addEventListener("resize", () => {
-          try {
-            if (btn.dataset.userToggled === "1") return;
-            setCollapsed(isMobile());
-          } catch (_) {}
-        }, { passive: true });
-      } catch (_) {}
-    } catch (_) {}
+    // The Spotify player should always be visible; no toggle button.
+    return;
   };
 
   const refreshTopbar = () => {
