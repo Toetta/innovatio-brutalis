@@ -344,7 +344,8 @@ small{color:var(--text-muted)}
   display: block;
 }
 
-.ib-spotify-player.ib-spotify-has-art .ib-spotify-player__cover{ display: block; }
+/* Spotify's embed UI already shows cover art; avoid showing it twice. */
+.ib-spotify-player__cover{ display: none !important; }
 
 .ib-spotify-player__controls{ display:none; gap:6px; align-items:center; }
 .ib-spotify-player.ib-spotify-has-art .ib-spotify-player__controls{ display:flex; }
