@@ -4,6 +4,13 @@ import { getEnv } from "./_lib/env.js";
 export const onRequestGet = async (context) => {
   const hasD1 = Boolean(context?.env?.DB);
   const cfg = getEnv(context?.env);
+  const pagesCommit = String(context?.env?.CF_PAGES_COMMIT_SHA || "").trim();
+  const pagesBranch = String(context?.env?.CF_PAGES_BRANCH || "").trim();
+  const pagesProject = String(context?.env?.CF_PAGES_PROJECT_NAME || "").trim();
+  const pagesEnv = String(context?.env?.CF_PAGES_ENVIRONMENT || "").trim();
+
+  const fuExpected = String(context?.env?.FU_KEY || context?.env?.["FU-KEY"] || context?.env?.FU_SYNC_KEY || "").trim();
+  const hasFuKeySecret = Boolean(fuExpected);
   const hasTurnstileSecret = Boolean(String(cfg.TURNSTILE_SECRET || "").trim());
   const supportFrom = String(cfg.EMAIL_FROM || "").trim();
   const loginFrom = String(cfg.LOGIN_EMAIL_FROM || "").trim();
@@ -24,7 +31,16 @@ export const onRequestGet = async (context) => {
     ok: true,
     hasD1,
     ts: new Date().toISOString(),
+    build: {
+      commit: pagesCommit || null,
+      branch: pagesBranch || null,
+      project: pagesProject || null,
+      environment: pagesEnv || null,
+    },
     devMode: Boolean(cfg.DEV_MODE),
+    fu: {
+      hasKeySecret: hasFuKeySecret,
+    },
     turnstile: {
       hasSecret: hasTurnstileSecret,
       ready: turnstileReady,
