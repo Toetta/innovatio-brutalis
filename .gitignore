@@ -8,6 +8,9 @@ node_modules/
 # Wrangler / Cloudflare local state
 .wrangler/
 
+# External repos checked out locally
+external/
+
 # OS / editor
 .DS_Store
 Thumbs.db
