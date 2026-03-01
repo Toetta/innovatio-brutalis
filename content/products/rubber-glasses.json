@@ -1,0 +1,23 @@
+{
+  "price_sek": 329,
+  "description_sv": "FAvoriter i repris! Barnglasögon-bågar som tål i princip allt. Är gjorda av gummi och okrossbara.\n\nKan fås i allt från rainbow färgade med unikt mönster till solida kulörer\n\nBygger på en modell som finns på specsavers så glasen kan tas därifrån med fördel till dessa.",
+  "is_news": true,
+  "title_sv": "Okrossbara gummi glasögonbågar för barn",
+  "slug": "rubber-glasses",
+  "description_en": "Favorites in repeat! Children's glasses frames that can withstand basically everything. Are made of rubber and unbreakable. Available in everything from rainbow colored with unique patterns to solid colors. Based on a model that is available at specsavers so the glasses can be taken from there with advantage to these",
+  "published": true,
+  "shipping_exempt": false,
+  "title_en": "Unbreakable rubber eyeglass frames for children",
+  "weight_grams": 100,
+  "images": [
+    {
+      "is_main": false,
+      "image": "/assets/uploads/img_5217.jpg"
+    }
+  ],
+  "height_mm": 100,
+  "tags": [],
+  "length_mm": 200,
+  "width_mm": 200,
+  "category": "living"
+}
