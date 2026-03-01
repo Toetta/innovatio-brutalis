@@ -4,7 +4,7 @@
 
 - The Innovatio Brutalis site uses a stable launcher URL that hard-redirects to GitHub Pages.
    - Launcher (stable entrypoint): `https://innovatio-brutalis.com/assets/fu-bookkeeping.html`
-   - Redirect target (GitHub Pages): `https://toetta.github.io/FU-Bookkeeping/FU-Bookkeeping.html`
+   - Redirect target (custom domain): `https://fu-bookkeeping.se/FU-Bookkeeping.html`
 - The currently published FU build shows `v0.2.19 · 86fcf6d` and **does not include** the Settings section **“Webshop-synk (tillägg)”**, so the Import button is not visible.
 - Backend support already exists on `https://innovatio-brutalis.com` (Cloudflare Pages/Functions) via `/api/fu/pull` + `/api/fu/ack` and expects header `X-FU-Key`.
 
@@ -69,7 +69,7 @@ When user clicks **Import**:
 
 ## Verification checklist
 
-- Opening `https://toetta.github.io/FU-Bookkeeping/FU-Bookkeeping.html` shows “Webshop-synk (tillägg)” in Settings.
+- Opening `https://fu-bookkeeping.se/FU-Bookkeeping.html` shows “Webshop-synk (tillägg)” in Settings.
 - With base URL `https://innovatio-brutalis.com` and a valid `X-FU-Key`, clicking Import pulls 1 queued payload and creates a voucher.
 - Import then acks successfully (server-side queue row becomes acked).
 
