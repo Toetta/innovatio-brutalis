@@ -45,6 +45,8 @@ Admin endpoints require:
 
 - URL: `/pay/<token>`
 - Note: served by a Pages Function and includes `<meta name="robots" content="noindex">`.
+- Payment: redirects to Stripe Checkout for card payment.
+- Receipt email: Stripe can email a receipt to the customer if receipts are enabled in your Stripe Dashboard.
 
 ### API endpoints (summary)
 
@@ -60,7 +62,19 @@ Admin endpoints require:
 - Public (token based):
    - `GET /api/custom-quotes/:token`
    - `POST /api/custom-quotes/:token/mark-viewed`
+   - `POST /api/custom-quotes/:token/checkout` (creates Stripe Checkout Session)
    - `POST /api/custom-quotes/:token/pay` (mock/manual; requires admin key)
+
+### Stripe webhooks
+
+Endpoint:
+
+- `POST /api/webhooks/stripe`
+
+For custom payment links, add at least:
+
+- `checkout.session.completed`
+- `payment_intent.succeeded` (already used for webshop orders)
 
 ### FU export
 

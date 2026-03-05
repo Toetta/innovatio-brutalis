@@ -23,6 +23,15 @@ export const onRequestGet = async (context) => {
 
     <p id="status" style="opacity: 0.8;"></p>
 
+    <section id="payBox" style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; display:none;">
+      <h2 style="margin-top: 0;">Betala</h2>
+      <p style="margin-top: 0; opacity: 0.9;">Du skickas till Stripe för kortbetalning. Kvitto kan skickas via e-post.</p>
+      <div style="display:flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <button id="payBtn" type="button">Betala med kort</button>
+        <span id="payStatus" style="opacity: 0.8;"></span>
+      </div>
+    </section>
+
     <section style="margin-top: 16px;">
       <h2>Kund</h2>
       <p id="customer" style="opacity: 0.9;"></p>

@@ -92,6 +92,80 @@ export const createStripePaymentIntent = async ({ env, amount_minor, currency = 
   return data;
 };
 
+export const createStripeCheckoutSession = async ({
+  env,
+  amount_minor,
+  currency = "sek",
+  success_url,
+  cancel_url,
+  customer_email,
+  name,
+  description,
+  metadata,
+}) => {
+  const { STRIPE_SECRET_KEY } = getEnv(env);
+  if (!STRIPE_SECRET_KEY) throw new Error("Stripe secret key not configured");
+
+  const amt = Math.max(0, Math.floor(Number(amount_minor) || 0));
+  if (!amt) throw new Error("Invalid amount");
+
+  const sUrl = String(success_url || "").trim();
+  const cUrl = String(cancel_url || "").trim();
+  if (!sUrl || !cUrl) throw new Error("Missing success/cancel URL");
+
+  const form = new URLSearchParams();
+  form.set("mode", "payment");
+  form.set("success_url", sUrl);
+  form.set("cancel_url", cUrl);
+
+  // Prefill customer email + enable Stripe receipt emails (if enabled in Stripe Dashboard).
+  const email = String(customer_email || "").trim();
+  if (email) {
+    form.set("customer_email", email);
+    form.set("payment_intent_data[receipt_email]", email);
+  }
+
+  const itemName = String(name || "Innovatio Brutalis – Betalning").trim() || "Innovatio Brutalis – Betalning";
+  form.set("line_items[0][price_data][currency]", String(currency || "sek").toLowerCase());
+  form.set("line_items[0][price_data][product_data][name]", itemName);
+  form.set("line_items[0][price_data][unit_amount]", String(amt));
+  form.set("line_items[0][quantity]", "1");
+
+  const desc = String(description || "").trim();
+  if (desc) form.set("payment_intent_data[description]", desc);
+
+  const meta = metadata && typeof metadata === "object" ? metadata : null;
+  if (meta) {
+    for (const [k, v] of Object.entries(meta)) {
+      const key = String(k || "").trim();
+      if (!key) continue;
+      const val = String(v ?? "").slice(0, 500);
+      form.set(`metadata[${key}]`, val);
+      form.set(`payment_intent_data[metadata][${key}]`, val);
+    }
+  }
+
+  const res = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${STRIPE_SECRET_KEY}`,
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body: form.toString(),
+  });
+
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const msg = data?.error?.message || "Stripe error";
+    const err = new Error(msg);
+    err.data = data;
+    err.status = res.status;
+    throw err;
+  }
+
+  return data;
+};
+
 export const stripeBalanceTotalsForPayout = async ({ env, payoutId }) => {
   const { STRIPE_SECRET_KEY } = getEnv(env);
   if (!STRIPE_SECRET_KEY) throw new Error("Stripe secret key not configured");

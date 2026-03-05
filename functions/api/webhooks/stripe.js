@@ -5,6 +5,32 @@ import { verifyStripeWebhook } from "../_lib/stripe.js";
 import { stripeBalanceTotalsForPayout } from "../_lib/stripe.js";
 import { queueFuPayloadForOrder, queueFuPayloadForStripePayout } from "../_lib/fu.js";
 
+const markCustomQuotePaid = async ({ db, quote_id, token, meta }) => {
+  const qid = String(quote_id || "").trim();
+  const t = String(token || "").trim();
+  if (!qid && !t) return { ok: false, error: "Missing quote id/token" };
+
+  const quote = qid
+    ? await one(db.prepare("SELECT id, status, paid_at FROM custom_quotes WHERE id = ? LIMIT 1").bind(qid).all())
+    : await one(db.prepare("SELECT id, status, paid_at FROM custom_quotes WHERE token = ? LIMIT 1").bind(t).all());
+
+  if (!quote?.id) return { ok: false, error: "Quote not found" };
+
+  const ts = nowIso();
+  await exec(
+    db,
+    "UPDATE custom_quotes SET status = 'paid', paid_at = COALESCE(paid_at, ?), updated_at = ? WHERE id = ? AND status IN ('draft','sent','paid')",
+    [ts, ts, quote.id]
+  );
+  await exec(
+    db,
+    "INSERT INTO custom_quote_events (id, quote_id, event_type, meta_json, created_at) VALUES (?,?,?,?,?)",
+    [uuid(), quote.id, "paid", JSON.stringify({ by: "stripe", ...(meta || {}) }), ts]
+  );
+
+  return { ok: true, id: quote.id };
+};
+
 const recordEvent = async ({ db, event, rawBody, order_id }) => {
   try {
     await exec(
@@ -55,8 +81,30 @@ export const onRequestPost = async (context) => {
 
   const ts = nowIso();
 
+  if (type === "checkout.session.completed") {
+    const quote_id = String(obj?.metadata?.quote_id || "").trim();
+    const token = String(obj?.metadata?.quote_token || "").trim();
+    if (quote_id || token) {
+      await markCustomQuotePaid({
+        db,
+        quote_id,
+        token,
+        meta: { session_id: String(obj?.id || ""), payment_intent: String(obj?.payment_intent || "") },
+      }).catch(() => null);
+    }
+    return text("ok", { status: 200 });
+  }
+
   if (type === "payment_intent.succeeded") {
     const piId = String(obj?.id || "");
+
+    // Custom quotes: payment intent metadata may contain quote reference.
+    const qid = String(obj?.metadata?.quote_id || "").trim();
+    const qtok = String(obj?.metadata?.quote_token || "").trim();
+    if (qid || qtok) {
+      await markCustomQuotePaid({ db, quote_id: qid, token: qtok, meta: { payment_intent: piId } }).catch(() => null);
+    }
+
     if (order_id) {
       await exec(
         db,

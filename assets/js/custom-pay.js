@@ -25,8 +25,17 @@ const render = ({ quote, lines, totals }) => {
   } else if (quote.status === "expired" || quote.status === "cancelled") {
     el("banner").textContent = "Den här länken är inte längre giltig. Kontakta oss.";
   } else {
-    el("banner").textContent = "Betalning hanteras manuellt (betalprovider kommer senare).";
+    el("banner").textContent = "Betala direkt med kort via Stripe.";
   }
+
+  const payBox = el("payBox");
+  const payBtn = el("payBtn");
+  const payStatus = el("payStatus");
+  if (payStatus) payStatus.textContent = "";
+
+  const canPay = quote.status === "draft" || quote.status === "sent";
+  if (payBox) payBox.style.display = canPay ? "block" : "none";
+  if (payBtn) payBtn.disabled = !canPay;
 
   el("customer").textContent = `${quote.customer_name || quote.company_name || ""}${quote.customer_email ? ` · ${quote.customer_email}` : ""}`;
 
@@ -65,6 +74,25 @@ const render = ({ quote, lines, totals }) => {
   el("totals").textContent = `Subtotal ex moms: ${money(totals.subtotal_ex_vat)} · Moms: ${money(totals.vat_total)} · Total inkl moms: ${money(totals.total_inc_vat)} (${quote.currency})`;
 };
 
+const startCheckout = async (token) => {
+  const payBtn = el("payBtn");
+  const payStatus = el("payStatus");
+  if (payStatus) payStatus.textContent = "Skapar betalning…";
+  if (payBtn) payBtn.disabled = true;
+
+  try {
+    const res = await fetch(`/api/custom-quotes/${encodeURIComponent(token)}/checkout`, { method: "POST" });
+    const data = await res.json().catch(() => null);
+    if (!res.ok || !data?.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+    const url = String(data?.url || "");
+    if (!url) throw new Error("Saknar Stripe-URL");
+    window.location.assign(url);
+  } catch (e) {
+    if (payStatus) payStatus.textContent = e?.message || "Fel";
+    if (payBtn) payBtn.disabled = false;
+  }
+};
+
 const main = async () => {
   const token = getTokenFromPath();
   if (!token) {
@@ -83,6 +111,11 @@ const main = async () => {
     fetch(`/api/custom-quotes/${encodeURIComponent(token)}/mark-viewed`, { method: "POST" }).catch(() => {});
 
     render({ quote: data.quote, lines: data.lines || [], totals: data.totals || {} });
+
+    const payBtn = el("payBtn");
+    if (payBtn) {
+      payBtn.addEventListener("click", () => startCheckout(token));
+    }
   } catch (e) {
     el("status").textContent = e.message || "Fel";
   }
