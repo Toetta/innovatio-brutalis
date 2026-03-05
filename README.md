@@ -38,7 +38,7 @@ Admin endpoints require:
 
 ### Admin UI
 
-- URL: `/admin-custom/`
+- URL: `/admin/#payment-links`
 - Behavior: you paste the `X-Admin-Key` once; it’s stored in `localStorage` in your browser.
 
 ### Public pay page

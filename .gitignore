@@ -11,6 +11,9 @@ node_modules/
 # External repos checked out locally
 external/
 
+# Local clones (do not commit)
+tmp/FU-Bookkeeping-repo/
+
 # OS / editor
 .DS_Store
 Thumbs.db

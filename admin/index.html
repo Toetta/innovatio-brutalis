@@ -3,161 +3,424 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Innovatio Brutalis CMS</title>
+    <title>Innovatio Brutalis – Admin</title>
+    <meta name="robots" content="noindex,nofollow" />
     <script>
       // Keep a single canonical origin for OAuth + storage.
       if (location.hostname === 'innovatio-brutalis.se') {
         location.replace(`https://www.innovatio-brutalis.se${location.pathname}${location.search}${location.hash}`);
       }
     </script>
+    <style>
+      :root{ color-scheme: light; }
+      body{ margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; }
+      .topbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-bottom:1px solid #e5e7eb; background:#fff; }
+      .topbar .left{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+      .topbar h1{ margin:0; font-size:14px; font-weight:700; }
+      .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
+      .tab{ appearance:none; border:1px solid #d1d5db; background:#fff; padding:8px 10px; border-radius:10px; cursor:pointer; font:inherit; font-size:13px; }
+      .tab[aria-pressed="true"]{ border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
+      .hint{ font-size:12px; color:#6b7280; }
+      .view{ display:none; }
+      .view.active{ display:block; }
+      /* Custom tool container */
+      #view-payment-links{ padding:18px 14px; }
+      #view-payment-links main{ max-width:1100px; margin:0 auto; }
+      code,kbd{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; }
+    </style>
   </head>
   <body>
+    <div class="topbar" role="navigation" aria-label="Admin navigation">
+      <div class="left">
+        <h1>Admin</h1>
+        <div class="tabs">
+          <button type="button" class="tab" id="tab-cms" aria-pressed="true">CMS</button>
+          <button type="button" class="tab" id="tab-payment-links" aria-pressed="false">Payment links</button>
+        </div>
+        <div class="hint">Tips: direktvy via <code>#cms</code> eller <code>#payment-links</code></div>
+      </div>
+    </div>
+
+    <div id="view-cms" class="view active">
+      <div id="nc-root"></div>
+    </div>
+
+    <div id="view-payment-links" class="view">
+      <main class="content">
+        <h1>Custom Payment Links</h1>
+
+        <section style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
+          <h2 style="margin-top: 0;">Admin-nyckel</h2>
+          <p style="margin-top: 0;">Sparas lokalt i webbläsaren. Skickas som <code>X-Admin-Key</code> till API.</p>
+          <label>
+            Nyckel
+            <input id="adminKey" type="password" autocomplete="off" style="width: 100%; max-width: 520px;" />
+          </label>
+          <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
+            <button id="saveAdminKey">Spara</button>
+            <button id="clearAdminKey" type="button">Rensa</button>
+            <span id="authStatus" style="opacity: 0.8;"></span>
+          </div>
+        </section>
+
+        <section style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
+          <h2 style="margin-top: 0;">Skapa ny quote</h2>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <label>
+              Kundens email *
+              <input id="newEmail" type="email" style="width: 100%;" />
+            </label>
+            <label>
+              Kundens namn
+              <input id="newName" type="text" style="width: 100%;" />
+            </label>
+            <label>
+              Företag
+              <input id="newCompany" type="text" style="width: 100%;" />
+            </label>
+            <label>
+              Orgnr
+              <input id="newOrgnr" type="text" style="width: 100%;" />
+            </label>
+            <label>
+              Telefon
+              <input id="newPhone" type="text" style="width: 100%;" />
+            </label>
+            <label>
+              Förfallodatum (valfritt)
+              <input id="newExpires" type="date" style="width: 100%;" />
+            </label>
+          </div>
+          <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
+            <button id="createQuote">Skapa</button>
+            <span id="createStatus" style="opacity: 0.8;"></span>
+          </div>
+        </section>
+
+        <section style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
+          <h2 style="margin-top: 0;">Quotes</h2>
+          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <label>
+              Status
+              <select id="filterStatus">
+                <option value="">Alla</option>
+                <option value="draft">draft</option>
+                <option value="sent">sent</option>
+                <option value="paid">paid</option>
+                <option value="expired">expired</option>
+                <option value="cancelled">cancelled</option>
+              </select>
+            </label>
+            <label>
+              Sök
+              <input id="filterQ" type="text" placeholder="email, namn, token…" />
+            </label>
+            <button id="refreshList" type="button">Uppdatera</button>
+            <span id="listStatus" style="opacity: 0.8;"></span>
+          </div>
+
+          <div style="margin-top: 12px; overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Skapad</th>
+                  <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Status</th>
+                  <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Email</th>
+                  <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Företag</th>
+                  <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Token</th>
+                  <th style="border-bottom: 1px solid #ddd; padding: 8px;"></th>
+                </tr>
+              </thead>
+              <tbody id="quotesTbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="editor" style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; display:none;">
+          <h2 style="margin-top: 0;">Redigera quote</h2>
+          <div id="editorHeader" style="opacity: 0.9;"></div>
+
+          <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <label>
+              Status
+              <select id="editStatus">
+                <option value="draft">draft</option>
+                <option value="sent">sent</option>
+                <option value="paid">paid</option>
+                <option value="expired">expired</option>
+                <option value="cancelled">cancelled</option>
+              </select>
+            </label>
+            <label>
+              Förfallodatum
+              <input id="editExpires" type="date" />
+            </label>
+            <label>
+              Kund email
+              <input id="editEmail" type="email" />
+            </label>
+            <label>
+              Kund namn
+              <input id="editName" type="text" />
+            </label>
+            <label>
+              Företag
+              <input id="editCompany" type="text" />
+            </label>
+            <label>
+              Orgnr
+              <input id="editOrgnr" type="text" />
+            </label>
+            <label>
+              Telefon
+              <input id="editPhone" type="text" />
+            </label>
+            <label>
+              Moms-scheme
+              <input id="editVatScheme" type="text" />
+            </label>
+          </div>
+
+          <label style="display:block; margin-top: 12px;">
+            Notes
+            <textarea id="editNotes" rows="3" style="width: 100%;"></textarea>
+          </label>
+
+          <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button id="saveQuote" type="button">Spara</button>
+            <button id="mockPaid" type="button">Mock: Markera paid</button>
+            <a id="payLink" href="#" target="_blank" rel="noopener">Öppna betalningslänk</a>
+            <span id="editStatusText" style="opacity: 0.8;"></span>
+          </div>
+
+          <h3 style="margin-top: 16px;">Rader</h3>
+          <div id="totals" style="opacity: 0.9;"></div>
+          <div style="margin-top: 8px; overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Typ</th>
+                  <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Kategori</th>
+                  <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Titel</th>
+                  <th style="text-align:right; border-bottom: 1px solid #ddd; padding: 8px;">Qty</th>
+                  <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Enhet</th>
+                  <th style="text-align:right; border-bottom: 1px solid #ddd; padding: 8px;">À-pris ex moms</th>
+                  <th style="text-align:right; border-bottom: 1px solid #ddd; padding: 8px;">Moms</th>
+                  <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Konto</th>
+                  <th style="border-bottom: 1px solid #ddd; padding: 8px;"></th>
+                </tr>
+              </thead>
+              <tbody id="linesTbody"></tbody>
+            </table>
+          </div>
+
+          <h3 style="margin-top: 16px;">Lägg till / redigera rad</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <label>
+              Kategori
+              <select id="lineCategory"></select>
+            </label>
+            <label>
+              Typ
+              <select id="lineType">
+                <option value="service_hourly">Timdebitering (tjänst)</option>
+                <option value="service_fixed">Fast pris (tjänst)</option>
+                <option value="product">Produkt</option>
+                <option value="shipping">Frakt</option>
+                <option value="discount">Rabatt</option>
+              </select>
+            </label>
+            <label>
+              Titel *
+              <input id="lineTitle" type="text" />
+            </label>
+            <label>
+              Konto
+              <input id="lineAccount" type="text" />
+            </label>
+            <label>
+              Qty
+              <input id="lineQty" type="number" step="0.25" min="0" />
+            </label>
+            <label>
+              Enhet
+              <input id="lineUnit" type="text" />
+            </label>
+            <label>
+              À-pris ex moms
+              <input id="lineUnitPrice" type="number" step="0.01" />
+            </label>
+            <label>
+              Moms (t.ex. 0.25)
+              <input id="lineVat" type="number" step="0.01" min="0" max="1" />
+            </label>
+            <label>
+              Sort order
+              <input id="lineSort" type="number" step="1" min="1" />
+            </label>
+          </div>
+          <label style="display:block; margin-top: 12px;">
+            Beskrivning
+            <textarea id="lineDesc" rows="2" style="width: 100%;"></textarea>
+          </label>
+          <div style="margin-top: 12px; display:flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <button id="saveLine" type="button">Spara rad</button>
+            <button id="resetLine" type="button">Nollställ</button>
+            <span id="lineStatus" style="opacity: 0.8;"></span>
+          </div>
+        </section>
+      </main>
+    </div>
+
     <script>
-      // Decap CMS image previews sometimes break when:
-      // 1) Older entries store paths like "assets/uploads/foo.jpg" (missing leading '/'), which resolves to "/admin/assets/uploads/...".
-      // 2) New uploads exist in GitHub, but your static host hasn't redeployed yet (so "/assets/uploads/..." 404s briefly).
-      //
-      // This normalizes those URLs inside the CMS UI only, by rewriting to GitHub raw URLs.
-      (function () {
-        const RAW_BASE = 'https://raw.githubusercontent.com/Toetta/innovatio-brutalis/main/';
-        const cacheBust = String(Date.now());
-
-        const toRaw = (path, query) => {
+      // --- CMS-only helpers (lazy loaded) ---
+      function loadScriptOnce(url){
+        return new Promise(function(resolve, reject){
           try {
-            const p = String(path || '').trim();
-            if (!p) return null;
-            const normalized = p.startsWith('/') ? p.slice(1) : p;
-            if (!normalized.startsWith('assets/uploads/')) return null;
-            const q = String(query || '');
-            const bust = (q && q.includes('?')) ? ('&v=' + cacheBust) : ('?v=' + cacheBust);
-            return RAW_BASE + normalized + (q || '') + bust;
-          } catch (_) {
-            return null;
-          }
-        };
+            if (document.querySelector('script[data-src="'+url+'"]')) return resolve(true);
+            var s = document.createElement('script');
+            s.src = url;
+            s.async = true;
+            s.setAttribute('data-src', url);
+            s.onload = function(){ resolve(true); };
+            s.onerror = function(){ reject(new Error('Failed to load '+url)); };
+            document.head.appendChild(s);
+          } catch (e){ reject(e); }
+        });
+      }
 
-        const rewriteUploadsInText = (value) => {
-          if (!value || typeof value !== 'string') return null;
-          const v = value.trim();
-          if (!v) return null;
-
-          // Avoid infinite rewriting
-          if (v.includes(RAW_BASE)) return null;
-
-          // Skip non-path URLs that Decap uses for immediate previews.
-          if (v.startsWith('data:') || v.startsWith('blob:')) return null;
-          if (/^https?:\/\//i.test(v)) return null;
-
-          // Replace any occurrence of /assets/uploads/... inside the string
-          // (covers src, href, srcset, and inline styles like background-image).
-          const re = /(^|[\s"'()])\/?(assets\/uploads\/[^\s"')]+)(\?[^\s"')]+)?/gi;
-          let changed = false;
-          const out = v.replace(re, (m, lead, path, query) => {
-            const next = toRaw(path, query);
-            if (!next) return m;
-            changed = true;
-            return String(lead || '') + next;
-          });
-
-          return changed ? out : null;
-        };
-
-        const maybeRewriteElAttr = (el, attrName) => {
-          try {
-            if (!el || el.nodeType !== 1) return;
-            const cur = el.getAttribute?.(attrName);
-            if (!cur) return;
-            const next = rewriteUploadsInText(String(cur));
-            if (next) el.setAttribute(attrName, next);
-          } catch (_) {}
-        };
-
-        const maybeRewriteInlineStyle = (el) => {
-          try {
-            if (!el || el.nodeType !== 1) return;
-            const styleAttr = el.getAttribute?.('style');
-            if (!styleAttr) return;
-            const next = rewriteUploadsInText(String(styleAttr));
-            if (next) el.setAttribute('style', next);
-          } catch (_) {}
-        };
-
-        const maybeRewriteImg = (img) => {
-          try {
-            if (!img || img.tagName !== 'IMG') return;
-            maybeRewriteElAttr(img, 'src');
-            maybeRewriteElAttr(img, 'srcset');
-          } catch (_) {}
-        };
-
-        const fixImages = (root) => {
-          try {
-            if (!root) root = document;
-
-            // Single element
-            if (root.nodeType === 1) {
-              if (root.tagName === 'IMG') maybeRewriteImg(root);
-              maybeRewriteInlineStyle(root);
-              maybeRewriteElAttr(root, 'href');
-              maybeRewriteElAttr(root, 'srcset');
-              maybeRewriteElAttr(root, 'src');
-            }
-
-            // Descendants
-            const nodes = root.querySelectorAll?.('img[src], img[srcset], [style*="uploads"], [href]');
-            if (!nodes) return;
-            for (const el of nodes) {
-              if (!el || el.nodeType !== 1) continue;
-              if (el.tagName === 'IMG') maybeRewriteImg(el);
-              maybeRewriteInlineStyle(el);
-              maybeRewriteElAttr(el, 'href');
-              maybeRewriteElAttr(el, 'srcset');
-              maybeRewriteElAttr(el, 'src');
-            }
-          } catch (_) {}
-        };
-
-        // Initial pass + keep updating as React renders.
-        fixImages(document);
-
+      function initDecapUploadsRewrite(){
+        // Decap CMS image previews sometimes break when:
+        // 1) Older entries store paths like "assets/uploads/foo.jpg" (missing leading '/'), which resolves to "/admin/assets/uploads/...".
+        // 2) New uploads exist in GitHub, but your static host hasn't redeployed yet (so "/assets/uploads/..." 404s briefly).
+        //
+        // This normalizes those URLs inside the CMS UI only, by rewriting to GitHub raw URLs.
         try {
-          const mo = new MutationObserver((mutations) => {
-            for (const m of mutations) {
-              if (m.type === 'attributes') {
-                const t = m.target;
-                if (!t || t.nodeType !== 1) continue;
-                if (m.attributeName === 'src' || m.attributeName === 'srcset') {
-                  if (t.tagName === 'IMG') maybeRewriteImg(t);
-                  else maybeRewriteElAttr(t, m.attributeName);
-                } else if (m.attributeName === 'href') {
-                  maybeRewriteElAttr(t, 'href');
-                } else if (m.attributeName === 'style') {
-                  maybeRewriteInlineStyle(t);
-                }
-              } else if (m.type === 'childList') {
-                for (const n of m.addedNodes || []) {
-                  if (!n || n.nodeType !== 1) continue;
-                  if (n.tagName === 'IMG') maybeRewriteImg(n);
-                  fixImages(n);
+          const RAW_BASE = 'https://raw.githubusercontent.com/Toetta/innovatio-brutalis/main/';
+          const cacheBust = String(Date.now());
+
+          const toRaw = (path, query) => {
+            try {
+              const p = String(path || '').trim();
+              if (!p) return null;
+              const normalized = p.startsWith('/') ? p.slice(1) : p;
+              if (!normalized.startsWith('assets/uploads/')) return null;
+              const q = String(query || '');
+              const bust = (q && q.includes('?')) ? ('&v=' + cacheBust) : ('?v=' + cacheBust);
+              return RAW_BASE + normalized + (q || '') + bust;
+            } catch (_) {
+              return null;
+            }
+          };
+
+          const rewriteUploadsInText = (value) => {
+            if (!value || typeof value !== 'string') return null;
+            const v = value.trim();
+            if (!v) return null;
+
+            if (v.includes(RAW_BASE)) return null;
+            if (v.startsWith('data:') || v.startsWith('blob:')) return null;
+            if (/^https?:\/\//i.test(v)) return null;
+
+            const re = /(^|[\s"'()])\/?(assets\/uploads\/[^\s"')]+)(\?[^\s"')]+)?/gi;
+            let changed = false;
+            const out = v.replace(re, (m, lead, path, query) => {
+              const next = toRaw(path, query);
+              if (!next) return m;
+              changed = true;
+              return String(lead || '') + next;
+            });
+            return changed ? out : null;
+          };
+
+          const maybeRewriteElAttr = (el, attrName) => {
+            try {
+              if (!el || el.nodeType !== 1) return;
+              const cur = el.getAttribute?.(attrName);
+              if (!cur) return;
+              const next = rewriteUploadsInText(String(cur));
+              if (next) el.setAttribute(attrName, next);
+            } catch (_) {}
+          };
+
+          const maybeRewriteInlineStyle = (el) => {
+            try {
+              if (!el || el.nodeType !== 1) return;
+              const styleAttr = el.getAttribute?.('style');
+              if (!styleAttr) return;
+              const next = rewriteUploadsInText(String(styleAttr));
+              if (next) el.setAttribute('style', next);
+            } catch (_) {}
+          };
+
+          const maybeRewriteImg = (img) => {
+            try {
+              if (!img || img.tagName !== 'IMG') return;
+              maybeRewriteElAttr(img, 'src');
+              maybeRewriteElAttr(img, 'srcset');
+            } catch (_) {}
+          };
+
+          const fixImages = (root) => {
+            try {
+              if (!root) root = document;
+              if (root.nodeType === 1) {
+                if (root.tagName === 'IMG') maybeRewriteImg(root);
+                maybeRewriteInlineStyle(root);
+                maybeRewriteElAttr(root, 'href');
+                maybeRewriteElAttr(root, 'srcset');
+                maybeRewriteElAttr(root, 'src');
+              }
+              const nodes = root.querySelectorAll?.('img[src], img[srcset], [style*="uploads"], [href]');
+              if (!nodes) return;
+              for (const el of nodes) {
+                if (!el || el.nodeType !== 1) continue;
+                if (el.tagName === 'IMG') maybeRewriteImg(el);
+                maybeRewriteInlineStyle(el);
+                maybeRewriteElAttr(el, 'href');
+                maybeRewriteElAttr(el, 'srcset');
+                maybeRewriteElAttr(el, 'src');
+              }
+            } catch (_) {}
+          };
+
+          fixImages(document.getElementById('view-cms') || document);
+
+          try {
+            const mo = new MutationObserver((mutations) => {
+              for (const m of mutations) {
+                if (m.type === 'attributes') {
+                  const t = m.target;
+                  if (!t || t.nodeType !== 1) continue;
+                  if (m.attributeName === 'src' || m.attributeName === 'srcset') {
+                    if (t.tagName === 'IMG') maybeRewriteImg(t);
+                    else maybeRewriteElAttr(t, m.attributeName);
+                  } else if (m.attributeName === 'href') {
+                    maybeRewriteElAttr(t, 'href');
+                  } else if (m.attributeName === 'style') {
+                    maybeRewriteInlineStyle(t);
+                  }
+                } else if (m.type === 'childList') {
+                  for (const n of m.addedNodes || []) {
+                    if (!n || n.nodeType !== 1) continue;
+                    if (n.tagName === 'IMG') maybeRewriteImg(n);
+                    fixImages(n);
+                  }
                 }
               }
-            }
-          });
-          mo.observe(document.documentElement, {
-            subtree: true,
-            childList: true,
-            attributes: true,
-            attributeFilter: ['src', 'srcset', 'href', 'style'],
-          });
+            });
+            mo.observe(document.getElementById('view-cms') || document.documentElement, {
+              subtree: true,
+              childList: true,
+              attributes: true,
+              attributeFilter: ['src', 'srcset', 'href', 'style'],
+            });
+          } catch (_) {}
         } catch (_) {}
-      })();
-    </script>
-    <script src="https://unpkg.com/decap-cms@^3/dist/decap-cms.js"></script>
-    <script>
-      (function () {
+      }
+
+      function initDecapMainImageRadio(){
         // Enforce "exactly one" main image selection in the editor UI.
-        // Decap's list widget uses checkboxes, so we implement "radio" behavior:
-        // when one is checked, all others are unchecked.
         var guard = false;
         document.addEventListener('change', function (e) {
           try {
@@ -167,7 +430,6 @@
             if (t.type !== 'checkbox') return;
             var name = String(t.getAttribute('name') || '');
             if (!name) return;
-            // Match the products images list field: images.*.is_main
             if (!/\bimages\.[0-9]+\.is_main\b/.test(name)) return;
             if (!t.checked) return;
 
@@ -179,7 +441,6 @@
               var n = String(cb.getAttribute('name') || '');
               if (!/\bimages\.[0-9]+\.is_main\b/.test(n)) continue;
               if (cb.checked) {
-                // Use click so React/Decap state updates correctly.
                 try { cb.click(); } catch (_) {}
               }
             }
@@ -190,62 +451,132 @@
           }
         }, true);
 
-        // Safety net: enforce the rule on save too.
-        try {
-          if (!window.CMS || typeof window.CMS.registerEventListener !== 'function') return;
-          window.CMS.registerEventListener({
-            name: 'preSave',
-            handler: function (payload) {
-              try {
-                var entry = payload && payload.entry;
-                if (!entry || typeof entry.get !== 'function') return entry;
-                var data = entry.get('data');
-                if (!data || typeof data.get !== 'function') return entry;
+        function whenCmsReady(cb){
+          var start = Date.now();
+          (function tick(){
+            try {
+              if (window.CMS && typeof window.CMS.registerEventListener === 'function') return cb();
+            } catch (_) {}
+            if ((Date.now() - start) > 10000) return;
+            setTimeout(tick, 120);
+          })();
+        }
 
-                var images = data.get('images');
-                if (!images || typeof images.size !== 'number' || typeof images.get !== 'function') return data;
-
-                // Find the last selected image (treat as "senast valda" if multiple).
-                var lastIdx = -1;
-                for (var idx = 0; idx < images.size; idx++) {
-                  var it = images.get(idx);
-                  if (!it || typeof it.get !== 'function') continue;
-                  var flagged = !!(it.get('is_main') || it.get('isMain') || it.get('main'));
-                  if (flagged) lastIdx = idx;
-                }
-
-                if (lastIdx < 0) return data;
-
-                // Clear all flags except lastIdx.
-                var nextImages = images;
-                for (var j = 0; j < images.size; j++) {
-                  var cur = images.get(j);
-                  if (!cur || typeof cur.set !== 'function') continue;
-                  var should = (j === lastIdx);
-                  nextImages = nextImages.set(j, cur.set('is_main', should));
-                }
-
-                var nextData = data.set('images', nextImages);
-
-                // If main_image override is empty, populate it from the selected image for compatibility.
+        whenCmsReady(function(){
+          try {
+            window.CMS.registerEventListener({
+              name: 'preSave',
+              handler: function (payload) {
                 try {
-                  var curMain = String(nextData.get('main_image') || '').trim();
-                  if (!curMain) {
-                    var sel = nextImages.get(lastIdx);
-                    var src = sel && typeof sel.get === 'function' ? String(sel.get('image') || sel.get('url') || '') : '';
-                    src = (src || '').trim();
-                    if (src) nextData = nextData.set('main_image', src);
-                  }
-                } catch (_) {}
+                  var entry = payload && payload.entry;
+                  if (!entry || typeof entry.get !== 'function') return entry;
+                  var data = entry.get('data');
+                  if (!data || typeof data.get !== 'function') return entry;
 
-                return nextData;
-              } catch (_) {
-                return payload && payload.entry ? payload.entry.get('data') : payload;
-              }
-            },
+                  var images = data.get('images');
+                  if (!images || typeof images.size !== 'number' || typeof images.get !== 'function') return data;
+
+                  var lastIdx = -1;
+                  for (var idx = 0; idx < images.size; idx++) {
+                    var it = images.get(idx);
+                    if (!it || typeof it.get !== 'function') continue;
+                    var flagged = !!(it.get('is_main') || it.get('isMain') || it.get('main'));
+                    if (flagged) lastIdx = idx;
+                  }
+                  if (lastIdx < 0) return data;
+
+                  var nextImages = images;
+                  for (var j = 0; j < nextImages.size; j++) {
+                    if (j === lastIdx) continue;
+                    var img = nextImages.get(j);
+                    if (!img || typeof img.set !== 'function') continue;
+                    if (img.get('is_main')) nextImages = nextImages.set(j, img.set('is_main', false));
+                  }
+                  return data.set('images', nextImages);
+                } catch (_) {
+                  return payload && payload.entry ? payload.entry.get('data') : payload;
+                }
+              },
+            });
+          } catch (_) {}
+        });
+      }
+
+      var cmsLoaded = false;
+      async function ensureCmsLoaded(){
+        if (cmsLoaded) return true;
+        cmsLoaded = true;
+        initDecapUploadsRewrite();
+        await loadScriptOnce('https://unpkg.com/decap-cms@^3/dist/decap-cms.js');
+        initDecapMainImageRadio();
+        return true;
+      }
+
+      function setActiveView(name){
+        var cms = document.getElementById('view-cms');
+        var pl = document.getElementById('view-payment-links');
+        var tabCms = document.getElementById('tab-cms');
+        var tabPl = document.getElementById('tab-payment-links');
+
+        var isCms = (name === 'cms');
+        if (cms) cms.classList.toggle('active', isCms);
+        if (pl) pl.classList.toggle('active', !isCms);
+        if (tabCms) tabCms.setAttribute('aria-pressed', isCms ? 'true' : 'false');
+        if (tabPl) tabPl.setAttribute('aria-pressed', isCms ? 'false' : 'true');
+
+        if (isCms){
+          ensureCmsLoaded().catch(function(e){
+            console.error(e);
+            alert('Kunde inte ladda CMS. Se konsolen.');
           });
+        }
+      }
+
+      function route(){
+        var h = String(location.hash || '').replace(/^#/, '');
+        if (h === 'payment-links' || h === 'custom' || h === 'quotes') setActiveView('payment-links');
+        else setActiveView('cms');
+      }
+
+      document.getElementById('tab-cms')?.addEventListener('click', function(){ location.hash = '#cms'; });
+      document.getElementById('tab-payment-links')?.addEventListener('click', function(){ location.hash = '#payment-links'; });
+      window.addEventListener('hashchange', route);
+      route();
+    </script>
+
+    <script type="module" src="/assets/js/admin-custom.js"></script>
+
+    <!-- Preload CMS if the default view is CMS (keeps current behavior) -->
+    <script>
+      (function(){
+        try {
+          var h = String(location.hash || '');
+          if (!h || h === '#cms') {
+            // Trigger lazy load quickly.
+            // route() will also call ensureCmsLoaded.
+          }
         } catch (_) {}
       })();
     </script>
+
+    <!-- End of portal -->
+
+    <script>
+      // NOTE: The rest of the previous Decap-only file is intentionally removed.
+      // CMS is now lazy-loaded to keep all admin tools under /admin/.
+    </script>
+
+    <!-- (file ends here) -->
+
+    <!--
+      The original Decap CMS single-page bootstrap has been integrated above.
+    -->
+
+    <!--
+      End.
+    -->
+
+    <!-- The following closing tags are kept by the existing file structure. -->
+
   </body>
 </html>
