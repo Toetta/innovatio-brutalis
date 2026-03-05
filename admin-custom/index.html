@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin – Custom Payment Links</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <meta name="robots" content="noindex,nofollow" />
+</head>
+<body>
+  <main class="content" style="max-width: 1100px; margin: 0 auto; padding: 24px;">
+    <h1>Custom Payment Links</h1>
+
+    <section style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
+      <h2 style="margin-top: 0;">Admin-nyckel</h2>
+      <p style="margin-top: 0;">Sparas lokalt i webbläsaren. Skickas som <code>X-Admin-Key</code> till API.</p>
+      <label>
+        Nyckel
+        <input id="adminKey" type="password" autocomplete="off" style="width: 100%; max-width: 520px;" />
+      </label>
+      <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
+        <button id="saveAdminKey">Spara</button>
+        <button id="clearAdminKey" type="button">Rensa</button>
+        <span id="authStatus" style="opacity: 0.8;"></span>
+      </div>
+    </section>
+
+    <section style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
+      <h2 style="margin-top: 0;">Skapa ny quote</h2>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <label>
+          Kundens email *
+          <input id="newEmail" type="email" style="width: 100%;" />
+        </label>
+        <label>
+          Kundens namn
+          <input id="newName" type="text" style="width: 100%;" />
+        </label>
+        <label>
+          Företag
+          <input id="newCompany" type="text" style="width: 100%;" />
+        </label>
+        <label>
+          Orgnr
+          <input id="newOrgnr" type="text" style="width: 100%;" />
+        </label>
+        <label>
+          Telefon
+          <input id="newPhone" type="text" style="width: 100%;" />
+        </label>
+        <label>
+          Förfallodatum (valfritt)
+          <input id="newExpires" type="date" style="width: 100%;" />
+        </label>
+      </div>
+      <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
+        <button id="createQuote">Skapa</button>
+        <span id="createStatus" style="opacity: 0.8;"></span>
+      </div>
+    </section>
+
+    <section style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
+      <h2 style="margin-top: 0;">Quotes</h2>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <label>
+          Status
+          <select id="filterStatus">
+            <option value="">Alla</option>
+            <option value="draft">draft</option>
+            <option value="sent">sent</option>
+            <option value="paid">paid</option>
+            <option value="expired">expired</option>
+            <option value="cancelled">cancelled</option>
+          </select>
+        </label>
+        <label>
+          Sök
+          <input id="filterQ" type="text" placeholder="email, namn, token…" />
+        </label>
+        <button id="refreshList" type="button">Uppdatera</button>
+        <span id="listStatus" style="opacity: 0.8;"></span>
+      </div>
+
+      <div style="margin-top: 12px; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Skapad</th>
+              <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Status</th>
+              <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Email</th>
+              <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Företag</th>
+              <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Token</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px;"></th>
+            </tr>
+          </thead>
+          <tbody id="quotesTbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="editor" style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; display:none;">
+      <h2 style="margin-top: 0;">Redigera quote</h2>
+      <div id="editorHeader" style="opacity: 0.9;"></div>
+
+      <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <label>
+          Status
+          <select id="editStatus">
+            <option value="draft">draft</option>
+            <option value="sent">sent</option>
+            <option value="paid">paid</option>
+            <option value="expired">expired</option>
+            <option value="cancelled">cancelled</option>
+          </select>
+        </label>
+        <label>
+          Förfallodatum
+          <input id="editExpires" type="date" />
+        </label>
+        <label>
+          Kund email
+          <input id="editEmail" type="email" />
+        </label>
+        <label>
+          Kund namn
+          <input id="editName" type="text" />
+        </label>
+        <label>
+          Företag
+          <input id="editCompany" type="text" />
+        </label>
+        <label>
+          Orgnr
+          <input id="editOrgnr" type="text" />
+        </label>
+        <label>
+          Telefon
+          <input id="editPhone" type="text" />
+        </label>
+        <label>
+          Moms-scheme
+          <input id="editVatScheme" type="text" />
+        </label>
+      </div>
+
+      <label style="display:block; margin-top: 12px;">
+        Notes
+        <textarea id="editNotes" rows="3" style="width: 100%;"></textarea>
+      </label>
+
+      <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <button id="saveQuote" type="button">Spara</button>
+        <button id="mockPaid" type="button">Mock: Markera paid</button>
+        <a id="payLink" href="#" target="_blank" rel="noopener">Öppna betalningslänk</a>
+        <span id="editStatusText" style="opacity: 0.8;"></span>
+      </div>
+
+      <h3 style="margin-top: 16px;">Rader</h3>
+      <div id="totals" style="opacity: 0.9;"></div>
+      <div style="margin-top: 8px; overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Typ</th>
+              <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Kategori</th>
+              <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Titel</th>
+              <th style="text-align:right; border-bottom: 1px solid #ddd; padding: 8px;">Qty</th>
+              <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Enhet</th>
+              <th style="text-align:right; border-bottom: 1px solid #ddd; padding: 8px;">À-pris ex moms</th>
+              <th style="text-align:right; border-bottom: 1px solid #ddd; padding: 8px;">Moms</th>
+              <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Konto</th>
+              <th style="border-bottom: 1px solid #ddd; padding: 8px;"></th>
+            </tr>
+          </thead>
+          <tbody id="linesTbody"></tbody>
+        </table>
+      </div>
+
+      <h3 style="margin-top: 16px;">Lägg till / redigera rad</h3>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <label>
+          Kategori
+          <select id="lineCategory"></select>
+        </label>
+        <label>
+          Typ
+          <select id="lineType">
+            <option value="service_hourly">Timdebitering (tjänst)</option>
+            <option value="service_fixed">Fast pris (tjänst)</option>
+            <option value="product">Produkt</option>
+            <option value="shipping">Frakt</option>
+            <option value="discount">Rabatt</option>
+          </select>
+        </label>
+        <label>
+          Titel *
+          <input id="lineTitle" type="text" />
+        </label>
+        <label>
+          Konto
+          <input id="lineAccount" type="text" />
+        </label>
+        <label>
+          Qty
+          <input id="lineQty" type="number" step="0.25" min="0" />
+        </label>
+        <label>
+          Enhet
+          <input id="lineUnit" type="text" />
+        </label>
+        <label>
+          À-pris ex moms
+          <input id="lineUnitPrice" type="number" step="0.01" />
+        </label>
+        <label>
+          Moms (t.ex. 0.25)
+          <input id="lineVat" type="number" step="0.01" min="0" max="1" />
+        </label>
+        <label>
+          Sort order
+          <input id="lineSort" type="number" step="1" min="1" />
+        </label>
+      </div>
+      <label style="display:block; margin-top: 12px;">
+        Beskrivning
+        <textarea id="lineDesc" rows="2" style="width: 100%;"></textarea>
+      </label>
+      <div style="margin-top: 12px; display:flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <button id="saveLine" type="button">Spara rad</button>
+        <button id="resetLine" type="button">Nollställ</button>
+        <span id="lineStatus" style="opacity: 0.8;"></span>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="/assets/js/admin-custom.js"></script>
+</body>
+</html>

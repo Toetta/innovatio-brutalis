@@ -10,6 +10,7 @@ export const getEnv = (env) => {
   const TURNSTILE_SECRET = String(env?.TURNSTILE_SECRET || "");
   const RESEND_API_KEY = String(env?.RESEND_API_KEY || "");
   const EXPORT_ADMIN_KEY = String(env?.EXPORT_ADMIN_KEY || "");
+  const ADMIN_CUSTOM_KEY = String(env?.ADMIN_CUSTOM_KEY || "");
 
   // Payments
   const STRIPE_SECRET_KEY = String(env?.STRIPE_SECRET_KEY || "");
@@ -42,6 +43,7 @@ export const getEnv = (env) => {
     TURNSTILE_SECRET,
     RESEND_API_KEY,
     EXPORT_ADMIN_KEY,
+    ADMIN_CUSTOM_KEY,
 
     STRIPE_SECRET_KEY,
     STRIPE_PUBLISHABLE_KEY,

@@ -164,3 +164,10 @@ export const requireAdminKey = ({ request, env }) => {
   const given = request.headers.get("X-Admin-Key") || "";
   return given && given === EXPORT_ADMIN_KEY;
 };
+
+export const requireCustomAdminKey = ({ request, env }) => {
+  const { ADMIN_CUSTOM_KEY } = getEnv(env);
+  if (!ADMIN_CUSTOM_KEY) return false;
+  const given = request.headers.get("X-Admin-Key") || "";
+  return given && given === ADMIN_CUSTOM_KEY;
+};

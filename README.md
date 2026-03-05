@@ -23,6 +23,60 @@ If the header is missing/empty or does not match, the API returns:
 
 - `403 {"ok":false,"error":"Forbidden"}`
 
+---
+
+## Custom Payment Links (private quotes)
+
+This repo includes a minimal “Custom Payment Links” system for customer-specific work/orders **without** publishing anything in the product catalog.
+
+### Admin auth
+
+Admin endpoints require:
+
+- Header: `X-Admin-Key: <key>`
+- Compared against Pages env var: `ADMIN_CUSTOM_KEY`
+
+### Admin UI
+
+- URL: `/admin-custom/`
+- Behavior: you paste the `X-Admin-Key` once; it’s stored in `localStorage` in your browser.
+
+### Public pay page
+
+- URL: `/pay/<token>`
+- Note: served by a Pages Function and includes `<meta name="robots" content="noindex">`.
+
+### API endpoints (summary)
+
+- Admin:
+   - `POST /api/admin/custom-quotes`
+   - `GET /api/admin/custom-quotes?status=&q=`
+   - `GET /api/admin/custom-quotes/:id`
+   - `PUT /api/admin/custom-quotes/:id`
+   - `POST /api/admin/custom-quotes/:id/lines`
+   - `PUT /api/admin/custom-quotes/:id/lines/:lineId`
+   - `DELETE /api/admin/custom-quotes/:id/lines/:lineId`
+
+- Public (token based):
+   - `GET /api/custom-quotes/:token`
+   - `POST /api/custom-quotes/:token/mark-viewed`
+   - `POST /api/custom-quotes/:token/pay` (mock/manual; requires admin key)
+
+### FU export
+
+Fetch paid quotes as FU payloads (admin protected):
+
+- `GET /api/fu/custom-quotes?status=paid&since=YYYY-MM-DD`
+
+### Defaults
+
+- Categories are constrained in the UI to: `3d_scan`, `cnc`, `3d_print`, `construction`, `product_sale`, `other`.
+- Account suggestions (editable per row):
+   - Service lines (`service_*`): `3041`
+   - Product lines (`product`): `3011`
+   - Shipping (`shipping`): `3520`
+   - Discount (`discount`): `3730` (discount is typically a negative net line)
+
 ### Hard safety guard (FU-Bookkeeping)
 
 `site-deeplinks.js` is designed to be **completely harmless** to FU-Bookkeeping:
