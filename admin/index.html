@@ -40,7 +40,7 @@
           <button type="button" class="tab" id="tab-cms" aria-pressed="true">CMS</button>
           <button type="button" class="tab" id="tab-payment-links" aria-pressed="false">Payment links</button>
         </div>
-        <div class="hint">Tips: direktvy via <code>#cms</code> eller <code>#payment-links</code></div>
+        <div class="hint">Tips: direktvy via <code>#/collections</code> (CMS) eller <code>#payment-links</code></div>
       </div>
     </div>
 
@@ -536,12 +536,18 @@
       }
 
       function route(){
-        var h = String(location.hash || '').replace(/^#/, '');
-        if (h === 'payment-links' || h === 'custom' || h === 'quotes') setActiveView('payment-links');
+        var raw = String(location.hash || '');
+
+        // Accept both "#payment-links" and Decap-style "#/payment-links".
+        // Decap uses "#/collections/..." etc, so we normalize "#/?" and only look at the first segment.
+        var normalized = raw.replace(/^#\/?/, '');
+        var first = normalized.split('/')[0];
+
+        if (first === 'payment-links' || first === 'custom' || first === 'quotes') setActiveView('payment-links');
         else setActiveView('cms');
       }
 
-      document.getElementById('tab-cms')?.addEventListener('click', function(){ location.hash = '#cms'; });
+      document.getElementById('tab-cms')?.addEventListener('click', function(){ location.hash = '#/collections'; });
       document.getElementById('tab-payment-links')?.addEventListener('click', function(){ location.hash = '#payment-links'; });
       window.addEventListener('hashchange', route);
       route();
