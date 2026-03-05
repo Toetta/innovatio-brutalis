@@ -2,11 +2,14 @@ import { badRequest, forbidden, json, notFound } from "../../_lib/resp.js";
 import { requireCustomAdminKey } from "../../_lib/auth.js";
 import { assertDb, exec, one } from "../../_lib/db.js";
 import { nowIso, uuid } from "../../_lib/crypto.js";
+import { getEnv } from "../../_lib/env.js";
 
 export const onRequestPost = async (context) => {
   const { request, env, params } = context;
   const token = String(params?.token || "").trim();
   if (!token) return notFound();
+
+  if (!getEnv(env).DEV_MODE) return forbidden("Manual pay is disabled (Stripe-only)");
 
   if (!requireCustomAdminKey({ request, env })) return forbidden();
 

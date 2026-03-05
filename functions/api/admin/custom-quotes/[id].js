@@ -63,6 +63,10 @@ export const onRequestPut = async (context) => {
   const nextStatus = has("status") ? String(body.status).trim().toLowerCase() : String(existing.status);
   if (nextStatus && !allowedStatus.has(nextStatus)) return badRequest("Invalid status");
 
+  if (has("status") && nextStatus === "paid" && String(existing.status) !== "paid") {
+    return badRequest("Status 'paid' is set by Stripe only");
+  }
+
   const customer_email = has("customer_email") && input.customer_email ? input.customer_email : String(existing.customer_email);
   const customer_name = has("customer_name") ? input.customer_name : existing.customer_name;
   const customer_phone = has("customer_phone") ? input.customer_phone : existing.customer_phone;

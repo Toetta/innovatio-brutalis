@@ -54,7 +54,7 @@ Admin endpoints require:
    - `POST /api/admin/custom-quotes`
    - `GET /api/admin/custom-quotes?status=&q=`
    - `GET /api/admin/custom-quotes/:id`
-   - `PUT /api/admin/custom-quotes/:id`
+   - `PUT /api/admin/custom-quotes/:id` (note: cannot set `status=paid`; Stripe-only)
    - `POST /api/admin/custom-quotes/:id/lines`
    - `PUT /api/admin/custom-quotes/:id/lines/:lineId`
    - `DELETE /api/admin/custom-quotes/:id/lines/:lineId`
@@ -63,7 +63,6 @@ Admin endpoints require:
    - `GET /api/custom-quotes/:token`
    - `POST /api/custom-quotes/:token/mark-viewed`
    - `POST /api/custom-quotes/:token/checkout` (creates Stripe Checkout Session)
-   - `POST /api/custom-quotes/:token/pay` (mock/manual; requires admin key)
 
 ### Stripe webhooks
 

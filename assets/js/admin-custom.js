@@ -344,19 +344,6 @@ const deleteLine = async (lineId) => {
   }
 };
 
-const mockMarkPaid = async () => {
-  if (!state.current) return;
-  el("editStatusText").textContent = "Markerar paid…";
-  try {
-    const token = state.current.quote.token;
-    await apiFetch(`/api/custom-quotes/${encodeURIComponent(token)}/pay`, { method: "POST", body: {} });
-    await loadQuote(state.current.quote.id);
-    el("editStatusText").textContent = "Ok";
-  } catch (e) {
-    el("editStatusText").textContent = e.message;
-  }
-};
-
 const createQuote = async () => {
   el("createStatus").textContent = "Skapar…";
   try {
@@ -410,7 +397,6 @@ const init = () => {
   el("saveQuote").addEventListener("click", saveQuote);
   el("saveLine").addEventListener("click", saveLine);
   el("resetLine").addEventListener("click", resetLineForm);
-  el("mockPaid").addEventListener("click", mockMarkPaid);
 
   el("lineType").addEventListener("change", () => {
     el("lineAccount").value = defaultAccountSuggestion(el("lineType").value);

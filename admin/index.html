@@ -149,7 +149,7 @@
               <select id="editStatus">
                 <option value="draft">draft</option>
                 <option value="sent">sent</option>
-                <option value="paid">paid</option>
+                <option value="paid" disabled>paid (Stripe)</option>
                 <option value="expired">expired</option>
                 <option value="cancelled">cancelled</option>
               </select>
@@ -191,7 +191,6 @@
 
           <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             <button id="saveQuote" type="button">Spara</button>
-            <button id="mockPaid" type="button">Mock: Markera paid</button>
             <a id="payLink" href="#" target="_blank" rel="noopener">Öppna betalningslänk</a>
             <span id="editStatusText" style="opacity: 0.8;"></span>
           </div>
