@@ -6,9 +6,15 @@
     <title>Innovatio Brutalis – Admin</title>
     <meta name="robots" content="noindex,nofollow" />
     <script>
-      // Keep a single canonical origin for OAuth + storage.
-      if (location.hostname === 'innovatio-brutalis.se') {
-        location.replace(`https://www.innovatio-brutalis.se${location.pathname}${location.search}${location.hash}`);
+      // Keep a single canonical origin that also hosts Pages Functions (/api/*).
+      // If you open the admin portal on other domains, the Payment links tool will hit `/api/...` and get HTTP 404.
+      const CANONICAL_HOST = "innovatio-brutalis.com";
+      const host = location.hostname;
+      const isLocal = host === "localhost" || host === "127.0.0.1";
+      const isPagesDev = host.endsWith(".pages.dev");
+
+      if (!isLocal && !isPagesDev && host !== CANONICAL_HOST) {
+        location.replace(`https://${CANONICAL_HOST}${location.pathname}${location.search}${location.hash}`);
       }
     </script>
     <style>
