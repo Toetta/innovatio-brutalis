@@ -12,9 +12,10 @@
       const CANONICAL_HOST = "www.innovatio-brutalis.se";
       const host = location.hostname;
       const isLocal = host === "localhost" || host === "127.0.0.1";
-      const isPagesDev = host.endsWith(".pages.dev");
 
-      if (!isLocal && !isPagesDev && host !== CANONICAL_HOST) {
+      // Always prefer the canonical host for Decap OAuth + localStorage.
+      // (The OAuth worker may be locked to a single allowed origin.)
+      if (!isLocal && host !== CANONICAL_HOST) {
         location.replace(`https://${CANONICAL_HOST}${location.pathname}${location.search}${location.hash}`);
       }
     </script>
