@@ -1,8 +1,19 @@
-import { badRequest, forbidden, json, notFound } from "../../_lib/resp.js";
+import { badRequest, corsPreflight, forbidden, json, notFound, withCors } from "../../_lib/resp.js";
 import { requireCustomAdminKey } from "../../_lib/auth.js";
 import { assertDb, all, exec, one } from "../../_lib/db.js";
 import { nowIso, uuid } from "../../_lib/crypto.js";
 import { computeTotals, normalizeQuoteInput } from "../../_lib/custom-quotes.js";
+
+const corsOpts = ({ request, env }) => ({
+  request,
+  env,
+  allowMethods: "GET, PUT, OPTIONS",
+  allowHeaders: "content-type, x-admin-key",
+});
+
+export const onRequestOptions = async (context) => {
+  return corsPreflight(context, corsOpts(context));
+};
 
 const allowedStatus = new Set(["draft", "sent", "paid", "expired", "cancelled"]);
 
@@ -26,34 +37,34 @@ const loadQuoteBundle = async (db, id) => {
 
 export const onRequestGet = async (context) => {
   const { request, env, params } = context;
-  if (!requireCustomAdminKey({ request, env })) return forbidden();
+  if (!requireCustomAdminKey({ request, env })) return withCors(forbidden(), corsOpts(context));
 
   const id = String(params?.id || "").trim();
-  if (!id) return notFound();
+  if (!id) return withCors(notFound(), corsOpts(context));
 
   const db = assertDb(env);
   const bundle = await loadQuoteBundle(db, id);
-  if (!bundle) return notFound();
+  if (!bundle) return withCors(notFound(), corsOpts(context));
 
-  return json({ ok: true, ...bundle });
+  return withCors(json({ ok: true, ...bundle }), corsOpts(context));
 };
 
 export const onRequestPut = async (context) => {
   const { request, env, params } = context;
-  if (!requireCustomAdminKey({ request, env })) return forbidden();
+  if (!requireCustomAdminKey({ request, env })) return withCors(forbidden(), corsOpts(context));
 
   const id = String(params?.id || "").trim();
-  if (!id) return notFound();
+  if (!id) return withCors(notFound(), corsOpts(context));
 
   const db = assertDb(env);
   const existing = await one(db.prepare("SELECT * FROM custom_quotes WHERE id = ? LIMIT 1").bind(id).all());
-  if (!existing) return notFound();
+  if (!existing) return withCors(notFound(), corsOpts(context));
 
   let body;
   try {
     body = await request.json();
   } catch (_) {
-    return badRequest("Invalid JSON");
+    return withCors(badRequest("Invalid JSON"), corsOpts(context));
   }
 
   const has = (k) => Object.prototype.hasOwnProperty.call(body || {}, k);
@@ -61,10 +72,10 @@ export const onRequestPut = async (context) => {
   const input = normalizeQuoteInput(body);
 
   const nextStatus = has("status") ? String(body.status).trim().toLowerCase() : String(existing.status);
-  if (nextStatus && !allowedStatus.has(nextStatus)) return badRequest("Invalid status");
+  if (nextStatus && !allowedStatus.has(nextStatus)) return withCors(badRequest("Invalid status"), corsOpts(context));
 
   if (has("status") && nextStatus === "paid" && String(existing.status) !== "paid") {
-    return badRequest("Status 'paid' is set by Stripe only");
+    return withCors(badRequest("Status 'paid' is set by Stripe only"), corsOpts(context));
   }
 
   const customer_email = has("customer_email") && input.customer_email ? input.customer_email : String(existing.customer_email);
@@ -116,7 +127,7 @@ export const onRequestPut = async (context) => {
   }
 
   const bundle = await loadQuoteBundle(db, id);
-  return json({ ok: true, ...bundle });
+  return withCors(json({ ok: true, ...bundle }), corsOpts(context));
 };
 
 export const onRequestPost = async () => badRequest("Method not allowed");

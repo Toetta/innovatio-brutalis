@@ -166,8 +166,13 @@ export const requireAdminKey = ({ request, env }) => {
 };
 
 export const requireCustomAdminKey = ({ request, env }) => {
-  const { ADMIN_CUSTOM_KEY } = getEnv(env);
-  if (!ADMIN_CUSTOM_KEY) return false;
+  const { ADMIN_CUSTOM_KEY, EXPORT_ADMIN_KEY } = getEnv(env);
+  // Allow using a single admin key across tools.
+  // Preferred: ADMIN_CUSTOM_KEY, but EXPORT_ADMIN_KEY is accepted as a fallback.
+  if (!ADMIN_CUSTOM_KEY && !EXPORT_ADMIN_KEY) return false;
   const given = request.headers.get("X-Admin-Key") || "";
-  return given && given === ADMIN_CUSTOM_KEY;
+  if (!given) return false;
+  if (ADMIN_CUSTOM_KEY && given === ADMIN_CUSTOM_KEY) return true;
+  if (EXPORT_ADMIN_KEY && given === EXPORT_ADMIN_KEY) return true;
+  return false;
 };

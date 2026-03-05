@@ -1,8 +1,19 @@
-import { badRequest, forbidden, json, notFound } from "../../../_lib/resp.js";
+import { badRequest, corsPreflight, forbidden, json, notFound, withCors } from "../../../_lib/resp.js";
 import { requireCustomAdminKey } from "../../../_lib/auth.js";
 import { assertDb, all, exec, one } from "../../../_lib/db.js";
 import { nowIso, uuid } from "../../../_lib/crypto.js";
 import { computeTotals, normalizeLineInput } from "../../../_lib/custom-quotes.js";
+
+const corsOpts = ({ request, env }) => ({
+  request,
+  env,
+  allowMethods: "POST, OPTIONS",
+  allowHeaders: "content-type, x-admin-key",
+});
+
+export const onRequestOptions = async (context) => {
+  return corsPreflight(context, corsOpts(context));
+};
 
 const insertEvent = async (db, { quote_id, event_type, meta }) => {
   await exec(
@@ -24,24 +35,24 @@ const loadBundle = async (db, id) => {
 
 export const onRequestPost = async (context) => {
   const { request, env, params } = context;
-  if (!requireCustomAdminKey({ request, env })) return forbidden();
+  if (!requireCustomAdminKey({ request, env })) return withCors(forbidden(), corsOpts(context));
 
   const quoteId = String(params?.id || "").trim();
-  if (!quoteId) return notFound();
+  if (!quoteId) return withCors(notFound(), corsOpts(context));
 
   const db = assertDb(env);
   const existing = await one(db.prepare("SELECT id FROM custom_quotes WHERE id = ? LIMIT 1").bind(quoteId).all());
-  if (!existing) return notFound();
+  if (!existing) return withCors(notFound(), corsOpts(context));
 
   let body;
   try {
     body = await request.json();
   } catch (_) {
-    return badRequest("Invalid JSON");
+    return withCors(badRequest("Invalid JSON"), corsOpts(context));
   }
 
   const line = normalizeLineInput(body);
-  if (!line.title) return badRequest("Missing title");
+  if (!line.title) return withCors(badRequest("Missing title"), corsOpts(context));
 
   const lineId = uuid();
   await exec(
@@ -68,9 +79,9 @@ export const onRequestPost = async (context) => {
   await insertEvent(db, { quote_id: quoteId, event_type: "edited", meta: { by: "admin", action: "line_add", line_id: lineId } });
 
   const bundle = await loadBundle(db, quoteId);
-  return json({ ok: true, ...bundle });
+  return withCors(json({ ok: true, ...bundle }), corsOpts(context));
 };
 
-export const onRequestGet = async () => badRequest("Method not allowed");
-export const onRequestPut = async () => badRequest("Method not allowed");
-export const onRequestDelete = async () => badRequest("Method not allowed");
+export const onRequestGet = async (context) => withCors(badRequest("Method not allowed"), corsOpts(context));
+export const onRequestPut = async (context) => withCors(badRequest("Method not allowed"), corsOpts(context));
+export const onRequestDelete = async (context) => withCors(badRequest("Method not allowed"), corsOpts(context));

@@ -1,8 +1,19 @@
-import { badRequest, forbidden, json, notFound } from "../../../../_lib/resp.js";
+import { badRequest, corsPreflight, forbidden, json, notFound, withCors } from "../../../../_lib/resp.js";
 import { requireCustomAdminKey } from "../../../../_lib/auth.js";
 import { assertDb, all, exec, one } from "../../../../_lib/db.js";
 import { nowIso, uuid } from "../../../../_lib/crypto.js";
 import { computeTotals, normalizeLineInput } from "../../../../_lib/custom-quotes.js";
+
+const corsOpts = ({ request, env }) => ({
+  request,
+  env,
+  allowMethods: "PUT, DELETE, OPTIONS",
+  allowHeaders: "content-type, x-admin-key",
+});
+
+export const onRequestOptions = async (context) => {
+  return corsPreflight(context, corsOpts(context));
+};
 
 const insertEvent = async (db, { quote_id, event_type, meta }) => {
   await exec(
@@ -24,25 +35,25 @@ const loadBundle = async (db, quoteId) => {
 
 export const onRequestPut = async (context) => {
   const { request, env, params } = context;
-  if (!requireCustomAdminKey({ request, env })) return forbidden();
+  if (!requireCustomAdminKey({ request, env })) return withCors(forbidden(), corsOpts(context));
 
   const quoteId = String(params?.id || "").trim();
   const lineId = String(params?.lineId || "").trim();
-  if (!quoteId || !lineId) return notFound();
+  if (!quoteId || !lineId) return withCors(notFound(), corsOpts(context));
 
   const db = assertDb(env);
   const existing = await one(db.prepare("SELECT * FROM custom_quote_lines WHERE id = ? AND quote_id = ? LIMIT 1").bind(lineId, quoteId).all());
-  if (!existing) return notFound();
+  if (!existing) return withCors(notFound(), corsOpts(context));
 
   let body;
   try {
     body = await request.json();
   } catch (_) {
-    return badRequest("Invalid JSON");
+    return withCors(badRequest("Invalid JSON"), corsOpts(context));
   }
 
   const input = normalizeLineInput({ ...existing, ...body });
-  if (!input.title) return badRequest("Missing title");
+  if (!input.title) return withCors(badRequest("Missing title"), corsOpts(context));
 
   await exec(
     db,
@@ -67,28 +78,28 @@ export const onRequestPut = async (context) => {
   await insertEvent(db, { quote_id: quoteId, event_type: "edited", meta: { by: "admin", action: "line_edit", line_id: lineId } });
 
   const bundle = await loadBundle(db, quoteId);
-  return json({ ok: true, ...bundle });
+  return withCors(json({ ok: true, ...bundle }), corsOpts(context));
 };
 
 export const onRequestDelete = async (context) => {
   const { request, env, params } = context;
-  if (!requireCustomAdminKey({ request, env })) return forbidden();
+  if (!requireCustomAdminKey({ request, env })) return withCors(forbidden(), corsOpts(context));
 
   const quoteId = String(params?.id || "").trim();
   const lineId = String(params?.lineId || "").trim();
-  if (!quoteId || !lineId) return notFound();
+  if (!quoteId || !lineId) return withCors(notFound(), corsOpts(context));
 
   const db = assertDb(env);
   const existing = await one(db.prepare("SELECT id FROM custom_quote_lines WHERE id = ? AND quote_id = ? LIMIT 1").bind(lineId, quoteId).all());
-  if (!existing) return notFound();
+  if (!existing) return withCors(notFound(), corsOpts(context));
 
   await exec(db, "DELETE FROM custom_quote_lines WHERE id = ? AND quote_id = ?", [lineId, quoteId]);
   await exec(db, "UPDATE custom_quotes SET updated_at = ? WHERE id = ?", [nowIso(), quoteId]);
   await insertEvent(db, { quote_id: quoteId, event_type: "edited", meta: { by: "admin", action: "line_delete", line_id: lineId } });
 
   const bundle = await loadBundle(db, quoteId);
-  return json({ ok: true, ...bundle });
+  return withCors(json({ ok: true, ...bundle }), corsOpts(context));
 };
 
-export const onRequestGet = async () => badRequest("Method not allowed");
-export const onRequestPost = async () => badRequest("Method not allowed");
+export const onRequestGet = async (context) => withCors(badRequest("Method not allowed"), corsOpts(context));
+export const onRequestPost = async (context) => withCors(badRequest("Method not allowed"), corsOpts(context));

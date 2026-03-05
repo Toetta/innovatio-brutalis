@@ -6,9 +6,10 @@
     <title>Innovatio Brutalis – Admin</title>
     <meta name="robots" content="noindex,nofollow" />
     <script>
-      // Keep a single canonical origin that also hosts Pages Functions (/api/*).
-      // If you open the admin portal on other domains, the Payment links tool will hit `/api/...` and get HTTP 404.
-      const CANONICAL_HOST = "innovatio-brutalis.com";
+      // Keep a single canonical origin for OAuth + storage.
+      // Note: Payment links backend calls use an explicit API base URL (configured in the UI),
+      // so the admin portal itself can live on GitHub Pages.
+      const CANONICAL_HOST = "www.innovatio-brutalis.se";
       const host = location.hostname;
       const isLocal = host === "localhost" || host === "127.0.0.1";
       const isPagesDev = host.endsWith(".pages.dev");
@@ -61,12 +62,23 @@
         <section style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
           <h2 style="margin-top: 0;">Admin-nyckel</h2>
           <p style="margin-top: 0;">Sparas lokalt i webbläsaren. Skickas som <code>X-Admin-Key</code> till API.</p>
+          <p style="margin-top: 0; opacity: 0.85;">Obs: backend måste ha samma nyckel satt som <code>ADMIN_CUSTOM_KEY</code> eller <code>EXPORT_ADMIN_KEY</code> i Cloudflare Pages. Den kan inte ändras från webben.</p>
+          <label>
+            API-bas URL
+            <input id="apiBase" type="url" inputmode="url" autocomplete="off" placeholder="https://innovatio-brutalis.pages.dev" style="width: 100%; max-width: 520px;" />
+          </label>
           <label>
             Nyckel
             <input id="adminKey" type="password" autocomplete="off" style="width: 100%; max-width: 520px;" />
           </label>
+          <label style="display: inline-flex; gap: 8px; align-items: center; margin-top: 6px;">
+            <input id="toggleShowAdminKey" type="checkbox" />
+            Visa nyckel
+          </label>
           <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
             <button id="saveAdminKey">Spara</button>
+            <button id="generateAdminKey" type="button">Skapa ny nyckel</button>
+            <button id="testAdminKey" type="button">Testa</button>
             <button id="clearAdminKey" type="button">Rensa</button>
             <span id="authStatus" style="opacity: 0.8;"></span>
           </div>

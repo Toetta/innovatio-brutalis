@@ -17,6 +17,9 @@ export const onRequestGet = async (context) => {
   const effectiveLoginFrom = (loginFrom || supportFrom).trim();
   const hasResendKey = Boolean(String(cfg.RESEND_API_KEY || "").trim());
 
+  const hasExportAdminKey = Boolean(String(cfg.EXPORT_ADMIN_KEY || "").trim());
+  const hasCustomAdminKey = Boolean(String(cfg.ADMIN_CUSTOM_KEY || "").trim());
+
   const hasStripeSecretKey = Boolean(String(cfg.STRIPE_SECRET_KEY || "").trim());
   const hasStripePublishableKey = Boolean(String(cfg.STRIPE_PUBLISHABLE_KEY || "").trim());
   const hasStripeWebhookSecret = Boolean(String(cfg.STRIPE_WEBHOOK_SECRET || "").trim());
@@ -38,6 +41,10 @@ export const onRequestGet = async (context) => {
       environment: pagesEnv || null,
     },
     devMode: Boolean(cfg.DEV_MODE),
+    admin: {
+      exportKeySet: hasExportAdminKey,
+      customKeySet: hasCustomAdminKey,
+    },
     fu: {
       hasKeySecret: hasFuKeySecret,
     },

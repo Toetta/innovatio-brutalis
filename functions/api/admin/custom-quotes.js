@@ -1,8 +1,19 @@
-import { badRequest, forbidden, json } from "../_lib/resp.js";
+import { badRequest, corsPreflight, forbidden, json, withCors } from "../_lib/resp.js";
 import { requireCustomAdminKey } from "../_lib/auth.js";
 import { assertDb, all, exec, one } from "../_lib/db.js";
 import { nowIso, randomToken, uuid } from "../_lib/crypto.js";
 import { normalizeQuoteInput } from "../_lib/custom-quotes.js";
+
+const corsOpts = ({ request, env }) => ({
+  request,
+  env,
+  allowMethods: "GET, POST, OPTIONS",
+  allowHeaders: "content-type, x-admin-key",
+});
+
+export const onRequestOptions = async (context) => {
+  return corsPreflight(context, corsOpts(context));
+};
 
 const isEmailLike = (email) => {
   const s = String(email || "").trim();
@@ -28,7 +39,7 @@ const createUniqueToken = async (db) => {
 
 export const onRequestGet = async (context) => {
   const { request, env } = context;
-  if (!requireCustomAdminKey({ request, env })) return forbidden();
+  if (!requireCustomAdminKey({ request, env })) return withCors(forbidden(), corsOpts(context));
 
   const url = new URL(request.url);
   const status = String(url.searchParams.get("status") || "").trim().toLowerCase();
@@ -57,22 +68,22 @@ export const onRequestGet = async (context) => {
   const db = assertDb(env);
   const rows = await all(db.prepare(sql).bind(...params).all());
 
-  return json({ ok: true, quotes: rows });
+  return withCors(json({ ok: true, quotes: rows }), corsOpts(context));
 };
 
 export const onRequestPost = async (context) => {
   const { request, env } = context;
-  if (!requireCustomAdminKey({ request, env })) return forbidden();
+  if (!requireCustomAdminKey({ request, env })) return withCors(forbidden(), corsOpts(context));
 
   let body;
   try {
     body = await request.json();
   } catch (_) {
-    return badRequest("Invalid JSON");
+    return withCors(badRequest("Invalid JSON"), corsOpts(context));
   }
 
   const input = normalizeQuoteInput(body);
-  if (!isEmailLike(input.customer_email)) return badRequest("Invalid customer_email");
+  if (!isEmailLike(input.customer_email)) return withCors(badRequest("Invalid customer_email"), corsOpts(context));
 
   const db = assertDb(env);
 
@@ -109,5 +120,5 @@ export const onRequestPost = async (context) => {
   await insertEvent(db, { quote_id: id, event_type: "created", meta: { by: "admin" } });
 
   const quote = await one(db.prepare("SELECT * FROM custom_quotes WHERE id = ? LIMIT 1").bind(id).all());
-  return json({ ok: true, quote });
+  return withCors(json({ ok: true, quote }), corsOpts(context));
 };

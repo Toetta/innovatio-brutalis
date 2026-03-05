@@ -1,4 +1,7 @@
 const STORAGE_KEY = "ib_admin_custom_key";
+const STORAGE_KEY_API_BASE = "ib_admin_custom_api_base";
+
+const DEFAULT_API_BASE = "https://innovatio-brutalis.pages.dev";
 
 const CUSTOM_CATEGORIES = [
   { key: "3d_scan", label: "3D scanning" },
@@ -26,10 +29,50 @@ const state = {
 
 const getAdminKey = () => localStorage.getItem(STORAGE_KEY) || "";
 
+const normalizeApiBase = (value) => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  // Allow pasting either origin or origin + /api.
+  return raw.replace(/\/+$/, "").replace(/\/api\/?$/, "");
+};
+
+const getApiBase = () => normalizeApiBase(localStorage.getItem(STORAGE_KEY_API_BASE) || DEFAULT_API_BASE);
+
+const base64Url = (bytes) => {
+  let s = "";
+  for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]);
+  // btoa expects Latin-1.
+  const b64 = btoa(s);
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+};
+
+const generateStrongKey = () => {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return base64Url(bytes);
+};
+
 const setAdminKeyUi = () => {
   const key = getAdminKey();
   el("adminKey").value = key;
+  const apiBaseEl = el("apiBase");
+  if (apiBaseEl) apiBaseEl.value = getApiBase();
   el("authStatus").textContent = key ? "Nyckel sparad" : "Ingen nyckel";
+};
+
+const setAuthStatus = (msg) => {
+  const s = el("authStatus");
+  if (s) s.textContent = String(msg || "");
+};
+
+const testAdminKey = async () => {
+  setAuthStatus("Testar…");
+  try {
+    await apiFetch("/api/admin/custom-quotes?status=&q=", { method: "GET" });
+    setAuthStatus("OK");
+  } catch (e) {
+    setAuthStatus(e.message);
+  }
 };
 
 const apiFetch = async (path, { method = "GET", body } = {}) => {
@@ -38,7 +81,10 @@ const apiFetch = async (path, { method = "GET", body } = {}) => {
   if (key) headers.set("X-Admin-Key", key);
   if (body != null) headers.set("content-type", "application/json");
 
-  const res = await fetch(path, {
+  const base = getApiBase();
+  const url = base ? `${base}${path}` : path;
+
+  const res = await fetch(url, {
     method,
     headers,
     body: body != null ? JSON.stringify(body) : undefined,
@@ -52,7 +98,8 @@ const apiFetch = async (path, { method = "GET", body } = {}) => {
   }
 
   if (!res.ok) {
-    const msg = data?.error || `HTTP ${res.status}`;
+    const raw = data?.error || `HTTP ${res.status}`;
+    const msg = res.status === 403 ? "Fel admin-nyckel (X-Admin-Key)" : raw;
     throw new Error(msg);
   }
 
@@ -123,7 +170,9 @@ const renderEditor = () => {
   el("editVatScheme").value = quote.vat_scheme || "SE_VAT";
   el("editNotes").value = quote.notes || "";
 
-  const payUrl = `${location.origin}/pay/${quote.token}`;
+  const base = getApiBase();
+  const payOrigin = base || location.origin;
+  const payUrl = `${payOrigin}/pay/${quote.token}`;
   const payLink = el("payLink");
   payLink.href = payUrl;
   payLink.textContent = payUrl;
@@ -382,10 +431,33 @@ const init = () => {
 
   setAdminKeyUi();
 
+  const toggle = el("toggleShowAdminKey");
+  if (toggle) {
+    toggle.addEventListener("change", () => {
+      el("adminKey").type = toggle.checked ? "text" : "password";
+    });
+  }
+
   el("saveAdminKey").addEventListener("click", () => {
     localStorage.setItem(STORAGE_KEY, el("adminKey").value.trim());
+    const apiBaseEl = el("apiBase");
+    if (apiBaseEl) localStorage.setItem(STORAGE_KEY_API_BASE, normalizeApiBase(apiBaseEl.value));
     setAdminKeyUi();
   });
+
+  const genBtn = el("generateAdminKey");
+  if (genBtn) {
+    genBtn.addEventListener("click", () => {
+      const key = generateStrongKey();
+      el("adminKey").value = key;
+      localStorage.setItem(STORAGE_KEY, key);
+      setAdminKeyUi();
+      setAuthStatus("Ny nyckel skapad (glöm inte att sätta den i Cloudflare Pages env vars)");
+    });
+  }
+
+  const testBtn = el("testAdminKey");
+  if (testBtn) testBtn.addEventListener("click", testAdminKey);
 
   el("clearAdminKey").addEventListener("click", () => {
     localStorage.removeItem(STORAGE_KEY);
