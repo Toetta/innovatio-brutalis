@@ -3,7 +3,7 @@ import { assertDb, exec, one } from "../_lib/db.js";
 import { nowIso, uuid } from "../_lib/crypto.js";
 import { verifyStripeWebhook } from "../_lib/stripe.js";
 import { stripeBalanceTotalsForPayout } from "../_lib/stripe.js";
-import { queueFuPayloadForOrder, queueFuPayloadForStripePayout } from "../_lib/fu.js";
+import { queueFuPayloadForCustomQuoteSale, queueFuPayloadForOrder, queueFuPayloadForStripePayout } from "../_lib/fu.js";
 
 const markCustomQuotePaid = async ({ db, quote_id, token, meta }) => {
   const qid = String(quote_id || "").trim();
@@ -85,12 +85,16 @@ export const onRequestPost = async (context) => {
     const quote_id = String(obj?.metadata?.quote_id || "").trim();
     const token = String(obj?.metadata?.quote_token || "").trim();
     if (quote_id || token) {
-      await markCustomQuotePaid({
+      const paid = await markCustomQuotePaid({
         db,
         quote_id,
         token,
         meta: { session_id: String(obj?.id || ""), payment_intent: String(obj?.payment_intent || "") },
       }).catch(() => null);
+
+      if (paid?.ok && paid?.id) {
+        await queueFuPayloadForCustomQuoteSale({ env, quoteId: paid.id }).catch(() => null);
+      }
     }
     return text("ok", { status: 200 });
   }
@@ -102,7 +106,10 @@ export const onRequestPost = async (context) => {
     const qid = String(obj?.metadata?.quote_id || "").trim();
     const qtok = String(obj?.metadata?.quote_token || "").trim();
     if (qid || qtok) {
-      await markCustomQuotePaid({ db, quote_id: qid, token: qtok, meta: { payment_intent: piId } }).catch(() => null);
+      const paid = await markCustomQuotePaid({ db, quote_id: qid, token: qtok, meta: { payment_intent: piId } }).catch(() => null);
+      if (paid?.ok && paid?.id) {
+        await queueFuPayloadForCustomQuoteSale({ env, quoteId: paid.id }).catch(() => null);
+      }
     }
 
     if (order_id) {

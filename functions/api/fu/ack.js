@@ -1,6 +1,6 @@
 import { badRequest, corsPreflight, forbidden, json, notFound, withCors } from "../_lib/resp.js";
 import { assertDb, exec, one } from "../_lib/db.js";
-import { nowIso } from "../_lib/crypto.js";
+import { nowIso, uuid } from "../_lib/crypto.js";
 import { requireFuKey } from "../_lib/fu.js";
 
 const corsOpts = ({ request, env }) => ({
@@ -52,6 +52,24 @@ export const onRequestPost = async (context) => {
         [voucher_id, ts, row.entity_id]
       );
     }
+    if (row.entity_type === "custom_quote") {
+      await exec(
+        db,
+        "UPDATE custom_quotes SET fu_exported_at = COALESCE(fu_exported_at, ?), updated_at = ? WHERE id = ?",
+        [ts, ts, row.entity_id]
+      );
+      await exec(
+        db,
+        "INSERT INTO custom_quote_events (id, quote_id, event_type, meta_json, created_at) VALUES (?,?,?,?,?)",
+        [
+          uuid(),
+          row.entity_id,
+          "fu_acked",
+          JSON.stringify({ voucher_id: voucher_id || null }),
+          ts,
+        ]
+      );
+    }
     return withCors(json({ ok: true }), corsOpts(context));
   }
 
@@ -66,6 +84,13 @@ export const onRequestPost = async (context) => {
       db,
       "UPDATE orders SET fu_sync_status = 'error', fu_sync_error = ?, updated_at = ? WHERE id = ?",
       [error || "Unknown error", ts, row.entity_id]
+    );
+  }
+  if (row.entity_type === "custom_quote") {
+    await exec(
+      db,
+      "INSERT INTO custom_quote_events (id, quote_id, event_type, meta_json, created_at) VALUES (?,?,?,?,?)",
+      [uuid(), row.entity_id, "fu_error", JSON.stringify({ error: error || "Unknown error" }), ts]
     );
   }
 

@@ -76,6 +76,19 @@ For custom payment links, add at least:
 - `checkout.session.completed`
 - `payment_intent.succeeded` (already used for webshop orders)
 
+### FU auto-bookkeeping (custom payment links)
+
+When a custom quote is paid via Stripe Checkout, the Stripe webhook queues a voucher payload into `fu_sync_payloads` with:
+
+- `entity_type = custom_quote`
+- `kind = sale`
+
+FU-Bookkeeping can then import it via `/api/fu/pull` + ack via `/api/fu/ack`.
+
+Optional env var:
+
+- `FU_VAT_ACCOUNT` (defaults to `2611`)
+
 ### FU export
 
 Fetch paid quotes as FU payloads (admin protected):

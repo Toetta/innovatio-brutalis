@@ -1,5 +1,5 @@
 import { getEnv } from "./env.js";
-import { assertDb, exec, one } from "./db.js";
+import { assertDb, all, exec, one } from "./db.js";
 import { nowIso, uuid } from "./crypto.js";
 import { getShippingZone } from "./shipping/postnord-tiers.js";
 
@@ -218,6 +218,125 @@ export const queueFuPayloadForStripePayout = async ({ env, payout, totals }) => 
   } catch (_) {
     return { ok: false, error: "FU payout payload already queued" };
   }
+
+  return { ok: true, id };
+};
+
+const toNumber = (v, fallback = 0) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const round2 = (n) => Math.round(toNumber(n, 0) * 100) / 100;
+
+export const buildFuVoucherPayloadForCustomQuote = ({ env, quote, lines, totals }) => {
+  const cfg = getEnv(env);
+  const clearing = Number(cfg?.FU_STRIPE_CLEARING_ACCOUNT || 1580) || 1580;
+  const vatAccount = Number(cfg?.FU_VAT_ACCOUNT || 2611) || 2611;
+
+  const currency = String(quote?.currency || "SEK").toUpperCase();
+  const date = (quote?.paid_at || quote?.created_at || nowIso()).slice(0, 10);
+  const text = `Custom quote ${String(quote?.id || "")}`;
+
+  const total = round2(totals?.total_inc_vat);
+  const vat = round2(totals?.vat_total);
+
+  // Credit per-line revenue accounts with net (ex VAT).
+  // Discounts are expected as negative net lines and will become debits.
+  const revenueLines = (Array.isArray(lines) ? lines : []).map((l) => {
+    const acct = Number(l?.account_suggestion || 0) || 0;
+    const qty = toNumber(l?.quantity, 0);
+    const unit = toNumber(l?.unit_price_ex_vat, 0);
+    const net = round2(qty * unit);
+
+    return {
+      account: acct,
+      debit: net < 0 ? Math.abs(net) : 0,
+      credit: net > 0 ? net : 0,
+      text,
+    };
+  }).filter((x) => Number(x.account) > 0 && (x.debit > 0 || x.credit > 0));
+
+  const voucherLines = [
+    // Clearing: money in
+    { account: clearing, debit: total > 0 ? total : 0, credit: total < 0 ? Math.abs(total) : 0, text },
+    ...revenueLines,
+    // VAT
+    { account: vatAccount, debit: vat < 0 ? Math.abs(vat) : 0, credit: vat > 0 ? vat : 0, text },
+  ];
+
+  return {
+    schema_version: "1.0",
+    source: "innovatio-brutalis-webshop",
+    kind: "sale",
+    entity_type: "custom_quote",
+    quote_id: String(quote?.id || ""),
+    reference_token: String(quote?.token || ""),
+    currency,
+    date,
+    lines: voucherLines,
+    meta: {
+      customer_email: quote?.customer_email || null,
+      customer_name: quote?.customer_name || null,
+      company_name: quote?.company_name || null,
+      orgnr: quote?.orgnr || null,
+      vat_id: quote?.vat_id || null,
+      totals: {
+        subtotal_ex_vat: round2(totals?.subtotal_ex_vat),
+        vat_total: vat,
+        total_inc_vat: total,
+      },
+    },
+  };
+};
+
+export const queueFuPayloadForCustomQuoteSale = async ({ env, quoteId }) => {
+  const db = assertDb(env);
+  const quote = await one(db.prepare("SELECT * FROM custom_quotes WHERE id = ? LIMIT 1").bind(String(quoteId || "")).all());
+  if (!quote) return { ok: false, error: "Quote not found" };
+  if (String(quote.status) !== "paid") return { ok: false, error: "Quote is not paid" };
+
+  const lines = await all(
+    db.prepare("SELECT * FROM custom_quote_lines WHERE quote_id = ? ORDER BY sort_order ASC, created_at ASC").bind(quote.id).all()
+  );
+
+  // Compute totals locally (keep dependency-free to avoid circular imports).
+  let subtotal_ex_vat = 0;
+  let vat_total = 0;
+  let total_inc_vat = 0;
+  for (const l of lines) {
+    const qty = toNumber(l?.quantity, 0);
+    const unit = toNumber(l?.unit_price_ex_vat, 0);
+    const rate = toNumber(l?.vat_rate, 0);
+    const net = qty * unit;
+    const vat = net * rate;
+    subtotal_ex_vat += net;
+    vat_total += vat;
+    total_inc_vat += net + vat;
+  }
+  const totals = {
+    subtotal_ex_vat: round2(subtotal_ex_vat),
+    vat_total: round2(vat_total),
+    total_inc_vat: round2(total_inc_vat),
+  };
+
+  const payloadObj = buildFuVoucherPayloadForCustomQuote({ env, quote, lines, totals });
+  const payload = JSON.stringify(payloadObj);
+
+  const id = uuid();
+  const created_at = nowIso();
+  try {
+    await exec(
+      db,
+      "INSERT INTO fu_sync_payloads (id, entity_type, entity_id, kind, status, payload, created_at, sent_at, acked_at, voucher_id, error) VALUES (?,?,?, ?, 'queued', ?, ?, NULL, NULL, NULL, NULL)",
+      [id, "custom_quote", quote.id, "sale", payload, created_at]
+    );
+  } catch (_) {
+    return { ok: false, error: "FU payload already queued" };
+  }
+
+  // Best-effort marker for visibility.
+  await exec(db, "UPDATE custom_quotes SET fu_exported_at = COALESCE(fu_exported_at, ?) WHERE id = ?", [nowIso(), quote.id]);
 
   return { ok: true, id };
 };

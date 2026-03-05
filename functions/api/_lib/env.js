@@ -24,6 +24,7 @@ export const getEnv = (env) => {
   const FU_BANK_ACCOUNT = Number(env?.FU_BANK_ACCOUNT || 1930) || 1930;
   const FU_STRIPE_CLEARING_ACCOUNT = Number(env?.FU_STRIPE_CLEARING_ACCOUNT || 1580) || 1580;
   const FU_STRIPE_FEE_ACCOUNT = Number(env?.FU_STRIPE_FEE_ACCOUNT || 6570) || 6570;
+  const FU_VAT_ACCOUNT = Number(env?.FU_VAT_ACCOUNT || 2611) || 2611;
 
   // Klarna/Swish guards (MVP defaults)
   const KLARNA_MAX_SEK = Number(env?.KLARNA_MAX_SEK || 500) || 500;
@@ -53,6 +54,7 @@ export const getEnv = (env) => {
     FU_BANK_ACCOUNT,
     FU_STRIPE_CLEARING_ACCOUNT,
     FU_STRIPE_FEE_ACCOUNT,
+    FU_VAT_ACCOUNT,
     KLARNA_MAX_SEK,
     KLARNA_USERNAME,
     KLARNA_PASSWORD,
