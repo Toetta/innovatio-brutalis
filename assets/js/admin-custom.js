@@ -2,8 +2,8 @@ const STORAGE_KEY = "ib_admin_custom_key";
 const STORAGE_KEY_API_BASE = "ib_admin_custom_api_base";
 
 // The admin portal is hosted on GitHub Pages, while the admin API lives on Cloudflare Pages/Functions.
-// Default to the production API origin to avoid confusing 404s when the user hasn't configured this yet.
-const DEFAULT_API_BASE = "https://innovatio-brutalis.com";
+// Use the Cloudflare Pages default domain as a safe default (custom domains can change / be misconfigured).
+const DEFAULT_API_BASE = "https://innovatio-brutalis.pages.dev";
 
 const CUSTOM_CATEGORIES = [
   { key: "3d_scan", label: "3D scanning" },
@@ -86,11 +86,22 @@ const apiFetch = async (path, { method = "GET", body } = {}) => {
   const base = getApiBase();
   const url = base ? `${base}${path}` : path;
 
-  const res = await fetch(url, {
-    method,
-    headers,
-    body: body != null ? JSON.stringify(body) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(url, {
+      method,
+      headers,
+      body: body != null ? JSON.stringify(body) : undefined,
+    });
+  } catch (e) {
+    // Browser throws a TypeError on network failures (DNS, CORS-preflight blocked, offline, etc).
+    // Provide a more actionable message for operators.
+    const base = getApiBase();
+    const baseHint = base ? `API-bas: ${base}` : "(ingen API-bas satt)";
+    throw new Error(
+      `Kunde inte nå API (nätverksfel/CORS/DNS). Kontrollera API-bas URL och att backend tillåter Origin via CORS_ALLOW_ORIGINS. ${baseHint}`
+    );
+  }
 
   let data = null;
   try {
