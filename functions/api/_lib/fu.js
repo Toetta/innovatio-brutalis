@@ -229,6 +229,14 @@ const toNumber = (v, fallback = 0) => {
 
 const round2 = (n) => Math.round(toNumber(n, 0) * 100) / 100;
 
+const defaultRevenueAccountForCustomQuoteLineType = (line_type) => {
+  const t = String(line_type || "").trim();
+  if (t === "product") return 3011;
+  if (t === "shipping") return 3520;
+  if (t === "discount") return 3730;
+  return 3041;
+};
+
 export const buildFuVoucherPayloadForCustomQuote = ({ env, quote, lines, totals }) => {
   const cfg = getEnv(env);
   const clearing = Number(cfg?.FU_STRIPE_CLEARING_ACCOUNT || 1580) || 1580;
@@ -244,7 +252,11 @@ export const buildFuVoucherPayloadForCustomQuote = ({ env, quote, lines, totals 
   // Credit per-line revenue accounts with net (ex VAT).
   // Discounts are expected as negative net lines and will become debits.
   const revenueLines = (Array.isArray(lines) ? lines : []).map((l) => {
-    const acct = Number(l?.account_suggestion || 0) || 0;
+    const suggested = String(l?.account_suggestion || "").trim();
+    const suggestedN = Number(suggested);
+    const acct = Number.isFinite(suggestedN) && suggestedN > 0
+      ? Math.floor(suggestedN)
+      : defaultRevenueAccountForCustomQuoteLineType(l?.line_type);
     const qty = toNumber(l?.quantity, 0);
     const unit = toNumber(l?.unit_price_ex_vat, 0);
     const net = round2(qty * unit);

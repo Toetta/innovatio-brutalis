@@ -1,7 +1,9 @@
 const STORAGE_KEY = "ib_admin_custom_key";
 const STORAGE_KEY_API_BASE = "ib_admin_custom_api_base";
 
-const DEFAULT_API_BASE = "https://innovatio-brutalis.pages.dev";
+// The admin portal is hosted on GitHub Pages, while the admin API lives on Cloudflare Pages/Functions.
+// Default to the production API origin to avoid confusing 404s when the user hasn't configured this yet.
+const DEFAULT_API_BASE = "https://innovatio-brutalis.com";
 
 const CUSTOM_CATEGORIES = [
   { key: "3d_scan", label: "3D scanning" },
@@ -430,6 +432,15 @@ const init = () => {
   }
 
   setAdminKeyUi();
+
+  const adminKeyForm = el("adminKeyForm");
+  if (adminKeyForm) {
+    adminKeyForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      // Reuse the existing save handler (and keep one source of truth).
+      el("saveAdminKey").click();
+    });
+  }
 
   const toggle = el("toggleShowAdminKey");
   if (toggle) {
