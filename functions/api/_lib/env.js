@@ -1,4 +1,13 @@
 export const getEnv = (env) => {
+  const cleanSecret = (value) => {
+    const s = String(value || "").trim();
+    if (!s) return "";
+    // Cloudflare dashboard users sometimes paste values with surrounding quotes.
+    // Be forgiving; keys are high-entropy and should not contain quotes.
+    if ((s.startsWith("\"") && s.endsWith("\"")) || (s.startsWith("'") && s.endsWith("'"))) return s.slice(1, -1).trim();
+    return s;
+  };
+
   const DEV_MODE = String(env?.DEV_MODE || "").toLowerCase() === "true";
   const EMAIL_PROVIDER = String(env?.EMAIL_PROVIDER || "resend").toLowerCase();
   // Backward-compat default sender (also useful as a general support sender).
@@ -7,18 +16,18 @@ export const getEnv = (env) => {
   const LOGIN_EMAIL_FROM = String(env?.LOGIN_EMAIL_FROM || "");
   const ORDER_EMAIL_FROM = String(env?.ORDER_EMAIL_FROM || "");
 
-  const TURNSTILE_SECRET = String(env?.TURNSTILE_SECRET || "");
-  const RESEND_API_KEY = String(env?.RESEND_API_KEY || "");
-  const EXPORT_ADMIN_KEY = String(env?.EXPORT_ADMIN_KEY || "");
-  const ADMIN_CUSTOM_KEY = String(env?.ADMIN_CUSTOM_KEY || "");
+  const TURNSTILE_SECRET = cleanSecret(env?.TURNSTILE_SECRET);
+  const RESEND_API_KEY = cleanSecret(env?.RESEND_API_KEY);
+  const EXPORT_ADMIN_KEY = cleanSecret(env?.EXPORT_ADMIN_KEY);
+  const ADMIN_CUSTOM_KEY = cleanSecret(env?.ADMIN_CUSTOM_KEY);
 
   // Payments
-  const STRIPE_SECRET_KEY = String(env?.STRIPE_SECRET_KEY || "");
-  const STRIPE_PUBLISHABLE_KEY = String(env?.STRIPE_PUBLISHABLE_KEY || "");
-  const STRIPE_WEBHOOK_SECRET = String(env?.STRIPE_WEBHOOK_SECRET || "");
+  const STRIPE_SECRET_KEY = cleanSecret(env?.STRIPE_SECRET_KEY);
+  const STRIPE_PUBLISHABLE_KEY = cleanSecret(env?.STRIPE_PUBLISHABLE_KEY);
+  const STRIPE_WEBHOOK_SECRET = cleanSecret(env?.STRIPE_WEBHOOK_SECRET);
 
   // FU pull/ack sync
-  const FU_SYNC_KEY = String(env?.FU_SYNC_KEY || "");
+  const FU_SYNC_KEY = cleanSecret(env?.FU_SYNC_KEY);
 
   // Optional bookkeeping account config (used for Stripe payout vouchers)
   const FU_BANK_ACCOUNT = Number(env?.FU_BANK_ACCOUNT || 1930) || 1930;
