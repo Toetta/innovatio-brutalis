@@ -1,4 +1,4 @@
-import { badRequest, corsPreflight, forbidden, json, withCors } from "../_lib/resp.js";
+import { badRequest, corsPreflight, forbidden, json, serverError, withCors } from "../_lib/resp.js";
 import { requireCustomAdminKey } from "../_lib/auth.js";
 import { assertDb, all, exec, one } from "../_lib/db.js";
 import { nowIso, randomToken, uuid } from "../_lib/crypto.js";
@@ -65,10 +65,28 @@ export const onRequestGet = async (context) => {
     (where.length ? `WHERE ${where.join(" AND ")} ` : "") +
     "ORDER BY created_at DESC LIMIT 200";
 
-  const db = assertDb(env);
-  const rows = await all(db.prepare(sql).bind(...params).all());
+  let db;
+  try {
+    db = assertDb(env);
+  } catch (e) {
+    return withCors(
+      serverError("Backend saknar D1-binding (DB)", e?.message || e),
+      corsOpts(context)
+    );
+  }
 
-  return withCors(json({ ok: true, quotes: rows }), corsOpts(context));
+  try {
+    const rows = await all(db.prepare(sql).bind(...params).all());
+    return withCors(json({ ok: true, quotes: rows }), corsOpts(context));
+  } catch (e) {
+    return withCors(
+      serverError(
+        "Kunde inte läsa custom quotes från DB (saknad tabell eller trasig migration)",
+        e?.message || e
+      ),
+      corsOpts(context)
+    );
+  }
 };
 
 export const onRequestPost = async (context) => {
@@ -85,40 +103,58 @@ export const onRequestPost = async (context) => {
   const input = normalizeQuoteInput(body);
   if (!isEmailLike(input.customer_email)) return withCors(badRequest("Invalid customer_email"), corsOpts(context));
 
-  const db = assertDb(env);
+  let db;
+  try {
+    db = assertDb(env);
+  } catch (e) {
+    return withCors(
+      serverError("Backend saknar D1-binding (DB)", e?.message || e),
+      corsOpts(context)
+    );
+  }
 
   const id = uuid();
   const token = await createUniqueToken(db);
   const ts = nowIso();
 
-  await exec(
-    db,
-    "INSERT INTO custom_quotes (id, token, status, customer_email, customer_name, customer_phone, company_name, orgnr, vat_id, billing_address_json, shipping_address_json, currency, vat_scheme, notes, created_at, updated_at, expires_at, paid_at, fu_exported_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
-    [
-      id,
-      token,
-      "draft",
-      input.customer_email,
-      input.customer_name,
-      input.customer_phone,
-      input.company_name,
-      input.orgnr,
-      input.vat_id,
-      input.billing_address_json,
-      input.shipping_address_json,
-      input.currency,
-      input.vat_scheme,
-      input.notes,
-      ts,
-      ts,
-      input.expires_at,
-      null,
-      null,
-    ]
-  );
+  try {
+    await exec(
+      db,
+      "INSERT INTO custom_quotes (id, token, status, customer_email, customer_name, customer_phone, company_name, orgnr, vat_id, billing_address_json, shipping_address_json, currency, vat_scheme, notes, created_at, updated_at, expires_at, paid_at, fu_exported_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+      [
+        id,
+        token,
+        "draft",
+        input.customer_email,
+        input.customer_name,
+        input.customer_phone,
+        input.company_name,
+        input.orgnr,
+        input.vat_id,
+        input.billing_address_json,
+        input.shipping_address_json,
+        input.currency,
+        input.vat_scheme,
+        input.notes,
+        ts,
+        ts,
+        input.expires_at,
+        null,
+        null,
+      ]
+    );
 
-  await insertEvent(db, { quote_id: id, event_type: "created", meta: { by: "admin" } });
+    await insertEvent(db, { quote_id: id, event_type: "created", meta: { by: "admin" } });
 
-  const quote = await one(db.prepare("SELECT * FROM custom_quotes WHERE id = ? LIMIT 1").bind(id).all());
-  return withCors(json({ ok: true, quote }), corsOpts(context));
+    const quote = await one(db.prepare("SELECT * FROM custom_quotes WHERE id = ? LIMIT 1").bind(id).all());
+    return withCors(json({ ok: true, quote }), corsOpts(context));
+  } catch (e) {
+    return withCors(
+      serverError(
+        "Kunde inte skapa custom quote i DB (saknad tabell eller trasig migration)",
+        e?.message || e
+      ),
+      corsOpts(context)
+    );
+  }
 };

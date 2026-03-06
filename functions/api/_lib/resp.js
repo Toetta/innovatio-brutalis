@@ -82,6 +82,8 @@ export const badRequest = (message = "Bad request") => json({ ok: false, error: 
 export const unauthorized = (message = "Unauthorized") => json({ ok: false, error: message }, { status: 401 });
 export const forbidden = (message = "Forbidden") => json({ ok: false, error: message }, { status: 403 });
 export const notFound = (message = "Not found") => json({ ok: false, error: message }, { status: 404 });
+export const serverError = (message = "Server error", details = null) =>
+  json({ ok: false, error: message, details: details ? String(details) : undefined }, { status: 500 });
 
 export const redirect = (url, status = 302, headers = {}) => {
   const h = { location: url, "cache-control": "no-store", ...headers };

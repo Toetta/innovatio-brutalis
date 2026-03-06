@@ -74,12 +74,21 @@ export const onRequestGet = async (context) => {
       const list = Array.isArray(rows?.results) ? rows.results : [];
       const cols = new Set(list.map((r) => String(r?.name || "")).filter(Boolean));
       const ordersSchemaV2 = cols.has("customer_country") && cols.has("payment_provider") && cols.has("public_token_hash") && cols.has("subtotal_minor");
+      const tableRows = await context.env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+      const tableList = Array.isArray(tableRows?.results) ? tableRows.results : [];
+      const tableNames = new Set(tableList.map((r) => String(r?.name || "")).filter(Boolean));
+      const customQuotesTablesReady =
+        tableNames.has("custom_quotes") &&
+        tableNames.has("custom_quote_lines") &&
+        tableNames.has("custom_quote_events");
+
       base.d1 = {
         ordersSchemaV2,
+        customQuotesTablesReady,
       };
       if (cfg.DEV_MODE) base.d1.ordersColumns = Array.from(cols).sort((a, b) => a.localeCompare(b));
     } catch (_) {
-      base.d1 = { ordersSchemaV2: false };
+      base.d1 = { ordersSchemaV2: false, customQuotesTablesReady: false };
     }
   }
 
