@@ -80,6 +80,11 @@
   align-items:stretch;
 }
 
+/* List layout: one product card per row (minimal change, keeps card internals the same) */
+.shop .grid.is-list{
+  grid-template-columns: 1fr;
+}
+
 .shop .cart{margin-top:0}
 
 .shop .btn{

@@ -693,6 +693,36 @@
 		const cartCount = qs("#cartCount");
 		if (!categoryFilter || !searchInput || !grid) return;
 
+		let webshopSettings = {};
+		try {
+			webshopSettings = await fetchJSON("/content/webshop.json");
+		} catch (_) {
+			webshopSettings = {};
+		}
+
+		try {
+			// Allow Decap-edited titles/intros to override the hardcoded i18n strings.
+			const title = isEN()
+				? (webshopSettings.title_en || webshopSettings.title_sv || webshopSettings.title || "")
+				: (webshopSettings.title_sv || webshopSettings.title_en || webshopSettings.title || "");
+			const intro = isEN()
+				? (webshopSettings.intro_en || webshopSettings.intro_sv || webshopSettings.intro || "")
+				: (webshopSettings.intro_sv || webshopSettings.intro_en || webshopSettings.intro || "");
+			const h1 = qs(".hero h1");
+			const p = qs(".hero p");
+			if (h1 && String(title || "").trim()) h1.textContent = String(title);
+			if (p && String(intro || "").trim()) p.textContent = String(intro);
+		} catch (_) {}
+
+		try {
+			const layout = String(webshopSettings.catalog_layout || "grid").toLowerCase();
+			grid.classList.toggle("is-list", layout === "list");
+		} catch (_) {}
+
+		const showExcerpt = webshopSettings.show_excerpt !== false;
+		const showNewBadge = webshopSettings.show_new_badge !== false;
+		const defaultSort = String(webshopSettings.default_sort || "title_asc");
+
 		// Auth button is handled globally for all shop pages.
 
 		grid.innerHTML = `<div class="card">${esc(t("loading"))}</div>`;
@@ -709,9 +739,42 @@
 			.filter((c) => c.isActive)
 			.sort((a, b) => (a.order - b.order) || String(a.titleSV || "").localeCompare(String(b.titleSV || "")));
 
-		const productsAll = [...catalog.products]
-			.filter((p) => p.isActive)
-			.sort((a, b) => String(a.titleSV || "").localeCompare(String(b.titleSV || "")));
+		const compareTitle = (a, b) => {
+			const at = String(a?.titleSV || a?.titleEN || a?.slug || "");
+			const bt = String(b?.titleSV || b?.titleEN || b?.slug || "");
+			return at.localeCompare(bt);
+		};
+		const comparePriceAsc = (a, b) => {
+			const ap = Number(a?.price);
+			const bp = Number(b?.price);
+			const av = Number.isFinite(ap) ? ap : Number.POSITIVE_INFINITY;
+			const bv = Number.isFinite(bp) ? bp : Number.POSITIVE_INFINITY;
+			return (av - bv) || compareTitle(a, b);
+		};
+		const comparePriceDesc = (a, b) => {
+			const ap = Number(a?.price);
+			const bp = Number(b?.price);
+			const av = Number.isFinite(ap) ? ap : Number.NEGATIVE_INFINITY;
+			const bv = Number.isFinite(bp) ? bp : Number.NEGATIVE_INFINITY;
+			return (bv - av) || compareTitle(a, b);
+		};
+		const compareNewFirst = (a, b) => {
+			const an = a?.isNews ? 1 : 0;
+			const bn = b?.isNews ? 1 : 0;
+			return (bn - an) || compareTitle(a, b);
+		};
+		const sortProducts = (arr) => {
+			switch (defaultSort) {
+				case "price_asc": return [...arr].sort(comparePriceAsc);
+				case "price_desc": return [...arr].sort(comparePriceDesc);
+				case "new_first": return [...arr].sort(compareNewFirst);
+				case "title_asc":
+				default: return [...arr].sort(compareTitle);
+			}
+		};
+
+		const productsAll = sortProducts(catalog.products)
+			.filter((p) => p.isActive);
 
 		const productBySlug = new Map();
 		for (const p of productsAll) productBySlug.set(String(p.slug), p);
@@ -766,13 +829,15 @@
 						<a class=\"product-link\" href=\"${href}\">
 							<div class=\"product-thumb-wrap\">
 								${img ? `<img class=\"thumb\" src=\"${esc(img)}\" alt=\"\">` : `<div class=\"thumb\"></div>`}
-								${p.isNews ? `<span class=\"product-badge-new\" title=\"${esc(newsLabel)}\">${esc(newsLabel)}</span>` : ""}
+								${(showNewBadge && p.isNews) ? `<span class=\"product-badge-new\" title=\"${esc(newsLabel)}\">${esc(newsLabel)}</span>` : ""}
 							</div>
 							<div class=\"product-body\">
 								<div class=\"product-title\">${esc(title)}</div>
-								${excerpt
-									? `<div class=\"badge product-excerpt\">${esc(excerpt)}</div>`
-									: `<div class=\"badge product-excerpt product-excerpt-empty\" aria-hidden=\"true\">&nbsp;</div>`}
+								${showExcerpt
+									? (excerpt
+										? `<div class=\"badge product-excerpt\">${esc(excerpt)}</div>`
+										: `<div class=\"badge product-excerpt product-excerpt-empty\" aria-hidden=\"true\">&nbsp;</div>`)
+									: ""}
 							</div>
 							<div class=\"meta product-meta\">
 								<div class=\"badge\">${esc(catLabel || "")}</div>

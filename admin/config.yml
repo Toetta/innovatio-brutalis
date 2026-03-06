@@ -150,3 +150,18 @@ collections:
             required: false
           - { label: "Intro (legacy)", name: "intro", widget: "text", required: false }
           - { label: "Aktiverad", name: "enabled", widget: "boolean", default: true }
+
+          - { label: "Kataloglayout", name: "catalog_layout", widget: "select", options: ["grid", "list"], default: "grid", required: false }
+          - { label: "Visa excerpt i listan", name: "show_excerpt", widget: "boolean", default: true, required: false }
+          - { label: "Visa NY/NEW-badge", name: "show_new_badge", widget: "boolean", default: true, required: false }
+          - { label: "Standardsortering", name: "default_sort", widget: "select", options: ["title_asc", "price_asc", "price_desc", "new_first"], default: "title_asc", required: false }
+
+  - name: "site"
+    label: "Site / Webbplats"
+    files:
+      - name: "settings"
+        label: "Site settings"
+        file: "content/site.json"
+        format: "json"
+        fields:
+          - { label: "Compact topbar", name: "topbar_compact", widget: "boolean", default: false, required: false }

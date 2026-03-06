@@ -1,5 +1,10 @@
 {
   "title": "Webshop",
   "intro": "",
-  "enabled": true
+  "enabled": true,
+
+  "catalog_layout": "grid",
+  "show_excerpt": true,
+  "show_new_badge": true,
+  "default_sort": "title_asc"
 }

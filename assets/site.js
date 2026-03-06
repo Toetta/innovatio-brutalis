@@ -24,6 +24,49 @@
     }
   };
 
+  const fetchJSON = async (url) => {
+    const res = await fetch(url, { credentials: "same-origin" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.json();
+  };
+
+  const loadSiteSettings = (() => {
+    let cached = null;
+    let inFlight = null;
+    return async () => {
+      try {
+        if (cached) return cached;
+        if (inFlight) return inFlight;
+        inFlight = fetchJSON("/content/site.json")
+          .then((doc) => {
+            cached = (doc && typeof doc === "object") ? doc : {};
+            return cached;
+          })
+          .catch(() => {
+            cached = {};
+            return cached;
+          })
+          .finally(() => {
+            inFlight = null;
+          });
+        return inFlight;
+      } catch (_) {
+        cached = {};
+        inFlight = null;
+        return cached;
+      }
+    };
+  })();
+
+  const applySiteSettings = (settings) => {
+    try {
+      const s = (settings && typeof settings === "object") ? settings : {};
+      const header = document.getElementById("ib-site-header");
+      if (!header) return;
+      header.classList.toggle("is-compact", !!s.topbar_compact);
+    } catch (_) {}
+  };
+
   // --- Helpers ---
   const computeState = () => {
     const pathname = window.location.pathname;
@@ -221,6 +264,7 @@
         wireSpotifyHeaderToggle();
         try { placeSpotifyPlayerInHeader(); } catch (_) {}
         try { updatePlayerControlsLabel(); } catch (_) {}
+        try { loadSiteSettings().then(applySiteSettings).catch(() => {}); } catch (_) {}
         return;
       }
     } catch (_) {}
@@ -249,6 +293,7 @@
 
     wireSpotifyHeaderToggle();
     try { placeSpotifyPlayerInHeader(); } catch (_) {}
+    try { loadSiteSettings().then(applySiteSettings).catch(() => {}); } catch (_) {}
   };
 
   const ensureMainRegion = () => {

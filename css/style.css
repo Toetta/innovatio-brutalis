@@ -76,6 +76,15 @@ small{color:var(--text-muted)}
   border-bottom: 1px solid rgba(184,115,51,.18);
 }
 
+.site-header.is-compact{
+  padding: 6px 0;
+}
+
+.site-header.is-compact .site-nav a,
+.site-header.is-compact .lang a{
+  padding: 6px 9px;
+}
+
 /* Main content gets its own spacing below the header */
 #ib-main{
   padding-top: 28px;
