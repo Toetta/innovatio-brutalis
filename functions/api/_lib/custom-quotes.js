@@ -6,6 +6,7 @@ export const CUSTOM_CATEGORIES = [
   { key: "3d_print", label: "3D print" },
   { key: "construction", label: "Konstruktionsarbete" },
   { key: "product_sale", label: "Försäljning artiklar" },
+  { key: "shipping_packaging", label: "Frakt & emballage" },
   { key: "other", label: "Övrigt" },
 ];
 

@@ -11,6 +11,7 @@ const CUSTOM_CATEGORIES = [
   { key: "3d_print", label: "3D print" },
   { key: "construction", label: "Konstruktionsarbete" },
   { key: "product_sale", label: "Försäljning artiklar" },
+  { key: "shipping_packaging", label: "Frakt & emballage" },
   { key: "other", label: "Övrigt" },
 ];
 
@@ -18,6 +19,7 @@ const defaultLineTypeForCategory = (category) => {
   // Some categories are inherently physical goods rather than time-based work.
   if (category === "3d_print") return "product";
   if (category === "product_sale") return "product";
+  if (category === "shipping_packaging") return "shipping";
   return "service_hourly";
 };
 
