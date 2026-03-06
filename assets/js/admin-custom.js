@@ -123,8 +123,9 @@ const apiFetch = async (path, { method = "GET", body } = {}) => {
     const base = getApiBase();
     const baseHint = base ? `API-bas: ${base}` : "(ingen API-bas satt)";
     const detail = e?.message ? ` (${e.message})` : "";
+    const originHint = `Origin: ${location.origin || "(okänd)"}`;
     throw new Error(
-      `Kunde inte nå API (nätverksfel/CORS/DNS). Kontrollera API-bas URL och att backend tillåter Origin via CORS_ALLOW_ORIGINS. ${baseHint}${detail}`
+      `Kunde inte nå API (nätverksfel/CORS/DNS). Kontrollera API-bas URL och att backend tillåter Origin via CORS_ALLOW_ORIGINS. ${baseHint}. ${originHint}${detail}`
     );
   }
 
