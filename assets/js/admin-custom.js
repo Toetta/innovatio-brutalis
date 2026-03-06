@@ -210,6 +210,39 @@ const apiFetch = async (path, { method = "GET", body } = {}) => {
 
 const fmtDate = (iso) => (iso ? String(iso).slice(0, 10) : "");
 
+const copyToClipboard = async (text) => {
+  const value = String(text || "");
+  if (!value) throw new Error("Ingen text att kopiera");
+
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch (_) {
+    // Fallback below.
+  }
+
+  // Fallback for older browsers / insecure contexts.
+  const ta = document.createElement("textarea");
+  ta.value = value;
+  ta.setAttribute("readonly", "");
+  ta.style.position = "fixed";
+  ta.style.left = "-9999px";
+  ta.style.top = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, value.length);
+  let ok = false;
+  try {
+    ok = document.execCommand("copy");
+  } finally {
+    document.body.removeChild(ta);
+  }
+  if (!ok) throw new Error("Kunde inte kopiera till urklipp");
+  return true;
+};
+
 const renderQuotesList = () => {
   const tbody = el("quotesTbody");
   tbody.innerHTML = "";
@@ -694,6 +727,21 @@ const init = () => {
   el("refreshList").addEventListener("click", refreshList);
   el("createQuote").addEventListener("click", createQuote);
   el("saveQuote").addEventListener("click", saveQuote);
+
+  const copyBtn = el("copyPayLink");
+  if (copyBtn) {
+    copyBtn.addEventListener("click", async () => {
+      try {
+        const link = el("payLink");
+        const url = String(link?.href || link?.textContent || "").trim();
+        await copyToClipboard(url);
+        el("editStatusText").textContent = "Kopierad";
+      } catch (e) {
+        el("editStatusText").textContent = e?.message || "Kunde inte kopiera";
+      }
+    });
+  }
+
   el("saveLine").addEventListener("click", saveLine);
   el("resetLine").addEventListener("click", resetLineForm);
 
