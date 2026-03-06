@@ -14,6 +14,13 @@ const CUSTOM_CATEGORIES = [
   { key: "other", label: "Övrigt" },
 ];
 
+const defaultLineTypeForCategory = (category) => {
+  // Some categories are inherently physical goods rather than time-based work.
+  if (category === "3d_print") return "product";
+  if (category === "product_sale") return "product";
+  return "service_hourly";
+};
+
 const defaultAccountSuggestion = (lineType) => {
   if (lineType === "product") return "3011";
   if (lineType === "shipping") return "3520";
@@ -520,6 +527,25 @@ const init = () => {
 
   el("lineType").addEventListener("change", () => {
     el("lineAccount").value = defaultAccountSuggestion(el("lineType").value);
+    applyLineTypeDefaults();
+  });
+
+  el("lineCategory").addEventListener("change", () => {
+    // Only auto-suggest type for new lines; never override when editing an existing line.
+    if (state.editingLineId) return;
+
+    const prevType = el("lineType").value;
+    const nextType = defaultLineTypeForCategory(el("lineCategory").value);
+    if (!nextType || nextType === prevType) return;
+
+    el("lineType").value = nextType;
+
+    // Only overwrite account if it's empty or still the default for the previous type.
+    const acct = el("lineAccount").value.trim();
+    if (!acct || acct === defaultAccountSuggestion(prevType)) {
+      el("lineAccount").value = defaultAccountSuggestion(nextType);
+    }
+
     applyLineTypeDefaults();
   });
 
