@@ -29,7 +29,23 @@ const state = {
   editingLineId: null,
 };
 
-const getAdminKey = () => localStorage.getItem(STORAGE_KEY) || "";
+const cleanHeaderToken = (value) => {
+  let s = String(value || "");
+  // Strip characters that can make the browser reject the request as an invalid header value.
+  // (Control chars, DEL, and common zero-width characters from copy/paste.)
+  s = s.replace(/[\u0000-\u001F\u007F]/g, "");
+  s = s.replace(/[\u200B-\u200D\uFEFF]/g, "");
+  s = s.trim();
+  // Common when copying from dashboards: surrounding quotes.
+  if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+    s = s.slice(1, -1).trim();
+  }
+  // Tokens should not contain whitespace; remove any that slipped in.
+  s = s.replace(/\s+/g, "");
+  return s;
+};
+
+const getAdminKey = () => cleanHeaderToken(localStorage.getItem(STORAGE_KEY) || "");
 
 const normalizeApiBase = (value) => {
   const raw = String(value || "").trim();
@@ -78,13 +94,21 @@ const testAdminKey = async () => {
 };
 
 const apiFetch = async (path, { method = "GET", body } = {}) => {
-  const headers = new Headers();
-  const key = getAdminKey();
-  if (key) headers.set("X-Admin-Key", key);
-  if (body != null) headers.set("content-type", "application/json");
-
   const base = getApiBase();
   const url = base ? `${base}${path}` : path;
+
+  let headers;
+  try {
+    headers = new Headers();
+    const key = getAdminKey();
+    if (key) headers.set("X-Admin-Key", key);
+    if (body != null) headers.set("content-type", "application/json");
+  } catch (e) {
+    // This is typically caused by an invalid header value (e.g. pasted key with hidden control chars).
+    throw new Error(
+      "Ogiltig admin-nyckel (innehåller tecken som inte får skickas som HTTP-header). Prova att klistra in nyckeln igen, eller skriv den manuellt."
+    );
+  }
 
   let res;
   try {
@@ -98,8 +122,9 @@ const apiFetch = async (path, { method = "GET", body } = {}) => {
     // Provide a more actionable message for operators.
     const base = getApiBase();
     const baseHint = base ? `API-bas: ${base}` : "(ingen API-bas satt)";
+    const detail = e?.message ? ` (${e.message})` : "";
     throw new Error(
-      `Kunde inte nå API (nätverksfel/CORS/DNS). Kontrollera API-bas URL och att backend tillåter Origin via CORS_ALLOW_ORIGINS. ${baseHint}`
+      `Kunde inte nå API (nätverksfel/CORS/DNS). Kontrollera API-bas URL och att backend tillåter Origin via CORS_ALLOW_ORIGINS. ${baseHint}${detail}`
     );
   }
 
@@ -461,7 +486,7 @@ const init = () => {
   }
 
   el("saveAdminKey").addEventListener("click", () => {
-    localStorage.setItem(STORAGE_KEY, el("adminKey").value.trim());
+    localStorage.setItem(STORAGE_KEY, cleanHeaderToken(el("adminKey").value));
     const apiBaseEl = el("apiBase");
     if (apiBaseEl) localStorage.setItem(STORAGE_KEY_API_BASE, normalizeApiBase(apiBaseEl.value));
     setAdminKeyUi();
