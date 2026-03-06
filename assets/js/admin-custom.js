@@ -331,12 +331,13 @@ const applyLineTypeDefaults = () => {
   }
 };
 
-const computeDiscountBaseNet = () => {
+const computeDiscountBaseNet = (categoryScope) => {
   const lines = state.current?.lines || [];
   let base = 0;
   for (const line of lines) {
     if (!line) continue;
     if (String(line.line_type || "") === "discount") continue;
+    if (categoryScope && String(line.category || "") !== String(categoryScope)) continue;
     const qty = toNumber(line.quantity, 0);
     const unit = toNumber(line.unit_price_ex_vat, 0);
     base += qty * unit;
@@ -359,8 +360,9 @@ const updateDiscountUi = () => {
     return;
   }
 
-  const baseNet = computeDiscountBaseNet();
-  help.textContent = `Bas (ex moms): ${baseNet}`;
+  const categoryScope = el("lineCategory").value;
+  const baseNet = computeDiscountBaseNet(categoryScope);
+  help.textContent = `Bas (ex moms) för kategori “${categoryScope}”: ${baseNet}`;
 };
 
 const applyDiscountPercent = () => {
@@ -375,9 +377,10 @@ const applyDiscountPercent = () => {
     return;
   }
 
-  const baseNet = computeDiscountBaseNet();
+  const categoryScope = el("lineCategory").value;
+  const baseNet = computeDiscountBaseNet(categoryScope);
   if (!(baseNet > 0)) {
-    help.textContent = "Bas (ex moms) är 0 – kan inte räkna ut rabatt.";
+    help.textContent = `Bas (ex moms) för kategori “${categoryScope}” är 0 – kan inte räkna ut rabatt.`;
     return;
   }
 
@@ -398,7 +401,7 @@ const applyDiscountPercent = () => {
   }
 
   applyLineTypeDefaults();
-  help.textContent = `Bas (ex moms): ${baseNet} · Rabatt: ${Math.abs(amount)}`;
+  help.textContent = `Bas (ex moms) för kategori “${categoryScope}”: ${baseNet} · Rabatt: ${Math.abs(amount)}`;
 };
 
 const loadLineIntoForm = (line) => {
@@ -484,6 +487,20 @@ const saveLine = async () => {
 
   el("lineStatus").textContent = "Sparar…";
   try {
+    // Guard: do not create a visible "discount" line unless a discount is actually specified.
+    // (A 0-amount discount sends the wrong signal to the customer.)
+    if (el("lineType").value === "discount") {
+      const pctEl = el("discountPct");
+      const pctRaw = pctEl ? String(pctEl.value || "").trim() : "";
+      const pct = pctRaw ? toNumber(pctRaw, NaN) : NaN;
+      const unitPrice = toNumber(el("lineUnitPrice").value || "0", 0);
+
+      if (!Number.isFinite(pct) && round2(unitPrice) === 0) {
+        el("lineStatus").textContent = "Ingen rabatt angiven. Ange Rabatt % eller ett belopp (À-pris ex moms) som inte är 0.";
+        return;
+      }
+    }
+
     const body = {
       line_type: el("lineType").value,
       category: el("lineCategory").value,
@@ -641,6 +658,12 @@ const init = () => {
 
     applyLineTypeDefaults();
     updateDiscountUi();
+  });
+
+  // Even when editing an existing line, the discount helper needs to recompute when the category changes.
+  el("lineCategory").addEventListener("change", () => {
+    updateDiscountUi();
+    applyDiscountPercent();
   });
 
   resetLineForm();
