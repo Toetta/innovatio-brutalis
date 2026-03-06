@@ -14,6 +14,26 @@ export const onRequestGet = async (context) => {
   <title>Betalning</title>
   <meta name="robots" content="noindex" />
   <link rel="stylesheet" href="/css/style.css" />
+  <style>
+    @media print {
+      body { background: #fff !important; }
+      main { max-width: none !important; margin: 0 !important; padding: 0 !important; }
+
+      /* Hide interactive/non-receipt UI in print */
+      #payBox, #banner, #status { display: none !important; }
+      #printReceiptBtn { display: none !important; }
+
+      /* Make receipt visible and clean */
+      #receiptBox { display: block !important; border: 0 !important; padding: 0 !important; }
+      #receiptHeader { display: flex !important; align-items: center; gap: 12px; margin-bottom: 12px; }
+      #receiptLogo { display: block !important; width: 56px !important; height: 56px !important; object-fit: contain; }
+      #receiptMeta { font-size: 12px !important; opacity: 0.9 !important; }
+
+      /* Keep the line items on the receipt */
+      table { page-break-inside: auto; }
+      tr { page-break-inside: avoid; page-break-after: auto; }
+    }
+  </style>
 </head>
 <body>
   <main class="content" style="max-width: 1100px; margin: 0 auto; padding: 24px;">
@@ -29,6 +49,20 @@ export const onRequestGet = async (context) => {
       <div style="display:flex; gap: 10px; align-items: center; flex-wrap: wrap;">
         <button id="payBtn" type="button">Betala med kort</button>
         <span id="payStatus" style="opacity: 0.8;"></span>
+      </div>
+    </section>
+
+    <section id="receiptBox" style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; display:none;">
+      <div id="receiptHeader" style="display:flex; align-items:center; gap: 12px; flex-wrap: wrap;">
+        <img id="receiptLogo" src="/assets/logo.png" alt="Innovatio Brutalis" style="width: 48px; height: 48px; object-fit: contain;" />
+        <div>
+          <h2 style="margin: 0;">Kvitto</h2>
+          <div id="receiptMeta" style="opacity: 0.85; font-size: 12px;"></div>
+        </div>
+      </div>
+      <div style="margin-top: 10px; display:flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <button id="printReceiptBtn" type="button">Skriv ut kvitto</button>
+        <span id="receiptStatus" style="opacity: 0.8;"></span>
       </div>
     </section>
 
