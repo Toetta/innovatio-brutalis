@@ -19,11 +19,21 @@ const parseArgs = (argv) => {
 
 const pickHeader = (headers, name) => headers.get(name) || headers.get(name.toLowerCase()) || "";
 
+const normalizeUrl = (value, { defaultScheme = "https://" } = {}) => {
+  const raw = String(value || "").trim().replace(/\/+$/, "");
+  if (!raw) return "";
+  if (/^https?:\/\//i.test(raw)) return raw;
+  return `${defaultScheme}${raw}`;
+};
+
 const main = async () => {
   const args = parseArgs(process.argv);
 
-  const base = String(args.get("base") || process.env.IB_API_BASE || "https://innovatio-brutalis.pages.dev").replace(/\/+$/, "");
-  const origin = String(args.get("origin") || process.env.IB_ORIGIN || "https://www.innovatio-brutalis.se");
+  const quiet = Boolean(args.get("quiet") || process.env.IB_QUIET);
+
+  // Accept both full URLs and bare hosts.
+  const base = normalizeUrl(args.get("base") || process.env.IB_API_BASE || "innovatio-brutalis.pages.dev");
+  const origin = normalizeUrl(args.get("origin") || process.env.IB_ORIGIN || "www.innovatio-brutalis.se");
   const key = String(args.get("key") || process.env.IB_ADMIN_KEY || "").trim();
 
   if (!key) {
@@ -34,8 +44,10 @@ const main = async () => {
 
   const url = `${base}/api/admin/custom-quotes?status=&q=`;
 
-  console.log(`URL: ${url}`);
-  console.log(`Origin (for CORS simulation): ${origin}`);
+  if (!quiet) {
+    console.log(`URL: ${url}`);
+    console.log(`Origin (for CORS simulation): ${origin}`);
+  }
 
   // 1) CORS preflight (what the browser does)
   const preflight = await fetch(url, {
@@ -47,7 +59,7 @@ const main = async () => {
     },
   });
 
-  console.log(`\nPreflight: HTTP ${preflight.status}`);
+  console.log(`Preflight: HTTP ${preflight.status}`);
   console.log(`  access-control-allow-origin: ${pickHeader(preflight.headers, "access-control-allow-origin") || "(missing)"}`);
   console.log(`  access-control-allow-headers: ${pickHeader(preflight.headers, "access-control-allow-headers") || "(missing)"}`);
   console.log(`  access-control-allow-methods: ${pickHeader(preflight.headers, "access-control-allow-methods") || "(missing)"}`);
@@ -62,7 +74,7 @@ const main = async () => {
   });
 
   const text = await res.text();
-  console.log(`\nGET: HTTP ${res.status}`);
+  console.log(`GET: HTTP ${res.status}`);
 
   // Avoid printing secrets; response is safe.
   if (!res.ok) {
