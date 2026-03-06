@@ -30,6 +30,13 @@ const defaultAccountSuggestion = (lineType) => {
   return "3041";
 };
 
+const toNumber = (v, fallback = 0) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const round2 = (n) => Math.round(toNumber(n, 0) * 100) / 100;
+
 const el = (id) => document.getElementById(id);
 
 const state = {
@@ -292,6 +299,15 @@ const resetLineForm = () => {
   el("lineSort").value = "1";
 
   applyLineTypeDefaults();
+
+  const pctInput = el("discountPct");
+  if (pctInput) pctInput.value = "";
+  const help = el("discountHelp");
+  if (help) help.textContent = "";
+  const row = el("discountPctRow");
+  if (row) row.style.display = "none";
+
+  updateDiscountUi();
 };
 
 const applyLineTypeDefaults = () => {
@@ -315,6 +331,76 @@ const applyLineTypeDefaults = () => {
   }
 };
 
+const computeDiscountBaseNet = () => {
+  const lines = state.current?.lines || [];
+  let base = 0;
+  for (const line of lines) {
+    if (!line) continue;
+    if (String(line.line_type || "") === "discount") continue;
+    const qty = toNumber(line.quantity, 0);
+    const unit = toNumber(line.unit_price_ex_vat, 0);
+    base += qty * unit;
+  }
+  return round2(base);
+};
+
+const updateDiscountUi = () => {
+  const row = el("discountPctRow");
+  const help = el("discountHelp");
+  const pctInput = el("discountPct");
+  if (!row || !help || !pctInput) return;
+
+  const isDiscount = el("lineType").value === "discount";
+  row.style.display = isDiscount ? "block" : "none";
+
+  if (!isDiscount) {
+    help.textContent = "";
+    pctInput.value = "";
+    return;
+  }
+
+  const baseNet = computeDiscountBaseNet();
+  help.textContent = `Bas (ex moms): ${baseNet}`;
+};
+
+const applyDiscountPercent = () => {
+  if (el("lineType").value !== "discount") return;
+  const pctInput = el("discountPct");
+  const help = el("discountHelp");
+  if (!pctInput || !help) return;
+
+  const pct = toNumber(pctInput.value, NaN);
+  if (!Number.isFinite(pct) || pct <= 0) {
+    updateDiscountUi();
+    return;
+  }
+
+  const baseNet = computeDiscountBaseNet();
+  if (!(baseNet > 0)) {
+    help.textContent = "Bas (ex moms) är 0 – kan inte räkna ut rabatt.";
+    return;
+  }
+
+  const amount = -round2((baseNet * pct) / 100);
+  el("lineQty").value = "1";
+  el("lineUnit").value = "st";
+  el("lineUnitPrice").value = String(amount);
+
+  const titleEl = el("lineTitle");
+  const currentTitle = String(titleEl.value || "").trim();
+  if (!currentTitle || /^Rabatt\b/i.test(currentTitle)) {
+    titleEl.value = `Rabatt ${pct}%`;
+  }
+
+  const acct = el("lineAccount").value.trim();
+  if (!acct) {
+    el("lineAccount").value = defaultAccountSuggestion("discount");
+  }
+
+  applyLineTypeDefaults();
+  help.textContent = `Bas (ex moms): ${baseNet} · Rabatt: ${Math.abs(amount)}`;
+};
+
 const loadLineIntoForm = (line) => {
   state.editingLineId = line.id;
   el("lineStatus").textContent = `Redigerar rad: ${line.id}`;
@@ -331,6 +417,7 @@ const loadLineIntoForm = (line) => {
   el("lineSort").value = String(line.sort_order || 1);
 
   applyLineTypeDefaults();
+  updateDiscountUi();
 };
 
 const refreshList = async () => {
@@ -530,7 +617,11 @@ const init = () => {
   el("lineType").addEventListener("change", () => {
     el("lineAccount").value = defaultAccountSuggestion(el("lineType").value);
     applyLineTypeDefaults();
+    updateDiscountUi();
   });
+
+  const pctInput = el("discountPct");
+  if (pctInput) pctInput.addEventListener("input", applyDiscountPercent);
 
   el("lineCategory").addEventListener("change", () => {
     // Only auto-suggest type for new lines; never override when editing an existing line.
@@ -549,6 +640,7 @@ const init = () => {
     }
 
     applyLineTypeDefaults();
+    updateDiscountUi();
   });
 
   resetLineForm();
