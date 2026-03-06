@@ -1,4 +1,4 @@
-import { json } from "./_lib/resp.js";
+import { json, withCors } from "./_lib/resp.js";
 import { getEnv } from "./_lib/env.js";
 
 export const onRequestGet = async (context) => {
@@ -88,5 +88,5 @@ export const onRequestGet = async (context) => {
     base.email.loginFrom = effectiveLoginFrom;
   }
 
-  return json(base);
+  return withCors(json(base), { request: context.request, env: context.env });
 };

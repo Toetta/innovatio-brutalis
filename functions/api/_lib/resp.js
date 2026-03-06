@@ -29,6 +29,11 @@ const getAllowedOrigin = ({ request, env }) => {
 
   if (allowList.includes("*")) return "*";
   if (allowList.includes(origin)) return origin;
+
+  // Be resilient to incomplete allowlists by always allowing the site's own canonical origins.
+  // This avoids accidental breakage when env vars are configured but missing e.g. the non-www host.
+  if (isDefaultAllowedOrigin(origin)) return origin;
+
   return null;
 };
 
