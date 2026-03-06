@@ -37,6 +37,53 @@ const toNumber = (v, fallback = 0) => {
 
 const round2 = (n) => Math.round(toNumber(n, 0) * 100) / 100;
 
+const computeUnitPriceExVatFromUi = () => {
+  const unitInput = el("lineUnitPrice");
+  const vatInput = el("lineVat");
+  const incToggle = el("linePriceIncVat");
+  if (!unitInput || !vatInput) return 0;
+
+  const unit = toNumber(unitInput.value || "0", 0);
+  const vatRate = toNumber(vatInput.value || "0", 0);
+  const isInc = !!incToggle?.checked;
+  if (!isInc) return round2(unit);
+
+  const denom = 1 + vatRate;
+  if (!Number.isFinite(denom) || denom <= 0) return round2(unit);
+  return round2(unit / denom);
+};
+
+const updatePriceModeUi = () => {
+  const modeEl = el("linePriceLabelMode");
+  const helpEl = el("linePriceHelp");
+  const incToggle = el("linePriceIncVat");
+  if (!modeEl || !helpEl || !incToggle) return;
+
+  // Discounts are always handled as ex VAT (and can be auto-computed from %).
+  if (el("lineType")?.value === "discount") {
+    incToggle.checked = false;
+    incToggle.disabled = true;
+    modeEl.textContent = "ex moms";
+    helpEl.textContent = "";
+    return;
+  }
+
+  incToggle.disabled = false;
+  const vatRate = toNumber(el("lineVat")?.value || "0", 0);
+  const raw = toNumber(el("lineUnitPrice")?.value || "0", 0);
+  const isInc = !!incToggle.checked;
+
+  if (isInc) {
+    modeEl.textContent = "inkl moms";
+    const ex = computeUnitPriceExVatFromUi();
+    helpEl.textContent = `Sparas som ex moms: ${ex}`;
+  } else {
+    modeEl.textContent = "ex moms";
+    const inc = round2(raw * (1 + vatRate));
+    helpEl.textContent = `Inkl moms: ${inc}`;
+  }
+};
+
 const el = (id) => document.getElementById(id);
 
 const state = {
@@ -298,6 +345,14 @@ const resetLineForm = () => {
   el("lineAccount").value = defaultAccountSuggestion("service_hourly");
   el("lineSort").value = "1";
 
+  const incToggle = el("linePriceIncVat");
+  if (incToggle) {
+    incToggle.checked = false;
+    incToggle.disabled = false;
+  }
+  const priceHelp = el("linePriceHelp");
+  if (priceHelp) priceHelp.textContent = "";
+
   applyLineTypeDefaults();
 
   const pctInput = el("discountPct");
@@ -308,6 +363,7 @@ const resetLineForm = () => {
   if (row) row.style.display = "none";
 
   updateDiscountUi();
+  updatePriceModeUi();
 };
 
 const applyLineTypeDefaults = () => {
@@ -329,6 +385,8 @@ const applyLineTypeDefaults = () => {
     const p = Number(el("lineUnitPrice").value || "0");
     if (p > 0) el("lineUnitPrice").value = String(-Math.abs(p));
   }
+
+  updatePriceModeUi();
 };
 
 const computeDiscountBaseNet = (categoryScope) => {
@@ -419,8 +477,16 @@ const loadLineIntoForm = (line) => {
   el("lineAccount").value = line.account_suggestion || "";
   el("lineSort").value = String(line.sort_order || 1);
 
+  const incToggle = el("linePriceIncVat");
+  if (incToggle) {
+    // Stored values are always ex VAT; default to showing ex VAT when editing.
+    incToggle.checked = false;
+    incToggle.disabled = false;
+  }
+
   applyLineTypeDefaults();
   updateDiscountUi();
+  updatePriceModeUi();
 };
 
 const refreshList = async () => {
@@ -508,7 +574,7 @@ const saveLine = async () => {
       description: el("lineDesc").value,
       quantity: Number(el("lineQty").value || "0"),
       unit: el("lineUnit").value.trim(),
-      unit_price_ex_vat: Number(el("lineUnitPrice").value || "0"),
+      unit_price_ex_vat: computeUnitPriceExVatFromUi(),
       vat_rate: Number(el("lineVat").value || "0"),
       account_suggestion: el("lineAccount").value.trim(),
       sort_order: Number(el("lineSort").value || "1"),
@@ -635,10 +701,18 @@ const init = () => {
     el("lineAccount").value = defaultAccountSuggestion(el("lineType").value);
     applyLineTypeDefaults();
     updateDiscountUi();
+    updatePriceModeUi();
   });
 
   const pctInput = el("discountPct");
   if (pctInput) pctInput.addEventListener("input", applyDiscountPercent);
+
+  const incToggle = el("linePriceIncVat");
+  if (incToggle) incToggle.addEventListener("change", updatePriceModeUi);
+  const unitPriceEl = el("lineUnitPrice");
+  if (unitPriceEl) unitPriceEl.addEventListener("input", updatePriceModeUi);
+  const vatEl = el("lineVat");
+  if (vatEl) vatEl.addEventListener("input", updatePriceModeUi);
 
   el("lineCategory").addEventListener("change", () => {
     // Only auto-suggest type for new lines; never override when editing an existing line.

@@ -273,8 +273,13 @@
               <input id="lineUnit" type="text" />
             </label>
             <label>
-              À-pris ex moms
+              À-pris <span id="linePriceLabelMode">ex moms</span>
               <input id="lineUnitPrice" type="number" step="0.01" />
+              <div style="margin-top: 6px; display: inline-flex; gap: 8px; align-items: center;">
+                <input id="linePriceIncVat" type="checkbox" />
+                <span>Beloppet är inkl moms</span>
+              </div>
+              <div id="linePriceHelp" style="opacity: 0.75; font-size: 12px; margin-top: 6px;"></div>
             </label>
             <label>
               Moms (t.ex. 0.25)
@@ -581,7 +586,7 @@
       route();
     </script>
 
-    <script type="module" src="/assets/js/admin-custom.js?v=20260306-7"></script>
+    <script type="module" src="/assets/js/admin-custom.js?v=20260306-8"></script>
 
     <!-- Preload CMS if the default view is CMS (keeps current behavior) -->
     <script>
