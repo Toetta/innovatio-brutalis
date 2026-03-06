@@ -9,12 +9,23 @@ const parseCsv = (value) =>
     .map((s) => s.trim())
     .filter(Boolean);
 
+const isDefaultAllowedOrigin = (origin) => {
+  const o = String(origin || "").trim();
+  if (!o) return false;
+  if (o === "null") return true;
+  if (o === "http://localhost" || o.startsWith("http://localhost:")) return true;
+  if (o === "http://127.0.0.1" || o.startsWith("http://127.0.0.1:")) return true;
+  return o === "https://innovatio-brutalis.se" || o === "https://www.innovatio-brutalis.se";
+};
+
 const getAllowedOrigin = ({ request, env }) => {
   const origin = request.headers.get("origin");
   if (!origin) return null;
 
   const allowList = parseCsv(env?.CORS_ALLOW_ORIGINS);
-  if (!allowList.length) return null;
+  // If no explicit allowlist is configured, fall back to a small safe default.
+  // This keeps the static admin UI working out-of-the-box while still not allowing arbitrary origins.
+  if (!allowList.length) return isDefaultAllowedOrigin(origin) ? origin : null;
 
   if (allowList.includes("*")) return "*";
   if (allowList.includes(origin)) return origin;
