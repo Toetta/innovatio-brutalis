@@ -15,6 +15,12 @@
       "title_en": "Lambretta Tools and Parts"
     },
     {
+      "order": 5,
+      "slug": "living",
+      "title_sv": "Livet...",
+      "title_en": "Life....."
+    },
+    {
       "order": 3,
       "slug": "mini-parts",
       "title_sv": "Delar till klassika mini",
@@ -33,6 +39,12 @@
       "title_sv": "Tjänster",
       "title_en": "Services",
       "title": "Various services"
+    },
+    {
+      "order": 3,
+      "slug": "vespa-parts-tools",
+      "title_sv": "Vespadelar och verktyg",
+      "title_en": "Vespa parts and tools"
     }
   ]
 }

@@ -2,14 +2,17 @@
   "categorySlugs": [
     "general-automotive",
     "lambretta",
+    "living",
     "mini-parts",
     "nyheter",
-    "service-area"
+    "service-area",
+    "vespa-parts-tools"
   ],
   "productSlugs": [
     "beeline-holder-1-basic",
     "beeline-holder-2-basic",
     "mini-gauge-cluster",
-    "quattrini-inlet"
+    "quattrini-inlet",
+    "rubber-glasses"
   ]
 }
