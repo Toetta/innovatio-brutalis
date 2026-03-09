@@ -8,9 +8,18 @@
   "main_image": "/assets/uploads/inlet1.jpg",
   "title": "M210 Quattrini Inlet ",
   "images": [
-    "/assets/uploads/inlet1.jpg",
-    "/assets/uploads/inlet2.jpg",
-    "/assets/uploads/quattrini-anvisning.jpg"
+    {
+      "image": "/assets/uploads/inlet1.jpg",
+      "is_main": false
+    },
+    {
+      "image": "/assets/uploads/inlet2.jpg",
+      "is_main": false
+    },
+    {
+      "image": "/assets/uploads/quattrini-anvisning.jpg",
+      "is_main": false
+    }
   ],
   "height_mm": 200,
   "tags": [],

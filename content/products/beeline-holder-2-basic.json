@@ -11,7 +11,10 @@
   "main_image": "/assets/uploads/img_3988.jpeg",
   "title": "",
   "images": [
-    "/assets/uploads/img_3997.jpeg"
+    {
+      "image": "/assets/uploads/img_3997.jpeg",
+      "is_main": false
+    }
   ],
   "height_mm": 100,
   "tags": [

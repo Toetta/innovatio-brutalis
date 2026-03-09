@@ -10,7 +10,10 @@
   "main_image": "/assets/uploads/img_3999.jpeg",
   "title": "Beeline holder",
   "images": [
-    "/assets/uploads/img_3998.jpeg"
+    {
+      "image": "/assets/uploads/img_3998.jpeg",
+      "is_main": false
+    }
   ],
   "height_mm": 100,
   "length_mm": 150,

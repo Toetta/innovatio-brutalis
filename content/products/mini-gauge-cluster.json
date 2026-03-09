@@ -12,9 +12,18 @@
   "main_image": "/assets/uploads/img_3985.jpg",
   "title": "Gauge cluster / holder for steering column",
   "images": [
-    "/assets/uploads/img_3985.jpg",
-    "/assets/uploads/mini-guage.png",
-    "/assets/uploads/cluster-baksida.jpg"
+    {
+      "image": "/assets/uploads/img_3985.jpg",
+      "is_main": false
+    },
+    {
+      "image": "/assets/uploads/mini-guage.png",
+      "is_main": false
+    },
+    {
+      "image": "/assets/uploads/cluster-baksida.jpg",
+      "is_main": false
+    }
   ],
   "height_mm": 150,
   "length_mm": 200,
