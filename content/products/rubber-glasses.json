@@ -11,7 +11,7 @@
   "weight_grams": 100,
   "images": [
     {
-      "is_main": false,
+      "is_main": true,
       "image": "/assets/uploads/img_5217.jpg"
     }
   ],
