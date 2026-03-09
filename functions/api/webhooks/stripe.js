@@ -4,6 +4,7 @@ import { nowIso, uuid } from "../_lib/crypto.js";
 import { verifyStripeWebhook } from "../_lib/stripe.js";
 import { stripeBalanceTotalsForPayout } from "../_lib/stripe.js";
 import { queueFuPayloadForCustomQuoteSale, queueFuPayloadForOrder, queueFuPayloadForStripePayout } from "../_lib/fu.js";
+import { sendPaymentNotificationEmail } from "../_lib/email.js";
 
 const markCustomQuotePaid = async ({ db, quote_id, token, meta }) => {
   const qid = String(quote_id || "").trim();
@@ -15,6 +16,7 @@ const markCustomQuotePaid = async ({ db, quote_id, token, meta }) => {
     : await one(db.prepare("SELECT id, status, paid_at FROM custom_quotes WHERE token = ? LIMIT 1").bind(t).all());
 
   if (!quote?.id) return { ok: false, error: "Quote not found" };
+  const alreadyPaid = String(quote?.status || "") === "paid" || !!quote?.paid_at;
 
   const ts = nowIso();
   await exec(
@@ -28,7 +30,82 @@ const markCustomQuotePaid = async ({ db, quote_id, token, meta }) => {
     [uuid(), quote.id, "paid", JSON.stringify({ by: "stripe", ...(meta || {}) }), ts]
   );
 
-  return { ok: true, id: quote.id };
+  return { ok: true, id: quote.id, newlyPaid: !alreadyPaid };
+};
+
+const formatMoney = (amount, currency = "SEK") => {
+  const value = Number(amount || 0);
+  const curr = String(currency || "SEK").trim() || "SEK";
+  try {
+    return new Intl.NumberFormat("sv-SE", { style: "currency", currency: curr }).format(value);
+  } catch (_) {
+    return `${value.toFixed(2)} ${curr}`;
+  }
+};
+
+const parseMetaJson = (raw) => {
+  try {
+    const parsed = JSON.parse(String(raw || "{}"));
+    return (parsed && typeof parsed === "object" && !Array.isArray(parsed)) ? parsed : {};
+  } catch (_) {
+    return {};
+  }
+};
+
+const sendOrderPaidNotification = async ({ env, db, orderId, paymentIntentId }) => {
+  const row = await one(
+    db.prepare(
+      "SELECT id, order_number, email, currency, total_inc_vat, paid_at, payment_provider, payment_reference, metadata FROM orders WHERE id = ? LIMIT 1"
+    ).bind(String(orderId || "")).all()
+  );
+  if (!row?.id) return { ok: false, error: "Order not found" };
+
+  const meta = parseMetaJson(row.metadata);
+  const fullName = String(meta?.customer?.full_name || "").trim();
+  const phone = String(meta?.customer?.phone || "").trim();
+  const subject = `Stripe-betalning registrerad: ${String(row.order_number || row.id)}`;
+  const text = [
+    "En Stripe-betalning har registrerats.",
+    "",
+    `Ordernummer: ${String(row.order_number || row.id)}`,
+    `Order-ID: ${String(row.id)}`,
+    `Belopp: ${formatMoney(row.total_inc_vat, row.currency)}`,
+    `Valuta: ${String(row.currency || "SEK")}`,
+    `Kund: ${fullName || "-"}`,
+    `E-post: ${String(row.email || "-")}`,
+    `Telefon: ${phone || "-"}`,
+    `Betald: ${String(row.paid_at || "")}`,
+    `Betalningsmetod: ${String(row.payment_provider || "stripe")}`,
+    `Stripe payment_intent: ${String(paymentIntentId || row.payment_reference || "-")}`,
+  ].join("\n");
+
+  return await sendPaymentNotificationEmail({ env, subject, text });
+};
+
+const sendCustomQuotePaidNotification = async ({ env, db, quoteId, paymentIntentId, sessionId }) => {
+  const row = await one(
+    db.prepare(
+      "SELECT id, customer_email, customer_name, customer_phone, company_name, currency, paid_at FROM custom_quotes WHERE id = ? LIMIT 1"
+    ).bind(String(quoteId || "")).all()
+  );
+  if (!row?.id) return { ok: false, error: "Custom quote not found" };
+
+  const subject = `Stripe-betalning registrerad: offert ${String(row.id)}`;
+  const text = [
+    "En Stripe-betalning för en privat betalningslänk/offert har registrerats.",
+    "",
+    `Offert-ID: ${String(row.id)}`,
+    `Företag: ${String(row.company_name || "-")}`,
+    `Kund: ${String(row.customer_name || "-")}`,
+    `E-post: ${String(row.customer_email || "-")}`,
+    `Telefon: ${String(row.customer_phone || "-")}`,
+    `Valuta: ${String(row.currency || "SEK")}`,
+    `Betald: ${String(row.paid_at || "")}`,
+    `Stripe payment_intent: ${String(paymentIntentId || "-")}`,
+    `Stripe session: ${String(sessionId || "-")}`,
+  ].join("\n");
+
+  return await sendPaymentNotificationEmail({ env, subject, text });
 };
 
 const recordEvent = async ({ db, event, rawBody, order_id }) => {
@@ -94,6 +171,15 @@ export const onRequestPost = async (context) => {
 
       if (paid?.ok && paid?.id) {
         await queueFuPayloadForCustomQuoteSale({ env, quoteId: paid.id }).catch(() => null);
+        if (paid.newlyPaid) {
+          await sendCustomQuotePaidNotification({
+            env,
+            db,
+            quoteId: paid.id,
+            paymentIntentId: String(obj?.payment_intent || ""),
+            sessionId: String(obj?.id || ""),
+          }).catch(() => null);
+        }
       }
     }
     return text("ok", { status: 200 });
@@ -109,16 +195,23 @@ export const onRequestPost = async (context) => {
       const paid = await markCustomQuotePaid({ db, quote_id: qid, token: qtok, meta: { payment_intent: piId } }).catch(() => null);
       if (paid?.ok && paid?.id) {
         await queueFuPayloadForCustomQuoteSale({ env, quoteId: paid.id }).catch(() => null);
+        if (paid.newlyPaid) {
+          await sendCustomQuotePaidNotification({ env, db, quoteId: paid.id, paymentIntentId: piId, sessionId: "" }).catch(() => null);
+        }
       }
     }
 
     if (order_id) {
+      const before = await one(db.prepare("SELECT status FROM orders WHERE id = ? LIMIT 1").bind(order_id).all()).catch(() => null);
       await exec(
         db,
         "UPDATE orders SET status = 'paid', paid_at = COALESCE(paid_at, ?), payment_provider = 'stripe', payment_reference = COALESCE(payment_reference, ?), updated_at = ? WHERE id = ? AND status IN ('pending_payment','awaiting_action','failed')",
         [ts, piId || null, ts, order_id]
       );
       await queueFuPayloadForOrder({ env, orderId: order_id, kind: "sale" }).catch(() => null);
+      if (String(before?.status || "") !== "paid") {
+        await sendOrderPaidNotification({ env, db, orderId: order_id, paymentIntentId: piId }).catch(() => null);
+      }
     }
     return text("ok", { status: 200 });
   }

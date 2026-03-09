@@ -15,7 +15,12 @@ const isDefaultAllowedOrigin = (origin) => {
   if (o === "null") return true;
   if (o === "http://localhost" || o.startsWith("http://localhost:")) return true;
   if (o === "http://127.0.0.1" || o.startsWith("http://127.0.0.1:")) return true;
-  return o === "https://innovatio-brutalis.se" || o === "https://www.innovatio-brutalis.se";
+  return (
+    o === "https://innovatio-brutalis.se" ||
+    o === "https://www.innovatio-brutalis.se" ||
+    o === "https://fu-bookkeeping.se" ||
+    o === "https://www.fu-bookkeeping.se"
+  );
 };
 
 const getAllowedOrigin = ({ request, env }) => {

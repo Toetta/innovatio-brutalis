@@ -15,6 +15,8 @@ export const getEnv = (env) => {
   // Optional specialized senders.
   const LOGIN_EMAIL_FROM = String(env?.LOGIN_EMAIL_FROM || "");
   const ORDER_EMAIL_FROM = String(env?.ORDER_EMAIL_FROM || "");
+  const PAYMENT_NOTIFY_FROM = String(env?.PAYMENT_NOTIFY_FROM || "");
+  const PAYMENT_NOTIFY_TO = String(env?.PAYMENT_NOTIFY_TO || "");
 
   const TURNSTILE_SECRET = cleanSecret(env?.TURNSTILE_SECRET);
   const RESEND_API_KEY = cleanSecret(env?.RESEND_API_KEY);
@@ -50,6 +52,8 @@ export const getEnv = (env) => {
     EMAIL_FROM,
     LOGIN_EMAIL_FROM,
     ORDER_EMAIL_FROM,
+    PAYMENT_NOTIFY_FROM,
+    PAYMENT_NOTIFY_TO,
     TURNSTILE_SECRET,
     RESEND_API_KEY,
     EXPORT_ADMIN_KEY,
