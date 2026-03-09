@@ -1,11 +1,11 @@
 {
   "price_sek": 249,
   "description_sv": "Beeline hållare för montering vid bagagekroken. Har man ingen bagagekrok (än) behöver man göra de 4 hålen och hållaren kan användas som borrmall.",
-  "title_sv": "Beeline gen1 hållare basmodell",
-  "slug": "beeline-holder-1-basic",
+  "title_sv": "Lambretta S1/S2 Beeline gen1 hållare basmodell",
+  "slug": "s2-beeline-holder-1-basic",
   "description_en": "Beeline holder for mounting on the luggage hook. If you don't have a luggage hook (yet), you need to make the 4 holes and the holder can be used as a drilling template.",
   "published": true,
-  "title_en": "Beeline gen1 holder basic",
+  "title_en": "Lambretta S1/S2 Beeline gen1 holder basic",
   "weight_grams": 200,
   "main_image": "/assets/uploads/img_3999.jpeg",
   "title": "Beeline holder",
@@ -18,5 +18,6 @@
   "height_mm": 100,
   "length_mm": 150,
   "width_mm": 100,
+  "image": "/assets/uploads/img_3999.jpeg",
   "category": "lambretta"
 }
