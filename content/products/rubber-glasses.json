@@ -10,10 +10,7 @@
   "title_en": "Unbreakable rubber eyeglass frames for children",
   "weight_grams": 100,
   "images": [
-    {
-      "is_main": false,
-      "image": "/assets/uploads/img_5217.jpg"
-    }
+    "/assets/uploads/img_5217.jpg"
   ],
   "height_mm": 100,
   "tags": [],
