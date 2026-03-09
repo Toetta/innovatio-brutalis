@@ -988,10 +988,20 @@
 		view.innerHTML = esc(t("loading"));
 
 		let product = null;
+		// Resolve through the catalog first so slug changes in CMS still work
+		// even if the underlying JSON filename has not been renamed.
+		try {
+			const catalog = await loadCatalog();
+			const products = Array.isArray(catalog?.products) ? catalog.products : [];
+			product = products.find((p) => String(p?.slug || "") === String(slug)) || null;
+		} catch (_) {}
+
 		// Prefer folder entry if it exists
 		try {
-			const raw = await fetchJSON(`/content/products/${encodeURIComponent(slug)}.json`);
-			product = normalizeProduct(raw);
+			if (!product) {
+				const raw = await fetchJSON(`/content/products/${encodeURIComponent(slug)}.json`);
+				product = normalizeProduct(raw);
+			}
 		} catch (_) {}
 
 		// Fall back to aggregated list
