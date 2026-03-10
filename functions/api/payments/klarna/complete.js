@@ -1,8 +1,45 @@
 import { badRequest, json, notFound } from "../../_lib/resp.js";
 import { assertDb, exec, one } from "../../_lib/db.js";
 import { nowIso, uuid } from "../../_lib/crypto.js";
-import { createKlarnaPaymentsOrder } from "../../_lib/klarna.js";
-// NOTE: Do not mark paid here; use /api/payments/klarna/verify which queries Klarna Order Management.
+import { createKlarnaPaymentsOrder, getKlarnaOrder, normalizeKlarnaOrderStatus } from "../../_lib/klarna.js";
+import { queueFuPayloadForOrder } from "../../_lib/fu.js";
+
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const syncOrderStatusFromKlarna = async ({ env, db, orderId, klarnaOrderId }) => {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const klarnaOrder = await getKlarnaOrder({ env, order_id: klarnaOrderId });
+    const mapped = normalizeKlarnaOrderStatus(klarnaOrder);
+    const ts = nowIso();
+
+    try {
+      await exec(
+        db,
+        "INSERT INTO payment_events (id, provider, event_id, type, order_id, created_at, payload) VALUES (?,?,?,?,?,?,?)",
+        [uuid(), "klarna", `${klarnaOrderId}:complete:${attempt + 1}`, "order.completed_verify", orderId, ts, JSON.stringify(klarnaOrder)]
+      );
+    } catch (_) {}
+
+    if (mapped === "paid") {
+      await exec(
+        db,
+        "UPDATE orders SET status = 'paid', paid_at = COALESCE(paid_at, ?), updated_at = ? WHERE id = ?",
+        [ts, ts, orderId]
+      );
+      await queueFuPayloadForOrder({ env, orderId, kind: "sale" }).catch(() => null);
+      return { status: "paid" };
+    }
+
+    if (mapped === "cancelled") {
+      await exec(db, "UPDATE orders SET status = 'cancelled', updated_at = ? WHERE id = ?", [ts, orderId]);
+      return { status: "cancelled" };
+    }
+
+    if (attempt < 2) await wait(700);
+  }
+
+  return { status: "awaiting_action" };
+};
 
 export const onRequestPost = async (context) => {
   const { request, env } = context;
@@ -82,5 +119,7 @@ export const onRequestPost = async (context) => {
     [klarnaOrderId, ts, order_id]
   );
 
-  return json({ ok: true, klarna_order_id: klarnaOrderId });
+  const syncResult = await syncOrderStatusFromKlarna({ env, db, orderId: order_id, klarnaOrderId });
+
+  return json({ ok: true, klarna_order_id: klarnaOrderId, status: syncResult.status });
 };

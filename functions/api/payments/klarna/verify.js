@@ -1,16 +1,8 @@
 import { badRequest, json, notFound, unauthorized } from "../../_lib/resp.js";
 import { assertDb, exec, one } from "../../_lib/db.js";
 import { nowIso, uuid, sha256Hex } from "../../_lib/crypto.js";
-import { getKlarnaOrder } from "../../_lib/klarna.js";
+import { getKlarnaOrder, normalizeKlarnaOrderStatus } from "../../_lib/klarna.js";
 import { queueFuPayloadForOrder } from "../../_lib/fu.js";
-
-const normalizeStatus = (klarnaOrder) => {
-  const s = String(klarnaOrder?.status || "").toUpperCase();
-  // Klarna OM statuses vary by product/version. Treat these as paid-enough for our purposes.
-  if (s === "AUTHORIZED" || s === "CAPTURED" || s === "PART_CAPTURED") return "paid";
-  if (s === "CANCELLED" || s === "CANCELED") return "cancelled";
-  return "unknown";
-};
 
 export const onRequestPost = async (context) => {
   const { request, env } = context;
@@ -45,7 +37,7 @@ export const onRequestPost = async (context) => {
   if (!klarnaOrderId) return badRequest("Missing Klarna order id");
 
   const klarnaOrder = await getKlarnaOrder({ env, order_id: klarnaOrderId });
-  const mapped = normalizeStatus(klarnaOrder);
+  const mapped = normalizeKlarnaOrderStatus(klarnaOrder);
 
   const ts = nowIso();
   // Best-effort audit; unique key is provider+event_id

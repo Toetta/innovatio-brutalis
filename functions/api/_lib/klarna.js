@@ -79,3 +79,10 @@ export const getKlarnaOrder = async ({ env, order_id }) => {
   const path = `/ordermanagement/v1/orders/${encodeURIComponent(oid)}`;
   return await klarnaFetchJson({ env, path, method: "GET" });
 };
+
+export const normalizeKlarnaOrderStatus = (klarnaOrder) => {
+  const s = String(klarnaOrder?.status || "").toUpperCase();
+  if (s === "AUTHORIZED" || s === "CAPTURED" || s === "PART_CAPTURED") return "paid";
+  if (s === "CANCELLED" || s === "CANCELED") return "cancelled";
+  return "unknown";
+};
