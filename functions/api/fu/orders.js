@@ -23,7 +23,7 @@ const buildWhere = (view) => {
     return ["WHERE o.status = 'paid' AND COALESCE(o.fulfillment_status, 'pending') = 'fulfilled'", []];
   }
   if (view === "all") {
-    return ["WHERE o.status IN ('paid','refunded','pending_payment','awaiting_action','failed')", []];
+    return ["WHERE o.status = 'paid'", []];
   }
   return ["WHERE o.status = 'paid' AND COALESCE(o.fulfillment_status, 'pending') != 'fulfilled'", []];
 };
