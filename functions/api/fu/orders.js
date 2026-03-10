@@ -74,42 +74,42 @@ export const onRequestGet = async (context) => {
   const orderRows = Array.isArray(orders) ? orders : [];
   const ids = orderRows.map((row) => String(row.id || "")).filter(Boolean);
 
-  let linesByOrderId = new Map();
-  if (ids.length) {
-    const placeholders = ids.map(() => "?").join(",");
-    const lines = await all(
-      db.prepare(
-        `SELECT order_id, sku, title, qty, unit_price_ex_vat, vat_rate, line_total_inc_vat
-         FROM order_lines
-         WHERE order_id IN (${placeholders})
-         ORDER BY order_id, id`
-      ).bind(...ids).all()
-    );
-    linesByOrderId = new Map();
-    for (const line of Array.isArray(lines) ? lines : []) {
-      const orderId = String(line.order_id || "");
-      if (!orderId) continue;
-      if (!linesByOrderId.has(orderId)) linesByOrderId.set(orderId, []);
-      linesByOrderId.get(orderId).push({
-        sku: line.sku != null ? String(line.sku) : null,
-        title: String(line.title || ""),
-        qty: Number(line.qty || 0) || 0,
-        unit_price_ex_vat: Number(line.unit_price_ex_vat || 0) || 0,
-        vat_rate: Number(line.vat_rate || 0) || 0,
-        line_total_inc_vat: Number(line.line_total_inc_vat || 0) || 0,
-      });
-    }
-  }
-
-  const out = orderRows.map((row) => {
-    const meta = parseMeta(row.metadata);
-    const customer = meta.customer && typeof meta.customer === "object" ? meta.customer : {};
-    const delivery = meta.delivery && typeof meta.delivery === "object" ? meta.delivery : {};
-    return {
-      id: String(row.id || ""),
-      order_number: String(row.order_number || ""),
-      email: String(row.email || ""),
       customer_country: String(row.customer_country || ""),
+        const db = assertDb(env);
+        const orders = await all(
+          db.prepare(
+            `SELECT
+              o.id,
+              o.order_number,
+              o.email,
+              o.customer_country,
+              o.currency,
+              o.status,
+              o.payment_provider,
+              o.payment_reference,
+              o.total_inc_vat,
+              o.placed_at,
+              o.paid_at,
+              o.refunded_at,
+              o.fu_voucher_id,
+              o.fu_sync_status,
+              o.fu_sync_error,
+              o.delivery_method,
+              o.shipping_provider,
+              o.shipping_code,
+              o.fulfillment_status,
+              o.fulfilled_at,
+              o.fulfilled_by,
+              o.tracking_number,
+              o.tracking_url,
+              o.fulfillment_note,
+              o.metadata
+            FROM orders o
+            ${whereSql}
+            ORDER BY COALESCE(o.paid_at, o.placed_at) DESC
+            LIMIT ?`
+          ).bind(...params, limit).all()
+        );
       currency: String(row.currency || "SEK"),
       status: String(row.status || ""),
       payment_provider: row.payment_provider != null ? String(row.payment_provider) : null,
