@@ -18,6 +18,18 @@ const parseMeta = (raw) => {
   }
 };
 
+const toNumber = (value, fallback = 0) => {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+};
+
+const round2 = (value) => Math.round(toNumber(value, 0) * 100) / 100;
+
+const normalizeVatPercent = (value) => {
+  const n = toNumber(value, 0);
+  return n <= 1 ? round2(n * 100) : round2(n);
+};
+
 const buildWhere = (view) => {
   if (view === "fulfilled") {
     return ["WHERE o.status = 'paid' AND COALESCE(o.fulfillment_status, 'pending') = 'fulfilled'", []];
@@ -105,6 +117,61 @@ export const onRequestGet = async (context) => {
     }
   }
 
+  const customQuoteRows = view === "all"
+    ? await all(
+        db.prepare(
+          `SELECT
+            q.id,
+            q.token,
+            q.customer_email,
+            q.customer_name,
+            q.customer_phone,
+            q.company_name,
+            q.currency,
+            q.status,
+            q.created_at,
+            q.paid_at,
+            q.fu_exported_at
+          FROM custom_quotes q
+          WHERE q.status = 'paid'
+          ORDER BY COALESCE(q.paid_at, q.created_at) DESC
+          LIMIT ?`
+        ).bind(limit).all()
+      ).catch(() => [])
+    : [];
+
+  const customQuoteIds = (Array.isArray(customQuoteRows) ? customQuoteRows : []).map((row) => String(row.id || "")).filter(Boolean);
+  const customQuoteLinesById = new Map();
+
+  if (customQuoteIds.length) {
+    const placeholders = customQuoteIds.map(() => "?").join(",");
+    const customLineRows = await all(
+      db.prepare(
+        `SELECT quote_id, title, quantity, vat_rate, unit_price_ex_vat
+         FROM custom_quote_lines
+         WHERE quote_id IN (${placeholders})
+         ORDER BY quote_id, sort_order, created_at`
+      ).bind(...customQuoteIds).all()
+    ).catch(() => []);
+
+    for (const line of Array.isArray(customLineRows) ? customLineRows : []) {
+      const quoteId = String(line.quote_id || "");
+      if (!quoteId) continue;
+      if (!customQuoteLinesById.has(quoteId)) customQuoteLinesById.set(quoteId, []);
+      const qty = toNumber(line.quantity, 0);
+      const unitPrice = toNumber(line.unit_price_ex_vat, 0);
+      const vatRate = toNumber(line.vat_rate, 0);
+      customQuoteLinesById.get(quoteId).push({
+        sku: null,
+        title: String(line.title || "Rad"),
+        qty,
+        unit_price_ex_vat: round2(unitPrice),
+        vat_rate: normalizeVatPercent(vatRate),
+        line_total_inc_vat: round2((qty * unitPrice) * (1 + vatRate)),
+      });
+    }
+  }
+
   const orders = rows.map((row) => {
     const meta = parseMeta(row.metadata);
     const customer = meta.customer && typeof meta.customer === "object" ? meta.customer : {};
@@ -144,9 +211,63 @@ export const onRequestGet = async (context) => {
         code: delivery.code != null ? String(delivery.code) : null,
         shipping_address: delivery.shipping_address ?? null,
       },
-      lines: linesByOrderId.get(String(row.id || "")) || [],
+      lines: (linesByOrderId.get(String(row.id || "")) || []).map((line) => ({
+        ...line,
+        vat_rate: normalizeVatPercent(line.vat_rate),
+      })),
+      entry_type: "order",
+      fulfillable: true,
     };
   });
 
-  return withCors(json({ ok: true, view, orders }), corsOpts(context));
+  const customQuotes = (Array.isArray(customQuoteRows) ? customQuoteRows : []).map((row) => {
+    const quoteId = String(row.id || "");
+    const lines = customQuoteLinesById.get(quoteId) || [];
+    const totalIncVat = round2(lines.reduce((sum, line) => sum + toNumber(line.line_total_inc_vat, 0), 0));
+    return {
+      id: quoteId,
+      order_number: `Custom quote ${quoteId}`,
+      email: String(row.customer_email || ""),
+      customer_country: "",
+      currency: String(row.currency || "SEK"),
+      status: String(row.status || "paid"),
+      payment_provider: null,
+      payment_reference: row.token != null ? String(row.token) : null,
+      total_inc_vat: totalIncVat,
+      placed_at: row.created_at ? String(row.created_at) : null,
+      paid_at: row.paid_at ? String(row.paid_at) : null,
+      refunded_at: null,
+      fu_voucher_id: null,
+      fu_sync_status: row.fu_exported_at ? "acked" : null,
+      fu_sync_error: null,
+      delivery_method: null,
+      shipping_provider: null,
+      shipping_code: null,
+      fulfillment_status: null,
+      fulfilled_at: null,
+      fulfilled_by: null,
+      tracking_number: null,
+      tracking_url: null,
+      fulfillment_note: null,
+      customer: {
+        full_name: row.customer_name != null ? String(row.customer_name) : (row.company_name != null ? String(row.company_name) : null),
+        phone: row.customer_phone != null ? String(row.customer_phone) : null,
+      },
+      delivery: {
+        method: null,
+        provider: null,
+        code: null,
+        shipping_address: null,
+      },
+      lines,
+      entry_type: "custom_quote",
+      fulfillable: false,
+    };
+  });
+
+  const combined = [...orders, ...customQuotes]
+    .sort((a, b) => String(b.paid_at || b.placed_at || "").localeCompare(String(a.paid_at || a.placed_at || "")))
+    .slice(0, limit);
+
+  return withCors(json({ ok: true, view, orders: combined }), corsOpts(context));
 };
