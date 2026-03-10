@@ -5,7 +5,3 @@
 set -e
 
 node tools/sync-fu-bookkeeping-mirror.mjs
-
-if [ -f "external/FU-Bookkeeping/FU-Bookkeeping.html" ]; then
-	git add external/FU-Bookkeeping/FU-Bookkeeping.html
-fi

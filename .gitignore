@@ -9,10 +9,7 @@ node_modules/
 .wrangler/
 
 # External repos checked out locally
-external/*
-!external/FU-Bookkeeping/
-external/FU-Bookkeeping/*
-!external/FU-Bookkeeping/FU-Bookkeeping.html
+external/
 
 # Local clones (do not commit)
 tmp/FU-Bookkeeping-repo/
