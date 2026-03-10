@@ -175,7 +175,7 @@ export const onRequestGet = async (context) => {
     const placeholders = customQuoteIds.map(() => "?").join(",");
     const customLineRows = await all(
       db.prepare(
-        `SELECT id, quote_id, title, quantity, fulfilled_quantity, vat_rate, unit_price_ex_vat
+        `SELECT id, quote_id, line_type, unit, title, quantity, fulfilled_quantity, vat_rate, unit_price_ex_vat
          FROM custom_quote_lines
          WHERE quote_id IN (${placeholders})
          ORDER BY quote_id, sort_order, created_at`
@@ -191,6 +191,8 @@ export const onRequestGet = async (context) => {
       const vatRate = toNumber(line.vat_rate, 0);
       customQuoteLinesById.get(quoteId).push({
         id: String(line.id || ""),
+        line_type: String(line.line_type || "service_fixed"),
+        unit: String(line.unit || "st"),
         sku: null,
         title: String(line.title || "Rad"),
         qty,
