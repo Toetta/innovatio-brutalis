@@ -19,8 +19,12 @@ const parseMeta = (raw) => {
 };
 
 const buildWhere = (view) => {
-  if (view === "fulfilled") return ["WHERE o.status = 'paid' AND COALESCE(o.fulfillment_status, 'pending') = 'fulfilled'", []];
-  if (view === "all") return ["WHERE o.status IN ('paid','refunded','pending_payment','awaiting_action','failed')", []];
+  if (view === "fulfilled") {
+    return ["WHERE o.status = 'paid' AND COALESCE(o.fulfillment_status, 'pending') = 'fulfilled'", []];
+  }
+  if (view === "all") {
+    return ["WHERE o.status IN ('paid','refunded','pending_payment','awaiting_action','failed')", []];
+  }
   return ["WHERE o.status = 'paid' AND COALESCE(o.fulfillment_status, 'pending') != 'fulfilled'", []];
 };
 
@@ -36,7 +40,7 @@ export const onRequestGet = async (context) => {
   const [whereSql, params] = buildWhere(view);
 
   const db = assertDb(env);
-  const orders = await all(
+  const orderRows = await all(
     db.prepare(
       `SELECT
         o.id,
@@ -71,45 +75,45 @@ export const onRequestGet = async (context) => {
     ).bind(...params, limit).all()
   );
 
-  const orderRows = Array.isArray(orders) ? orders : [];
-  const ids = orderRows.map((row) => String(row.id || "")).filter(Boolean);
+  const rows = Array.isArray(orderRows) ? orderRows : [];
+  const ids = rows.map((row) => String(row.id || "")).filter(Boolean);
+  const linesByOrderId = new Map();
 
+  if (ids.length) {
+    const placeholders = ids.map(() => "?").join(",");
+    const lineRows = await all(
+      db.prepare(
+        `SELECT order_id, sku, title, qty, unit_price_ex_vat, vat_rate, line_total_inc_vat
+         FROM order_lines
+         WHERE order_id IN (${placeholders})
+         ORDER BY order_id, id`
+      ).bind(...ids).all()
+    );
+
+    for (const line of Array.isArray(lineRows) ? lineRows : []) {
+      const orderId = String(line.order_id || "");
+      if (!orderId) continue;
+      if (!linesByOrderId.has(orderId)) linesByOrderId.set(orderId, []);
+      linesByOrderId.get(orderId).push({
+        sku: line.sku != null ? String(line.sku) : null,
+        title: String(line.title || ""),
+        qty: Number(line.qty || 0) || 0,
+        unit_price_ex_vat: Number(line.unit_price_ex_vat || 0) || 0,
+        vat_rate: Number(line.vat_rate || 0) || 0,
+        line_total_inc_vat: Number(line.line_total_inc_vat || 0) || 0,
+      });
+    }
+  }
+
+  const orders = rows.map((row) => {
+    const meta = parseMeta(row.metadata);
+    const customer = meta.customer && typeof meta.customer === "object" ? meta.customer : {};
+    const delivery = meta.delivery && typeof meta.delivery === "object" ? meta.delivery : {};
+    return {
+      id: String(row.id || ""),
+      order_number: String(row.order_number || ""),
+      email: String(row.email || ""),
       customer_country: String(row.customer_country || ""),
-        const db = assertDb(env);
-        const orders = await all(
-          db.prepare(
-            `SELECT
-              o.id,
-              o.order_number,
-              o.email,
-              o.customer_country,
-              o.currency,
-              o.status,
-              o.payment_provider,
-              o.payment_reference,
-              o.total_inc_vat,
-              o.placed_at,
-              o.paid_at,
-              o.refunded_at,
-              o.fu_voucher_id,
-              o.fu_sync_status,
-              o.fu_sync_error,
-              o.delivery_method,
-              o.shipping_provider,
-              o.shipping_code,
-              o.fulfillment_status,
-              o.fulfilled_at,
-              o.fulfilled_by,
-              o.tracking_number,
-              o.tracking_url,
-              o.fulfillment_note,
-              o.metadata
-            FROM orders o
-            ${whereSql}
-            ORDER BY COALESCE(o.paid_at, o.placed_at) DESC
-            LIMIT ?`
-          ).bind(...params, limit).all()
-        );
       currency: String(row.currency || "SEK"),
       status: String(row.status || ""),
       payment_provider: row.payment_provider != null ? String(row.payment_provider) : null,
@@ -144,75 +148,5 @@ export const onRequestGet = async (context) => {
     };
   });
 
-  return withCors(json({ ok: true, view, orders: out }), corsOpts(context));
-};import { badRequest, forbidden, json } from "../_lib/resp.js";
-import { assertDb, all, exec } from "../_lib/db.js";
-import { nowIso } from "../_lib/crypto.js";
-import { requireFuKey } from "../_lib/fu.js";
-
-export const onRequestGet = async (context) => {
-  const { request, env } = context;
-  if (!requireFuKey({ request, env })) return forbidden();
-
-  const url = new URL(request.url);
-  const status = String(url.searchParams.get("status") || "ready").trim().toLowerCase();
-  if (status !== "ready") return badRequest("Unsupported status");
-
-  const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit") || 20)));
-
-  const db = assertDb(env);
-  const rows = await all(
-    db
-      .prepare(
-        "SELECT id, order_number, placed_at, status, exported_to_fu, fu_payload_json FROM orders WHERE status = 'paid' AND exported_to_fu = 0 AND fu_payload_json IS NOT NULL ORDER BY placed_at ASC LIMIT ?"
-      )
-      .bind(limit)
-      .all()
-  );
-
-  const orders = rows.map((r) => {
-    let payload = null;
-    try {
-      payload = r.fu_payload_json ? JSON.parse(String(r.fu_payload_json)) : null;
-    } catch (_) {
-      payload = null;
-    }
-    return {
-      id: r.id,
-      order_number: r.order_number,
-      placed_at: r.placed_at,
-      payload,
-    };
-  });
-
-  return json({ ok: true, orders });
-};
-
-// FU acknowledges successful import so we can mark exported_to_fu.
-export const onRequestPost = async (context) => {
-  const { request, env } = context;
-  if (!requireFuKey({ request, env })) return forbidden();
-
-  let body;
-  try {
-    body = await request.json();
-  } catch (_) {
-    return badRequest("Invalid JSON");
-  }
-
-  const idsRaw = body?.order_ids;
-  const ids = Array.isArray(idsRaw) ? idsRaw.map((x) => String(x || "").trim()).filter(Boolean) : [];
-  if (!ids.length) return badRequest("Missing order_ids");
-  if (ids.length > 50) return badRequest("Too many order_ids");
-
-  const ok = Boolean(body?.ok);
-  if (!ok) return badRequest("ok=false not supported");
-
-  const db = assertDb(env);
-  const ts = nowIso();
-  for (const id of ids) {
-    await exec(db, "UPDATE orders SET exported_to_fu = 1, exported_to_fu_at = COALESCE(exported_to_fu_at, ?), updated_at = ? WHERE id = ?", [ts, ts, id]);
-  }
-
-  return json({ ok: true, updated: ids.length });
+  return withCors(json({ ok: true, view, orders }), corsOpts(context));
 };
