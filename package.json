@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "build": "node tools/build-shop-catalog.mjs",
-    "test": "node tools/test-shipping.mjs"
+    "test": "node tools/test-shipping.mjs",
+    "sync:fu-bookkeeping-mirror": "node tools/sync-fu-bookkeeping-mirror.mjs",
+    "check:fu-bookkeeping-mirror": "node tools/sync-fu-bookkeeping-mirror.mjs --check"
   },
   "devDependencies": {
     "wrangler": "^4.68.1"

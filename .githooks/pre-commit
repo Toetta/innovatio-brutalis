@@ -1,11 +1,11 @@
 #!/bin/sh
-# Auto-bump FU bookkeeping visible version on every commit.
+# Keep the mirrored FU-Bookkeeping copy in sync with the source repo when available.
 # Requires: node
 
 set -e
 
-# Only stamp if the local app is actually present (APP_SEMVER marker exists).
-if [ -f "assets/fu-bookkeeping.html" ] && grep -q "APP_SEMVER" "assets/fu-bookkeeping.html"; then
-	node tools/stamp-fu-version.mjs
-	git add assets/fu-bookkeeping.html
+node tools/sync-fu-bookkeeping-mirror.mjs
+
+if [ -f "external/FU-Bookkeeping/FU-Bookkeeping.html" ]; then
+	git add external/FU-Bookkeeping/FU-Bookkeeping.html
 fi
