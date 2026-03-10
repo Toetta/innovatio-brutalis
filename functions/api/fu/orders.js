@@ -30,6 +30,30 @@ const normalizeVatPercent = (value) => {
   return n <= 1 ? round2(n * 100) : round2(n);
 };
 
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+const summarizeCustomQuoteFulfillment = (lines, storedStatus) => {
+  const normalized = (Array.isArray(lines) ? lines : []).map((line) => {
+    const qty = Math.max(0, toNumber(line?.qty, 0));
+    const fulfilledQuantity = round2(clamp(toNumber(line?.fulfilled_quantity, 0), 0, qty));
+    return {
+      ...line,
+      qty,
+      fulfilled_quantity: fulfilledQuantity,
+      remaining_quantity: round2(Math.max(0, qty - fulfilledQuantity)),
+    };
+  });
+  const hasDelivered = normalized.some((line) => line.fulfilled_quantity > 0);
+  const allDelivered = normalized.length > 0 && normalized.every((line) => line.remaining_quantity <= 0.0001);
+  const status = allDelivered ? "fulfilled" : (hasDelivered ? "partial" : (String(storedStatus || "pending") === "fulfilled" ? "fulfilled" : "pending"));
+  return {
+    status,
+    total_quantity: round2(normalized.reduce((sum, line) => sum + toNumber(line.qty, 0), 0)),
+    fulfilled_quantity: round2(normalized.reduce((sum, line) => sum + toNumber(line.fulfilled_quantity, 0), 0)),
+    lines: normalized,
+  };
+};
+
 const buildWhere = (view) => {
   if (view === "fulfilled") {
     return ["WHERE o.status = 'paid' AND COALESCE(o.fulfillment_status, 'pending') = 'fulfilled'", []];
@@ -117,28 +141,32 @@ export const onRequestGet = async (context) => {
     }
   }
 
-  const customQuoteRows = view === "all"
-    ? await all(
-        db.prepare(
-          `SELECT
-            q.id,
-            q.token,
-            q.customer_email,
-            q.customer_name,
-            q.customer_phone,
-            q.company_name,
-            q.currency,
-            q.status,
-            q.created_at,
-            q.paid_at,
-            q.fu_exported_at
-          FROM custom_quotes q
-          WHERE q.status = 'paid'
-          ORDER BY COALESCE(q.paid_at, q.created_at) DESC
-          LIMIT ?`
-        ).bind(limit).all()
-      ).catch(() => [])
-    : [];
+  const customQuoteRows = await all(
+    db.prepare(
+      `SELECT
+        q.id,
+        q.token,
+        q.customer_email,
+        q.customer_name,
+        q.customer_phone,
+        q.company_name,
+        q.currency,
+        q.status,
+        q.created_at,
+        q.paid_at,
+        q.fu_exported_at,
+        q.fulfillment_status,
+        q.fulfilled_at,
+        q.fulfilled_by,
+        q.tracking_number,
+        q.tracking_url,
+        q.fulfillment_note
+      FROM custom_quotes q
+      WHERE q.status = 'paid'
+      ORDER BY COALESCE(q.paid_at, q.created_at) DESC
+      LIMIT ?`
+    ).bind(limit).all()
+  ).catch(() => []);
 
   const customQuoteIds = (Array.isArray(customQuoteRows) ? customQuoteRows : []).map((row) => String(row.id || "")).filter(Boolean);
   const customQuoteLinesById = new Map();
@@ -147,7 +175,7 @@ export const onRequestGet = async (context) => {
     const placeholders = customQuoteIds.map(() => "?").join(",");
     const customLineRows = await all(
       db.prepare(
-        `SELECT quote_id, title, quantity, vat_rate, unit_price_ex_vat
+        `SELECT id, quote_id, title, quantity, fulfilled_quantity, vat_rate, unit_price_ex_vat
          FROM custom_quote_lines
          WHERE quote_id IN (${placeholders})
          ORDER BY quote_id, sort_order, created_at`
@@ -162,9 +190,11 @@ export const onRequestGet = async (context) => {
       const unitPrice = toNumber(line.unit_price_ex_vat, 0);
       const vatRate = toNumber(line.vat_rate, 0);
       customQuoteLinesById.get(quoteId).push({
+        id: String(line.id || ""),
         sku: null,
         title: String(line.title || "Rad"),
         qty,
+        fulfilled_quantity: round2(clamp(toNumber(line.fulfilled_quantity, 0), 0, qty)),
         unit_price_ex_vat: round2(unitPrice),
         vat_rate: normalizeVatPercent(vatRate),
         line_total_inc_vat: round2((qty * unitPrice) * (1 + vatRate)),
@@ -222,7 +252,8 @@ export const onRequestGet = async (context) => {
 
   const customQuotes = (Array.isArray(customQuoteRows) ? customQuoteRows : []).map((row) => {
     const quoteId = String(row.id || "");
-    const lines = customQuoteLinesById.get(quoteId) || [];
+    const summary = summarizeCustomQuoteFulfillment(customQuoteLinesById.get(quoteId) || [], row.fulfillment_status);
+    const lines = summary.lines;
     const totalIncVat = round2(lines.reduce((sum, line) => sum + toNumber(line.line_total_inc_vat, 0), 0));
     return {
       id: quoteId,
@@ -243,12 +274,12 @@ export const onRequestGet = async (context) => {
       delivery_method: null,
       shipping_provider: null,
       shipping_code: null,
-      fulfillment_status: null,
-      fulfilled_at: null,
-      fulfilled_by: null,
-      tracking_number: null,
-      tracking_url: null,
-      fulfillment_note: null,
+      fulfillment_status: summary.status,
+      fulfilled_at: row.fulfilled_at ? String(row.fulfilled_at) : null,
+      fulfilled_by: row.fulfilled_by != null ? String(row.fulfilled_by) : null,
+      tracking_number: row.tracking_number != null ? String(row.tracking_number) : null,
+      tracking_url: row.tracking_url != null ? String(row.tracking_url) : null,
+      fulfillment_note: row.fulfillment_note != null ? String(row.fulfillment_note) : null,
       customer: {
         full_name: row.customer_name != null ? String(row.customer_name) : (row.company_name != null ? String(row.company_name) : null),
         phone: row.customer_phone != null ? String(row.customer_phone) : null,
@@ -261,11 +292,23 @@ export const onRequestGet = async (context) => {
       },
       lines,
       entry_type: "custom_quote",
-      fulfillable: false,
+      fulfillable: true,
+      fulfillment_summary: {
+        total_quantity: summary.total_quantity,
+        fulfilled_quantity: summary.fulfilled_quantity,
+        remaining_quantity: round2(Math.max(0, summary.total_quantity - summary.fulfilled_quantity)),
+      },
     };
   });
 
-  const combined = [...orders, ...customQuotes]
+  const filteredCustomQuotes = customQuotes.filter((quote) => {
+    const fulfillmentStatus = String(quote.fulfillment_status || "pending");
+    if (view === "fulfilled") return fulfillmentStatus === "fulfilled";
+    if (view === "open") return fulfillmentStatus !== "fulfilled";
+    return true;
+  });
+
+  const combined = [...orders, ...filteredCustomQuotes]
     .sort((a, b) => String(b.paid_at || b.placed_at || "").localeCompare(String(a.paid_at || a.placed_at || "")))
     .slice(0, limit);
 
