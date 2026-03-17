@@ -1,0 +1,22 @@
+{
+  "price_sek": 500,
+  "description_sv": "Topppackning för long stroke vevaxel med 60mm slaglängd. Kan glödgas och återanvändas",
+  "is_news": true,
+  "title_sv": "Gori koppar topppackning 2mm",
+  "slug": "gori2mm",
+  "description_en": "Head gasket for long stroke 60mm crank applications. Can be heat treated and is reusable.",
+  "published": true,
+  "shipping_exempt": false,
+  "title_en": "Gori copper head gaskes 2mm",
+  "weight_grams": 100,
+  "images": [
+    {
+      "is_main": false,
+      "image": "/assets/uploads/img_4274.jpeg"
+    }
+  ],
+  "height_mm": 5,
+  "length_mm": 100,
+  "width_mm": 100,
+  "category": "lambretta"
+}
