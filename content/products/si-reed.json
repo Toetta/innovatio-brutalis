@@ -1,0 +1,24 @@
+{
+  "price_sek": 550,
+  "is_news": false,
+  "title_sv": "Si reed adapter till Malossi reedkorg",
+  "slug": "si-reed",
+  "published": true,
+  "shipping_exempt": false,
+  "title_en": "Si reed house adapter to Malossi inlet",
+  "weight_grams": 100,
+  "images": [
+    {
+      "is_main": false,
+      "image": "/assets/uploads/img_4287.jpeg"
+    },
+    {
+      "is_main": false,
+      "image": "/assets/uploads/img_4096.jpeg"
+    }
+  ],
+  "height_mm": 40,
+  "length_mm": 100,
+  "width_mm": 100,
+  "category": "vespa-parts-tools"
+}
