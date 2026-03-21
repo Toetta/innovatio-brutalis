@@ -29,6 +29,9 @@
       --muted: #94a3b8;
       --accent: #60a5fa;
       --rowH: 34px;
+      --cellFont: 13px;
+      --headFont: 12px;
+      --cellPadX: 8px;
       --radius: 16px;
       --shadow: 0 20px 60px rgba(0,0,0,.45);
     }
@@ -36,6 +39,7 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
+      min-height: 100vh;
       background: linear-gradient(180deg, var(--bg), var(--bg2));
       color: var(--text);
       font: 14px/1.35 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
@@ -63,20 +67,71 @@
     }
 
     .panel {
+      position: relative;
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
       overflow: visible;
-      }
+    }
+
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 8;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(var(--card2-rgb), .94);
+      backdrop-filter: blur(14px);
+    }
+
+    .toolbarGroup {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+
+    .toolbarTitle {
+      font-size: 12px;
+      color: rgba(255,255,255,0.82);
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .toolbarNote {
+      font-size: 12px;
+      color: var(--muted);
+    }
 
     .controls {
+      max-height: 1200px;
       padding: 14px 14px 10px;
       border-bottom: 1px solid var(--line);
       display: grid;
       gap: 12px;
       grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
       align-items: start;
+      transition: max-height .28s ease, opacity .2s ease, padding .28s ease, gap .28s ease, border-color .28s ease;
+    }
+
+    .panel.is-controls-collapsed .controls {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      padding-top: 0;
+      padding-bottom: 0;
+      gap: 0;
+      border-bottom-color: transparent;
+      pointer-events: none;
     }
     @media (max-width: 980px) {
       .controls { grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); }
@@ -148,6 +203,11 @@
     .btn:hover { border-color: rgba(255,255,255,0.18); }
     .btn:active { transform: translateY(1px); }
 
+    .btn.accent {
+      background: rgba(96,165,250,0.16);
+      border-color: rgba(96,165,250,0.34);
+    }
+
     .pillbar {
       display: flex;
       flex-wrap: wrap;
@@ -170,7 +230,7 @@
       overflow: auto;
       min-height: 220px;
       -webkit-overflow-scrolling: touch;
-      max-height: 75vh;
+      height: var(--tableHeight, clamp(320px, 60vh, 78vh));
       background: rgba(0,0,0,0.12);
     }
 
@@ -187,12 +247,13 @@
       background: rgba(12,16,22,0.92);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--line);
-      font-size: 12px;
+      font-size: var(--headFont);
       color: rgba(255,255,255,0.75);
       text-transform: uppercase;
       letter-spacing: .12em;
-      padding: 10px 8px;
+      padding: 8px var(--cellPadX);
       white-space: nowrap;
+      line-height: 1.1;
     }
     thead tr:first-child th {
       border-bottom: 1px solid rgba(255,255,255,0.12);
@@ -203,12 +264,14 @@
     tbody td {
       border-bottom: 1px solid rgba(255,255,255,0.06);
       border-right: 1px solid rgba(255,255,255,0.06);
-      padding: 0 8px;
+      padding: 0 var(--cellPadX);
       height: var(--rowH);
       text-align: center;
       white-space: nowrap;
       background: rgba(0,0,0,0.18);
       font-variant-numeric: tabular-nums;
+      font-size: var(--cellFont);
+      line-height: 1;
     }
     tbody tr td:first-child { border-left: 1px solid rgba(255,255,255,0.06); }
 
@@ -447,6 +510,147 @@
       -webkit-overflow-scrolling: touch;
     }
     .detailsRow > .infoBox{ min-width: 420px; }
+
+    @media (max-width: 760px) {
+      .toolbar {
+        position: static;
+      }
+
+      .toolbarGroup {
+        width: 100%;
+      }
+    }
+
+    @media print {
+      @page {
+        size: landscape;
+        margin: 10mm;
+      }
+
+      body {
+        min-height: auto;
+        background: #fff;
+        color: #111;
+        font-size: 10pt;
+      }
+
+      header,
+      .wrap {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+      }
+
+      .panel,
+      .infoBox,
+      .detailsBelow {
+        background: #fff;
+        border-color: #c7c7c7;
+        box-shadow: none;
+      }
+
+      .toolbar,
+      .controls {
+        display: none !important;
+      }
+
+      .pillbar {
+        padding: 0 0 8px;
+        border-bottom: 0;
+      }
+
+      .pill {
+        background: #fff;
+        color: #111;
+        border-color: #c7c7c7;
+      }
+
+      .table-wrap,
+      .miniTableWrap,
+      .detailsRow {
+        height: auto !important;
+        overflow: visible !important;
+      }
+
+      table,
+      .miniTable {
+        min-width: 0;
+      }
+
+      thead th {
+        background: #f4f4f4;
+        color: #111;
+        border-bottom-color: #c7c7c7;
+        backdrop-filter: none;
+      }
+
+      tbody td,
+      td.speed,
+      .miniTable th,
+      .miniTable td {
+        color: #111;
+        border-color: #d7d7d7;
+      }
+
+      .detailsRow {
+        grid-template-columns: 1fr 1fr;
+        gap: 6px;
+        align-items: start;
+        grid-auto-rows: min-content;
+      }
+
+      .detailsRow > .infoBox {
+        min-width: 0;
+        align-self: start;
+        padding: 6px;
+        break-inside: avoid;
+      }
+
+      .detailsBelow {
+        margin-top: 6px;
+        padding: 6px;
+        break-inside: avoid;
+      }
+
+      .infoBox h4 {
+        margin: 0 0 4px;
+        font-size: 10px;
+        color: #111;
+      }
+
+      .kv {
+        grid-template-columns: 80px minmax(0, 1fr);
+        gap: 3px 6px;
+        font-size: 9px;
+        margin-bottom: 4px;
+        color: #111;
+      }
+
+      .kv .k,
+      .muted,
+      .kv b,
+      .kv > div {
+        color: #111;
+      }
+
+      .kvNoteLabel,
+      .kvNoteValue {
+        display: none;
+      }
+
+      .miniTable {
+        font-size: 9px;
+      }
+
+      .miniTable thead th {
+        color: #111;
+      }
+
+      .miniTable th,
+      .miniTable td {
+        padding: 3px 4px;
+      }
+    }
 </style>
 </head>
 <body>
@@ -456,8 +660,19 @@
   </header>
 
   <div class="wrap">
-    <div class="panel">
-      <div class="controls">
+    <div class="panel" id="mainPanel">
+      <div class="toolbar">
+        <div class="toolbarGroup">
+          <span class="toolbarTitle">View tools</span>
+          <button class="btn" id="toggleControls" type="button" aria-expanded="true">Hide controls</button>
+          <button class="btn accent" id="printPdf" type="button">Print / Save PDF</button>
+        </div>
+        <div class="toolbarGroup">
+          <span class="toolbarNote">Collapse the top panel to free more height for the diagram.</span>
+        </div>
+      </div>
+
+      <div class="controls" id="controlsPanel">
         <div class="card">
           <h3>Display</h3>
           <div class="row">
@@ -477,7 +692,7 @@
           <label>Row height</label>
           <div class="zoomRow">
             <button class="btn" id="rhMinus" title="Smaller">−</button>
-            <input id="rowHeight" type="range" min="40" max="140" value="100"/>
+            <input id="rowHeight" type="range" min="20" max="140" value="100"/>
             <button class="btn" id="rhPlus" title="Larger">+</button>
             <button class="btn" id="fit" title="Fit table to screen">Fit</button>
             <span class="smallNote" id="rowHeightLabel">100%</span>
@@ -567,8 +782,6 @@
           <datalist id="cwList"></datalist>
         </div>
       </div>
-</div>
-      </div>
 
       <div class="pillbar" id="pills">
         <span class="pill" id="maxA">A max @ max rpm: —</span>
@@ -578,16 +791,8 @@
 <div class="table-wrap" id="tableWrap">
         <table id="tbl">
           <thead>
-            <tr>
-              <th colspan="6">Setup A RPM</th>
-              <th colspan="1">Speed</th>
-              <th colspan="6">Setup B RPM</th>
-            </tr>
-            <tr>
-              <th>1st RPM</th><th>2nd RPM</th><th>3rd RPM</th><th>4th RPM</th><th>5th RPM</th><th>6th RPM</th>
-              <th id="speedHead">km/h</th>
-              <th>1st RPM</th><th>2nd RPM</th><th>3rd RPM</th><th>4th RPM</th><th>5th RPM</th><th>6th RPM</th>
-            </tr>
+            <tr id="headGroup"></tr>
+            <tr id="headCols"></tr>
           </thead>
           <tbody id="tbody"></tbody>
         </table>
@@ -657,10 +862,12 @@ function normalizeState(){
   state.rowHeightPct = (isFinite(state.rowHeightPct) && state.rowHeightPct >= 30 && state.rowHeightPct <= 140)
     ? state.rowHeightPct
     : 100;
+  state.controlsCollapsed = typeof state.controlsCollapsed === "boolean" ? state.controlsCollapsed : false;
 }
 
 const DEFAULTS = {"gearboxA": 11, "gearboxB": 11, "tyreA": 1, "tyreB": 1, "sprocketA": 16, "crownA": 46, "sprocketB": 16, "crownB": 47, "rpmIn": 3800, "rpmPeak": 6000, "rpmShift": 6800, "rpmMax": 7500, "unit": "kmh", "speedStep": 2, "rpmIdle": 1000};
 const STORAGE_KEY = "lambretta_large_frame_visualiser_v1";
+let printRestoreCollapsed = null;
 
 // -------- utils
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
@@ -845,7 +1052,7 @@ function renderSetupInfo(targetEl, tag, gb, tyre, sprocket, crown){
   targetEl.innerHTML = `
     <div class="kv">
       <div class="k">Gearbox</div><div><b>${gbName}</b> <span class="muted">(#${gbId})</span></div>
-      ${gbNote ? `<div class="k">Note</div><div>${gbNote.replace(/\n/g,'<br>')}</div>` : ``}
+      ${gbNote ? `<div class="k kvNoteLabel">Note</div><div class="kvNoteValue">${gbNote.replace(/\n/g,'<br>')}</div>` : ``}
       <div class="k">Tyre</div><div>${tyreName} <span class="muted">(${isFinite(tyreCirc)?tyreCirc.toFixed(3)+" m":"—"})</span></div>
       <div class="k">Primary ratio</div><div>${fmt(primary,3)} <span class="muted">(${crown}/${sprocket})</span></div>
       <div class="k">Chain</div><div>${chain}</div>
@@ -902,6 +1109,10 @@ function maxSpeedForSetup(setup){
 
 // -------- UI
 const els = {
+  panel: document.getElementById("mainPanel"),
+  controlsPanel: document.getElementById("controlsPanel"),
+  toggleControls: document.getElementById("toggleControls"),
+  printPdf: document.getElementById("printPdf"),
   unit: document.getElementById("unit"),
   step: document.getElementById("step"),
   rowHeight: document.getElementById("rowHeight"),
@@ -933,6 +1144,8 @@ const els = {
 
   infoA: document.getElementById("infoA"),
   infoB: document.getElementById("infoB"),
+  headGroup: document.getElementById("headGroup"),
+  headCols: document.getElementById("headCols"),
   tbody: document.getElementById("tbody"),
   speedHead: document.getElementById("speedHead"),
   tableWrap: document.getElementById("tableWrap"),
@@ -941,6 +1154,24 @@ const els = {
   maxB: document.getElementById("maxB"),
   maxAuto: document.getElementById("maxAuto"),
 };
+
+function updateViewportLayout(){
+  const details = document.querySelector(".detailsBelow");
+  const detailsHeight = details ? details.getBoundingClientRect().height : 0;
+  const available = Math.floor(window.innerHeight - els.tableWrap.getBoundingClientRect().top - detailsHeight - 24);
+  const target = Math.max(220, available);
+  document.documentElement.style.setProperty("--tableHeight", target + "px");
+}
+
+function setControlsCollapsed(collapsed, options = {}){
+  const { refit = true } = options;
+  state.controlsCollapsed = !!collapsed;
+  els.panel.classList.toggle("is-controls-collapsed", state.controlsCollapsed);
+  els.toggleControls.textContent = state.controlsCollapsed ? "Show controls" : "Hide controls";
+  els.toggleControls.setAttribute("aria-expanded", String(!state.controlsCollapsed));
+  updateViewportLayout();
+  if (refit) fitTableToScreen();
+}
 
 function populateSelect(selectEl, groups, selectedId){
   selectEl.innerHTML = "";
@@ -983,27 +1214,60 @@ function populateDatalists(){
   els.cwList.innerHTML = cwVals.map(v=>`<option value="${v}"></option>`).join("");
 }
 
+function renderHeaders(gearCountA, gearCountB){
+  els.headGroup.innerHTML = `
+    <th colspan="${gearCountA}">Setup A RPM</th>
+    <th colspan="1">Speed</th>
+    <th colspan="${gearCountB}">Setup B RPM</th>
+  `;
+
+  const makeGearHeaders = (count) => {
+    let html = "";
+    for (let index = 0; index < count; index++) {
+      html += `<th>${ordinal(index + 1)} RPM</th>`;
+    }
+    return html;
+  };
+
+  els.headCols.innerHTML = `${makeGearHeaders(gearCountA)}<th id="speedHead">${unitLabel(state.unit)}</th>${makeGearHeaders(gearCountB)}`;
+  els.speedHead = document.getElementById("speedHead");
+}
+
 function setRowHeightPercent(p){
-  const pct = clamp(Math.round(p), 40, 140);
+  const pct = clamp(Math.round(p), 20, 140);
   els.rowHeight.value = String(pct);
   els.rowHeightLabel.textContent = pct + "%";
   const base = 34; // px
   const px = Math.round(base * (pct/100));
+  const compact = pct / 100;
+  const cellFont = clamp(Math.round(13 * compact), 8, 13);
+  const headFont = clamp(Math.round(12 * compact), 7, 12);
+  const cellPadX = clamp(Math.round(8 * compact), 3, 8);
   document.documentElement.style.setProperty("--rowH", px + "px");
+  document.documentElement.style.setProperty("--cellFont", cellFont + "px");
+  document.documentElement.style.setProperty("--headFont", headFont + "px");
+  document.documentElement.style.setProperty("--cellPadX", cellPadX + "px");
   state.rowHeightPct = pct;
 }
 
 function fitTableToScreen(){
   // Try to fit all rows (plus header) within viewport height by adjusting row height.
+  updateViewportLayout();
   const wrap = els.tableWrap;
   const tbl = document.getElementById("tbl");
   const headerH = tbl.tHead ? tbl.tHead.getBoundingClientRect().height : 70;
-  const avail = Math.max(220, window.innerHeight - wrap.getBoundingClientRect().top - 30);
+  const avail = Math.max(180, wrap.clientHeight - 2);
   const rows = els.tbody.children.length || 1;
   const rowH = Math.floor((avail - headerH) / rows);
   const base = 34;
-  const pct = clamp((rowH / base) * 100, 40, 140);
+  const pct = clamp((rowH / base) * 100, 20, 140);
   setRowHeightPercent(pct);
+}
+
+function handlePrint(){
+  printRestoreCollapsed = state.controlsCollapsed;
+  setControlsCollapsed(true, { refit: false });
+  window.print();
 }
 
 function readStateFromUI(){
@@ -1048,7 +1312,7 @@ function writeStateToUI(){
   els.cwB.value = state.B.crown;
 
   setRowHeightPercent(state.rowHeightPct ?? 100);
-  els.speedHead.textContent = unitLabel(state.unit);
+  setControlsCollapsed(state.controlsCollapsed, { refit: false });
 }
 
 function buildRows(){
@@ -1074,7 +1338,6 @@ function buildRows(){
 
 function renderTable(){
   readStateFromUI();
-  els.speedHead.textContent = unitLabel(state.unit);
 
   const speeds = buildRows();
   const gbA = findGearbox(state.A.gearboxId);
@@ -1082,8 +1345,11 @@ function renderTable(){
   const tyreA = findTyre(state.A.tyreId);
   const tyreB = findTyre(state.B.tyreId);
 
-  const pairsA = gbA?.gears || [];
-  const pairsB = gbB?.gears || [];
+  const pairsA = validGearPairs(gbA);
+  const pairsB = validGearPairs(gbB);
+  const gearCountA = Math.max(1, pairsA.length);
+  const gearCountB = Math.max(1, pairsB.length);
+  renderHeaders(gearCountA, gearCountB);
 
   // extra info panels (gearbox data + chain length)
   renderSetupInfo(els.infoA, "A", gbA, tyreA, state.A.sprocket, state.A.crown);
@@ -1096,7 +1362,7 @@ function renderTable(){
     const kmh = toKmh(s, state.unit);
 
     // setup A cells
-    for (let gi=0; gi<6; gi++) {
+    for (let gi=0; gi<gearCountA; gi++) {
       const td = document.createElement("td");
       td.className = "rpm";
       const p = pairsA[gi];
@@ -1122,7 +1388,7 @@ function renderTable(){
     tr.appendChild(tdS);
 
     // setup B cells
-    for (let gi=0; gi<6; gi++) {
+    for (let gi=0; gi<gearCountB; gi++) {
       const td = document.createElement("td");
       td.className = "rpm";
       const p = pairsB[gi];
@@ -1143,6 +1409,8 @@ function renderTable(){
 
     els.tbody.appendChild(tr);
   }
+
+  updateViewportLayout();
 }
 
 function saveState(){
@@ -1180,6 +1448,7 @@ function resetState(){
     rpmMax: DEFAULTS.rpmMax,
     rpmIdle: (DEFAULTS.rpmIdle || 1000),
     rowHeightPct: 100,
+    controlsCollapsed: true,
     A: {
       gearboxId: DEFAULTS.gearboxA,
       tyreId: DEFAULTS.tyreA,
@@ -1200,7 +1469,8 @@ function resetState(){
 function init(){
   populateDatalists();
   resetState();
-  loadState(); // if exists, it will override
+  updateViewportLayout();
+  fitTableToScreen();
 
   // listeners
   const rerender = ()=>{ renderTable(); };
@@ -1240,7 +1510,19 @@ function init(){
   els.rhMinus.addEventListener("click", ()=> setRowHeightPercent((state.rowHeightPct||100) - 5));
   els.rhPlus.addEventListener("click", ()=> setRowHeightPercent((state.rowHeightPct||100) + 5));
   els.fit.addEventListener("click", ()=>{ fitTableToScreen(); });
-  window.addEventListener("resize", ()=>{ /* keep current */ });
+  els.toggleControls.addEventListener("click", ()=> setControlsCollapsed(!state.controlsCollapsed));
+  els.printPdf.addEventListener("click", handlePrint);
+  window.addEventListener("resize", ()=>{ updateViewportLayout(); });
+  window.addEventListener("beforeprint", ()=>{
+    printRestoreCollapsed = state.controlsCollapsed;
+    setControlsCollapsed(true, { refit: false });
+  });
+  window.addEventListener("afterprint", ()=>{
+    if (printRestoreCollapsed !== null) {
+      setControlsCollapsed(printRestoreCollapsed, { refit: true });
+      printRestoreCollapsed = null;
+    }
+  });
 
   els.save.addEventListener("click", saveState);
   els.load.addEventListener("click", ()=>{ loadState(); });
