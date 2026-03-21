@@ -19,6 +19,7 @@
         <section class="card">
           <h1 style="margin-top:0">Kassa</h1>
           <p style="margin-top:0; color:var(--text-muted)">Kortbetalning via Stripe.</p>
+          <div id="currencyNotice" class="badge" style="margin-top:10px; white-space:pre-line">Priser i kassan debiteras i SEK.</div>
 
           <div id="cartSummary" class="badge" style="margin-top:10px">Laddar kundvagn…</div>
           <div id="taxSummary" class="badge" style="margin-top:10px; white-space:pre-line"></div>
@@ -26,22 +27,22 @@
 
           <form id="startForm" style="margin-top:14px; display:grid; gap:10px">
             <label class="badge" style="display:grid; gap:6px">
-              <span>Namn</span>
+              <span id="labelFullName">Namn</span>
               <input id="fullName" type="text" autocomplete="name" required />
             </label>
 
             <label class="badge" style="display:grid; gap:6px">
-              <span>Telefon</span>
+              <span id="labelPhone">Telefon</span>
               <input id="phone" type="tel" autocomplete="tel" inputmode="tel" required />
             </label>
 
             <label class="badge" style="display:grid; gap:6px">
-              <span>E-post</span>
+              <span id="labelEmail">E-post</span>
               <input id="email" type="email" autocomplete="email" required />
             </label>
 
             <label class="badge" style="display:grid; gap:6px">
-              <span>Land</span>
+              <span id="labelCountry">Land</span>
               <select id="country" required>
                 <option value="SE" selected>Sverige</option>
                 <option value="AT">Österrike</option>
@@ -78,23 +79,23 @@
 
             <div id="vatIdWrap" class="badge" style="display:grid; gap:8px" hidden>
               <label style="display:grid; gap:6px">
-                <span>VAT-ID (företag inom EU)</span>
+                <span id="labelVatId">VAT-ID (företag inom EU)</span>
                 <input id="vatId" type="text" inputmode="text" autocomplete="off" placeholder="Ex: DE123456789" />
               </label>
-              <div style="color:var(--text-muted)">
+              <div id="vatIdHelp" style="color:var(--text-muted)">
                 Ange endast om du handlar som företag inom EU (utanför Sverige). VAT-ID valideras via VIES; vid giltigt VAT-ID tillämpas 0% moms (omvänd skattskyldighet).
               </div>
             </div>
 
             <fieldset class="badge" style="display:grid; gap:8px; padding:12px">
-              <legend style="padding:0 6px">Leverans</legend>
+              <legend id="legendDelivery" style="padding:0 6px">Leverans</legend>
               <label style="display:flex; gap:10px; align-items:center">
                 <input type="radio" name="delivery_method" value="pickup" checked>
-                <span>Avhämtning (0 kr)</span>
+                <span id="deliveryPickupLabel">Avhämtning (0 kr)</span>
               </label>
               <label style="display:flex; gap:10px; align-items:center">
                 <input type="radio" name="delivery_method" value="postnord">
-                <span>PostNord frakt (viktbaserat)</span>
+                <span id="deliveryPostnordLabel">PostNord frakt (viktbaserat)</span>
               </label>
 
               <div id="pickupInfo" style="color:var(--text-muted)">
@@ -102,45 +103,45 @@
               </div>
 
               <div id="shippingAddressWrap" style="display:grid; gap:10px" hidden>
-                <div style="color:var(--text-muted)">PostNord frakt: leveransadress krävs (används även som fakturaadress).</div>
+                <div id="shippingAddressHelp" style="color:var(--text-muted)">PostNord frakt: leveransadress krävs (används även som fakturaadress).</div>
 
                 <label class="badge" style="display:grid; gap:6px">
-                  <span>Adress</span>
+                  <span id="labelShipLine1">Adress</span>
                   <input id="shipLine1" type="text" autocomplete="shipping street-address" />
                 </label>
 
                 <label class="badge" style="display:grid; gap:6px">
-                  <span>Adressrad 2 (valfritt)</span>
+                  <span id="labelShipLine2">Adressrad 2 (valfritt)</span>
                   <input id="shipLine2" type="text" autocomplete="shipping address-line2" />
                 </label>
 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
                   <label class="badge" style="display:grid; gap:6px">
-                    <span>Postnr</span>
+                    <span id="labelShipPostal">Postnr</span>
                     <input id="shipPostal" type="text" autocomplete="shipping postal-code" />
                   </label>
                   <label class="badge" style="display:grid; gap:6px">
-                    <span>Ort</span>
+                    <span id="labelShipCity">Ort</span>
                     <input id="shipCity" type="text" autocomplete="shipping address-level2" />
                   </label>
                 </div>
 
                 <label class="badge" style="display:grid; gap:6px">
-                  <span>Land (2 bokstäver)</span>
+                  <span id="labelShipCountry">Land (2 bokstäver)</span>
                   <input id="shipCountry" type="text" value="SE" inputmode="text" autocomplete="shipping country" />
                 </label>
               </div>
             </fieldset>
 
             <fieldset id="payMethodBox" class="badge" style="display:grid; gap:8px; padding:12px; width:fit-content; max-width:100%; justify-self:center">
-              <legend style="padding:0 6px">Betalmetod</legend>
+              <legend id="legendPayMethod" style="padding:0 6px">Betalmetod</legend>
               <label style="display:flex; gap:10px; align-items:center">
                 <input type="radio" name="paymethod" value="stripe" checked>
-                <span>Kort (Stripe)</span>
+                <span id="payMethodStripeLabel">Kort (Stripe)</span>
               </label>
               <label id="klarnaOption" style="display:flex; gap:10px; align-items:center" hidden>
                 <input type="radio" name="paymethod" value="klarna">
-                <span>Klarna (test)</span>
+                <span id="payMethodKlarnaLabel">Klarna (test)</span>
               </label>
             </fieldset>
 

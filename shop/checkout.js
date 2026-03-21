@@ -1,5 +1,52 @@
 (() => {
   const qs = (sel) => document.querySelector(sel);
+  const getLang = () => {
+    try {
+      const params = new URLSearchParams(window.location.search || "");
+      const raw = String(params.get("lang") || "").toLowerCase();
+      if (raw === "en") return "en";
+    } catch (_) {}
+    return "sv";
+  };
+  const isEN = () => getLang() === "en";
+  const tx = (sv, en) => (isEN() ? en : sv);
+  const countryName = (code) => {
+    const names = {
+      SE: ["Sverige", "Sweden"],
+      AT: ["Österrike", "Austria"],
+      BE: ["Belgien", "Belgium"],
+      BG: ["Bulgarien", "Bulgaria"],
+      HR: ["Kroatien", "Croatia"],
+      CY: ["Cypern", "Cyprus"],
+      CZ: ["Tjeckien", "Czech Republic"],
+      DK: ["Danmark", "Denmark"],
+      EE: ["Estland", "Estonia"],
+      FI: ["Finland", "Finland"],
+      FR: ["Frankrike", "France"],
+      DE: ["Tyskland", "Germany"],
+      GR: ["Grekland", "Greece"],
+      HU: ["Ungern", "Hungary"],
+      IE: ["Irland", "Ireland"],
+      IT: ["Italien", "Italy"],
+      LV: ["Lettland", "Latvia"],
+      LT: ["Litauen", "Lithuania"],
+      LU: ["Luxemburg", "Luxembourg"],
+      MT: ["Malta", "Malta"],
+      NL: ["Nederländerna", "Netherlands"],
+      PL: ["Polen", "Poland"],
+      PT: ["Portugal", "Portugal"],
+      RO: ["Rumänien", "Romania"],
+      SK: ["Slovakien", "Slovakia"],
+      SI: ["Slovenien", "Slovenia"],
+      ES: ["Spanien", "Spain"],
+      NO: ["Norge", "Norway"],
+      GB: ["Storbritannien", "United Kingdom"],
+      US: ["USA", "United States"],
+    };
+    const pair = names[String(code || "").trim().toUpperCase()];
+    if (!pair) return String(code || "").trim().toUpperCase();
+    return isEN() ? pair[1] : pair[0];
+  };
 
   // Keep hostname consistent with /login/ so localStorage + cookies work across flows.
   // Otherwise, users can end up with email stored on one origin and checkout running on another.
@@ -28,6 +75,7 @@
   const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 
   const cartSummary = qs("#cartSummary");
+  const currencyNotice = qs("#currencyNotice");
   const taxSummary = qs("#taxSummary");
   const deliverySummary = qs("#deliverySummary");
   const startForm = qs("#startForm");
@@ -58,6 +106,93 @@
   const klarnaBtn = qs("#klarnaBtn");
   const klarnaErr = qs("#klarnaErr");
   const klarnaWidget = qs("#klarnaWidget");
+
+  const applyCheckoutI18n = () => {
+    try {
+      document.documentElement.lang = isEN() ? "en" : "sv";
+    } catch (_) {}
+
+    try {
+      const back = qs("a.back");
+      if (back) {
+        back.textContent = tx("← Tillbaka", "← Back");
+        const url = new URL("/shop/", window.location.origin);
+        url.searchParams.set("lang", getLang());
+        back.setAttribute("href", url.pathname + url.search);
+      }
+    } catch (_) {}
+
+    try {
+      const title = qs(".card h1");
+      if (title) title.textContent = tx("Kassa", "Checkout");
+    } catch (_) {}
+
+    try {
+      const intro = qs(".card p");
+      if (intro) intro.textContent = tx("Kortbetalning via Stripe.", "Card payment via Stripe.");
+    } catch (_) {}
+
+    const setText = (selector, sv, en) => {
+      try {
+        const el = qs(selector);
+        if (el) el.textContent = tx(sv, en);
+      } catch (_) {}
+    };
+
+    setText("#labelFullName", "Namn", "Full name");
+    setText("#labelPhone", "Telefon", "Phone");
+    setText("#labelEmail", "E-post", "Email");
+    setText("#labelCountry", "Land", "Country");
+    setText("#labelVatId", "VAT-ID (företag inom EU)", "VAT ID (EU business customers)");
+    setText("#vatIdHelp", "Ange endast om du handlar som företag inom EU (utanför Sverige). VAT-ID valideras via VIES; vid giltigt VAT-ID tillämpas 0% moms (omvänd skattskyldighet).", "Enter this only if you are purchasing as an EU business outside Sweden. The VAT ID is validated through VIES; if valid, 0% VAT is applied under reverse charge.");
+    setText("#legendDelivery", "Leverans", "Delivery");
+    setText("#deliveryPickupLabel", "Avhämtning (0 kr)", "Pickup (SEK 0)");
+    setText("#deliveryPostnordLabel", "PostNord frakt (viktbaserat)", "PostNord shipping (weight-based)");
+    setText("#shippingAddressHelp", "PostNord frakt: leveransadress krävs (används även som fakturaadress).", "PostNord shipping: a delivery address is required and will also be used as the billing address.");
+    setText("#labelShipLine1", "Adress", "Address");
+    setText("#labelShipLine2", "Adressrad 2 (valfritt)", "Address line 2 (optional)");
+    setText("#labelShipPostal", "Postnr", "Postal code");
+    setText("#labelShipCity", "Ort", "City");
+    setText("#labelShipCountry", "Land (2 bokstäver)", "Country (2 letters)");
+    setText("#legendPayMethod", "Betalmetod", "Payment method");
+    setText("#payMethodStripeLabel", "Kort (Stripe)", "Card (Stripe)");
+    setText("#payMethodKlarnaLabel", "Klarna (test)", "Klarna (test)");
+
+    try {
+      const input = qs("#vatId");
+      if (input) input.setAttribute("placeholder", tx("Ex: DE123456789", "E.g. DE123456789"));
+    } catch (_) {}
+
+    try {
+      const select = qs("#country");
+      if (select) {
+        for (const option of Array.from(select.options || [])) {
+          option.textContent = countryName(option.value);
+        }
+      }
+    } catch (_) {}
+
+    try {
+      if (currencyNotice) {
+        currencyNotice.textContent = tx(
+          "Priser i kassan debiteras i SEK.",
+          "English product prices may be shown in EUR, but checkout is charged in SEK."
+        );
+      }
+    } catch (_) {}
+
+    try {
+      if (startBtn) startBtn.textContent = tx("Gå till betalning", "Continue to payment");
+    } catch (_) {}
+    try {
+      if (payBtn) payBtn.textContent = tx("Betala", "Pay");
+    } catch (_) {}
+    try {
+      if (klarnaBtn) klarnaBtn.textContent = tx("Betala med Klarna", "Pay with Klarna");
+    } catch (_) {}
+  };
+
+  applyCheckoutI18n();
 
   let emailTouched = false;
   let countryTouched = false;
@@ -354,17 +489,17 @@
     const rate = Number(vat_rate);
     const pct = Number.isFinite(rate) ? Math.round(rate * 100) : 0;
     const lines = [];
-    lines.push(`Summa exkl. moms: ${fmt(subtotal_ex_vat, currency)}`);
+    lines.push(tx(`Summa exkl. moms: ${fmt(subtotal_ex_vat, currency)}`, `Subtotal excl. VAT: ${fmt(subtotal_ex_vat, currency)}`));
     const mode = String(tax_mode || "");
     if (mode === "reverse_charge") {
       const suffix = vies_status ? `, VIES: ${String(vies_status)}` : "";
-      lines.push(`Moms (${pct}%${c ? `, ${c}` : ""}, omvänd skattskyldighet${suffix}): ${fmt(vat_total, currency)}`);
+      lines.push(tx(`Moms (${pct}%${c ? `, ${c}` : ""}, omvänd skattskyldighet${suffix}): ${fmt(vat_total, currency)}`, `VAT (${pct}%${c ? `, ${c}` : ""}, reverse charge${suffix}): ${fmt(vat_total, currency)}`));
     } else if (mode === "export") {
-      lines.push(`Moms (${pct}%${c ? `, ${c}` : ""}, export): ${fmt(vat_total, currency)}`);
+      lines.push(tx(`Moms (${pct}%${c ? `, ${c}` : ""}, export): ${fmt(vat_total, currency)}`, `VAT (${pct}%${c ? `, ${c}` : ""}, export): ${fmt(vat_total, currency)}`));
     } else {
-      lines.push(`Moms (${pct}%${c ? `, ${c}` : ""}): ${fmt(vat_total, currency)}`);
+      lines.push(tx(`Moms (${pct}%${c ? `, ${c}` : ""}): ${fmt(vat_total, currency)}`, `VAT (${pct}%${c ? `, ${c}` : ""}): ${fmt(vat_total, currency)}`));
     }
-    lines.push(`Summa inkl. moms: ${fmt(total_inc_vat, currency)}`);
+    lines.push(tx(`Summa inkl. moms: ${fmt(total_inc_vat, currency)}`, `Total incl. VAT: ${fmt(total_inc_vat, currency)}`));
     return lines.join("\n");
   };
 
@@ -373,7 +508,7 @@
     const country = String(countryEl?.value || "SE").trim().toUpperCase();
     const vatId = normalizeVatIdForSend(vatIdEl?.value || "");
     if (!cartTotalSEK || cartTotalSEK <= 0) {
-      taxSummary.textContent = country === "SE" ? "Priser visas inkl. moms." : "";
+      taxSummary.textContent = country === "SE" ? tx("Priser visas inkl. moms.", "Prices are shown incl. VAT.") : "";
       return;
     }
     const HOME_VAT_RATE = 0.25;
@@ -393,11 +528,11 @@
     });
 
     if (vatId && country !== "SE" && isEu(country)) {
-      text += "\n\nOBS: Om VAT-ID är giltigt kan moms bli 0% (omvänd skattskyldighet).";
+      text += tx("\n\nOBS: Om VAT-ID är giltigt kan moms bli 0% (omvänd skattskyldighet).", "\n\nNote: If the VAT ID is valid, VAT may become 0% under reverse charge.");
     }
 
     if (isExport) {
-      text += "\n\nOBS: Export utanför EU (0% moms).";
+      text += tx("\n\nOBS: Export utanför EU (0% moms).", "\n\nNote: Export outside the EU (0% VAT).");
     }
 
     taxSummary.textContent = text;
@@ -644,11 +779,11 @@
     try {
       if (deliverySummary) {
         if (zone === "OTHER") {
-          deliverySummary.textContent = "Leverans: frakt offereras manuellt efter beställning.\nFrakt: enligt överenskommelse";
+          deliverySummary.textContent = tx("Leverans: frakt offereras manuellt efter beställning.\nFrakt: enligt överenskommelse", "Delivery: shipping will be quoted manually after the order.\nShipping: by agreement");
         } else {
           deliverySummary.textContent = method === "pickup"
-            ? "Avhämtning: Innovatio Brutalis, (adress enligt överenskommelse)\nFrakt: 0 kr"
-            : "PostNord frakt: beräknar…";
+            ? tx("Avhämtning: Innovatio Brutalis, (adress enligt överenskommelse)\nFrakt: 0 kr", "Pickup: Innovatio Brutalis, (address by arrangement)\nShipping: SEK 0")
+            : tx("PostNord frakt: beräknar…", "PostNord shipping: calculating...");
         }
       }
     } catch (_) {}
@@ -657,21 +792,21 @@
       const q = await refreshShippingQuote();
       if (!deliverySummary) return;
       if (method === "pickup") {
-        deliverySummary.textContent = `Avhämtning: Innovatio Brutalis, (adress enligt överenskommelse)\nFrakt: 0 kr\nTotal (estimat): ${fmt(cartTotalSEK, 'SEK')}`;
+        deliverySummary.textContent = tx(`Avhämtning: Innovatio Brutalis, (adress enligt överenskommelse)\nFrakt: 0 kr\nTotal (estimat): ${fmt(cartTotalSEK, 'SEK')}`, `Pickup: Innovatio Brutalis, (address by arrangement)\nShipping: SEK 0\nEstimated total: ${fmt(cartTotalSEK, 'SEK')}`);
         return;
       }
 
       if (zone === "OTHER") {
-        deliverySummary.textContent = "Leverans: frakt offereras manuellt efter beställning.\nFrakt: enligt överenskommelse\nTotal (utan frakt): " + fmt(cartTotalSEK, "SEK");
+        deliverySummary.textContent = tx("Leverans: frakt offereras manuellt efter beställning.\nFrakt: enligt överenskommelse\nTotal (utan frakt): ", "Delivery: shipping will be quoted manually after the order.\nShipping: by agreement\nTotal (excluding shipping): ") + fmt(cartTotalSEK, "SEK");
         return;
       }
 
-      const shipTxt = Number(shippingQuoteSEK) > 0 ? fmt(shippingQuoteSEK, "SEK") : "0 kr";
+      const shipTxt = Number(shippingQuoteSEK) > 0 ? fmt(shippingQuoteSEK, "SEK") : tx("0 kr", "SEK 0");
       const totalEstimate = (Number(cartTotalSEK) || 0) + (Number(shippingQuoteSEK) || 0);
       const grams = q && Number.isFinite(Number(q?.total_weight_grams)) ? Number(q.total_weight_grams) : null;
-      deliverySummary.textContent = `PostNord frakt: ${shipTxt} (viktbaserat)\nTotalvikt: ${grams != null ? grams : "?"} g\nTotal (estimat): ${fmt(totalEstimate, 'SEK')}`;
+      deliverySummary.textContent = tx(`PostNord frakt: ${shipTxt} (viktbaserat)\nTotalvikt: ${grams != null ? grams : "?"} g\nTotal (estimat): ${fmt(totalEstimate, 'SEK')}`, `PostNord shipping: ${shipTxt} (weight-based)\nTotal weight: ${grams != null ? grams : "?"} g\nEstimated total: ${fmt(totalEstimate, 'SEK')}`);
     } catch (err) {
-      if (deliverySummary) deliverySummary.textContent = `Leverans: fel vid fraktberäkning (${String(err?.message || err)})`;
+      if (deliverySummary) deliverySummary.textContent = tx(`Leverans: fel vid fraktberäkning (${String(err?.message || err)})`, `Delivery: shipping calculation failed (${String(err?.message || err)})`);
     }
   };
 
@@ -746,13 +881,13 @@
     const items = getCartItems();
     const slugs = Object.keys(items);
     if (!slugs.length) {
-      cartSummary.textContent = "Kundvagnen är tom.";
+      cartSummary.textContent = tx("Kundvagnen är tom.", "Cart is empty.");
       startForm.hidden = true;
       return;
     }
 
     const qtyTotal = Object.values(items).reduce((s, v) => s + v, 0);
-    cartSummary.textContent = `Produkter: ${slugs.length} · Antal: ${qtyTotal}`;
+    cartSummary.textContent = tx(`Produkter: ${slugs.length} · Antal: ${qtyTotal}`, `Products: ${slugs.length} · Quantity: ${qtyTotal}`);
 
     try {
       cartTotalSEK = await computeCartTotal();
@@ -799,7 +934,7 @@
 
     const items = getCartItems();
     if (!Object.keys(items).length) {
-      if (startErr) startErr.textContent = "Kundvagnen är tom.";
+      if (startErr) startErr.textContent = tx("Kundvagnen är tom.", "Cart is empty.");
       return;
     }
 
@@ -815,22 +950,22 @@
     const shipping_address = delivery_method === "postnord" ? getShippingAddress() : undefined;
 
     if (!full_name) {
-      if (startErr) startErr.textContent = "Fyll i namn.";
+      if (startErr) startErr.textContent = tx("Fyll i namn.", "Enter your full name.");
       return;
     }
     if (!phone) {
-      if (startErr) startErr.textContent = "Fyll i telefon.";
+      if (startErr) startErr.textContent = tx("Fyll i telefon.", "Enter your phone number.");
       return;
     }
     if (!email || !email.includes("@")) {
-      if (startErr) startErr.textContent = "Fyll i e-post.";
+      if (startErr) startErr.textContent = tx("Fyll i e-post.", "Enter your email address.");
       return;
     }
 
     if (delivery_method === "postnord") {
       const a = shipping_address || {};
       if (!String(a.line1 || "").trim() || !String(a.postal_code || "").trim() || !String(a.city || "").trim() || !String(a.country || "").trim()) {
-        if (startErr) startErr.textContent = "Fyll i leveransadress (PostNord).";
+        if (startErr) startErr.textContent = tx("Fyll i leveransadress (PostNord).", "Enter the delivery address for PostNord shipping.");
         return;
       }
     }
@@ -929,7 +1064,7 @@
       const total = data?.order?.total_inc_vat;
       const currency = data?.order?.currency;
 
-      if (cartSummary) cartSummary.innerHTML = `Order <strong>${esc(data?.order?.order_number || "")}</strong> · ${esc(fmt(total, currency))}`;
+      if (cartSummary) cartSummary.innerHTML = `${esc(tx("Order", "Order"))} <strong>${esc(data?.order?.order_number || "")}</strong> · ${esc(fmt(total, currency))}`;
 
       // Contact-only flow (OTHER zone)
       if (String(data?.order?.status || "") === "needs_shipping_quote") {
@@ -939,9 +1074,9 @@
           swishBox.hidden = false;
           swishBox.className = "badge";
           swishBox.innerHTML = `
-            <div style="font-weight:800">Fraktförfrågan skickad</div>
-            <div style="margin-top:10px; color:var(--text-muted)">Vi återkommer med fraktkostnad och betalningsinstruktioner.</div>
-            <div style="margin-top:10px"><a class="btn" href="/shop/thanks.html?order=${encodeURIComponent(orderId)}&token=${encodeURIComponent(publicToken)}">Visa status</a></div>
+            <div style="font-weight:800">${esc(tx("Fraktförfrågan skickad", "Shipping request sent"))}</div>
+            <div style="margin-top:10px; color:var(--text-muted)">${esc(tx("Vi återkommer med fraktkostnad och betalningsinstruktioner.", "We will follow up with a shipping cost and payment instructions."))}</div>
+            <div style="margin-top:10px"><a class="btn" href="/shop/thanks.html?order=${encodeURIComponent(orderId)}&token=${encodeURIComponent(publicToken)}">${esc(tx("Visa status", "View status"))}</a></div>
           `;
         }
         startForm.hidden = true;
@@ -955,14 +1090,14 @@
         if (swishBox) {
           swishBox.hidden = false;
           swishBox.className = "badge";
-          const payee = data.swish.payee_alias ? `<div><strong>Mottagare:</strong> ${esc(data.swish.payee_alias)}</div>` : "";
+          const payee = data.swish.payee_alias ? `<div><strong>${esc(tx("Mottagare:", "Recipient:"))}</strong> ${esc(data.swish.payee_alias)}</div>` : "";
           swishBox.innerHTML = `
-            <div style="font-weight:800">Swish (manuellt)</div>
+            <div style="font-weight:800">${esc(tx("Swish (manuellt)", "Swish (manual)"))}</div>
             ${payee}
-            <div><strong>Belopp:</strong> ${esc(fmt(data.swish.amount_sek, 'SEK'))}</div>
-            <div><strong>Meddelande / Referens:</strong> ${esc(data.swish.reference || '')}</div>
-            <div style="margin-top:10px; color:var(--text-muted)">När betalningen är verifierad uppdateras orderstatus.</div>
-            <div style="margin-top:10px"><a class="btn" href="/shop/thanks.html?order=${encodeURIComponent(orderId)}&token=${encodeURIComponent(publicToken)}">Visa status</a></div>
+            <div><strong>${esc(tx("Belopp:", "Amount:"))}</strong> ${esc(fmt(data.swish.amount_sek, 'SEK'))}</div>
+            <div><strong>${esc(tx("Meddelande / Referens:", "Message / reference:"))}</strong> ${esc(data.swish.reference || '')}</div>
+            <div style="margin-top:10px; color:var(--text-muted)">${esc(tx("När betalningen är verifierad uppdateras orderstatus.", "The order status will update once the payment has been verified."))}</div>
+            <div style="margin-top:10px"><a class="btn" href="/shop/thanks.html?order=${encodeURIComponent(orderId)}&token=${encodeURIComponent(publicToken)}">${esc(tx("Visa status", "View status"))}</a></div>
           `;
         }
         startForm.hidden = true;
@@ -1012,7 +1147,7 @@
       startForm.hidden = true;
       payForm.hidden = false;
     } catch (err) {
-      if (startErr) startErr.textContent = String(err?.message || "Kunde inte starta checkout.");
+      if (startErr) startErr.textContent = String(err?.message || tx("Kunde inte starta checkout.", "Could not start checkout."));
     } finally {
       if (startBtn) startBtn.disabled = false;
     }
@@ -1034,10 +1169,10 @@
       });
 
       if (error) {
-        if (payErr) payErr.textContent = error.message || "Betalning misslyckades.";
+        if (payErr) payErr.textContent = error.message || tx("Betalning misslyckades.", "Payment failed.");
       }
     } catch (err) {
-      if (payErr) payErr.textContent = String(err?.message || "Betalning misslyckades.");
+      if (payErr) payErr.textContent = String(err?.message || tx("Betalning misslyckades.", "Payment failed."));
     } finally {
       if (payBtn) payBtn.disabled = false;
     }
@@ -1072,7 +1207,7 @@
       url.searchParams.set("token", publicToken);
       window.location.href = url.toString();
     } catch (err) {
-      if (klarnaErr) klarnaErr.textContent = String(err?.message || "Klarna failed");
+      if (klarnaErr) klarnaErr.textContent = String(err?.message || tx("Klarna misslyckades", "Klarna failed"));
     } finally {
       if (klarnaBtn) klarnaBtn.disabled = false;
     }
@@ -1098,6 +1233,6 @@
   loadProfileAndPrefill().catch(() => {});
 
   renderCartSummary().catch(() => {
-    if (cartSummary) cartSummary.textContent = "Kunde inte läsa kundvagn.";
+    if (cartSummary) cartSummary.textContent = tx("Kunde inte läsa kundvagn.", "Could not read cart.");
   });
 })();

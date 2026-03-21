@@ -94,6 +94,17 @@
 		return data;
 	};
 
+	let webshopSettingsCache = null;
+	const loadWebshopSettings = async () => {
+		if (webshopSettingsCache) return webshopSettingsCache;
+		try {
+			webshopSettingsCache = await fetchJSON("/content/webshop.json");
+		} catch (_) {
+			webshopSettingsCache = {};
+		}
+		return webshopSettingsCache;
+	};
+
 	// --- Cart (minimal MVP) ---
 	const CART_KEY = "ib_shop_cart_v1";
 	const readCart = () => {
@@ -468,14 +479,42 @@
 		"'": "&#39;",
 	}[ch]));
 
-	const formatPrice = (value, currency = "SEK") => {
+	const DEFAULT_EUR_DISPLAY_RATE = 11.2;
+
+	const formatCurrency = (value, currency = "SEK", locale = "sv-SE") => {
 		const n = Number(value);
 		if (!Number.isFinite(n)) return "";
 		try {
-			return new Intl.NumberFormat("sv-SE", { style: "currency", currency }).format(n);
+			return new Intl.NumberFormat(locale, { style: "currency", currency }).format(n);
 		} catch (_) {
 			return `${n} ${currency}`;
 		}
+	};
+
+	const formatPrice = (value, currency = "SEK") => formatCurrency(value, currency, "sv-SE");
+
+	const getEurDisplayRate = () => {
+		try {
+			const raw = Number(webshopSettingsCache?.eur_display_rate);
+			if (Number.isFinite(raw) && raw > 0) return raw;
+		} catch (_) {}
+		return DEFAULT_EUR_DISPLAY_RATE;
+	};
+
+	const formatDisplayPrice = (value, currency = "SEK") => {
+		const normalizedCurrency = String(currency || "SEK").trim().toUpperCase();
+		if (isEN() && normalizedCurrency === "SEK") {
+			return formatCurrency(Number(value) / getEurDisplayRate(), "EUR", "en-IE");
+		}
+		return formatPrice(value, normalizedCurrency);
+	};
+
+	const getDisplayPriceNote = (value, currency = "SEK") => {
+		const normalizedCurrency = String(currency || "SEK").trim().toUpperCase();
+		if (isEN() && normalizedCurrency === "SEK") {
+			return `incl. VAT · charged in SEK (${formatPrice(value, "SEK")})`;
+		}
+		return vatLabel("SE");
 	};
 
 	const vatLabel = (countryCode) => {
@@ -695,7 +734,7 @@
 
 		let webshopSettings = {};
 		try {
-			webshopSettings = await fetchJSON("/content/webshop.json");
+			webshopSettings = await loadWebshopSettings();
 		} catch (_) {
 			webshopSettings = {};
 		}
@@ -820,8 +859,8 @@
 				const excerpt = isEN() ? (p.excerptEN || p.excerptSV || "") : (p.excerptSV || p.excerptEN || "");
 				const img = pickMainImage(p);
 				const newsLabel = isEN() ? "NEW" : "NY";
-				const price = formatPrice(p.price, p.currency);
-				const priceNote = vatLabel("SE");
+				const price = formatDisplayPrice(p.price, p.currency);
+				const priceNote = getDisplayPriceNote(p.price, p.currency);
 				const href = withLangQuery(`/shop/product.html?slug=${encodeURIComponent(p.slug)}`);
 				const catLabel = categoryTitleBySlug.get(String(p.categorySlug || "")) || String(p.categorySlug || "");
 				return `
@@ -886,7 +925,7 @@
 							<div class=\"cart-row\" data-cart-row=\"${esc(slug)}\">
 								<div>
 									<div class=\"cart-title\">${esc(title)}</div>
-									${p ? `<div class=\"badge\">${esc(formatPrice(p.price, p.currency))}</div>` : ""}
+									${p ? `<div class=\"badge\">${esc(formatPrice(p.price, "SEK"))}</div>` : ""}
 								</div>
 								<div class=\"cart-actions\">
 									<label class=\"badge\" style=\"display:flex; flex-direction:column; gap:6px\">
@@ -906,7 +945,7 @@
 						</div>
 						<div style=\"margin-top:12px\">${rows}</div>
 						<div style=\"margin-top:12px; display:flex; justify-content:space-between; gap:12px\">
-							<div class=\"badge\">${esc(t("total"))} · ${esc(vatLabel("SE"))}</div>
+							<div class=\"badge\">${esc(t("total"))} · ${esc(isEN() ? "charged in SEK" : vatLabel("SE"))}</div>
 							<div class=\"price\">${esc(formatPrice(total, "SEK"))}</div>
 						</div>
 						<div style=\"margin-top:12px; display:flex; justify-content:flex-end\">
@@ -991,6 +1030,9 @@
 		// Resolve through the catalog first so slug changes in CMS still work
 		// even if the underlying JSON filename has not been renamed.
 		try {
+			await loadWebshopSettings();
+		} catch (_) {}
+		try {
 			const catalog = await loadCatalog();
 			const products = Array.isArray(catalog?.products) ? catalog.products : [];
 			product = products.find((p) => String(p?.slug || "") === String(slug)) || null;
@@ -1024,8 +1066,8 @@
 		const gallery = getGalleryImages(product);
 		const mainImg = gallery[0] ? String(gallery[0]) : "";
 		const thumbImages = gallery;
-		const price = formatPrice(product.price, product.currency);
-		const priceNote = vatLabel("SE");
+		const price = formatDisplayPrice(product.price, product.currency);
+		const priceNote = getDisplayPriceNote(product.price, product.currency);
 
 		view.innerHTML = `
 			<h1 style=\"margin-bottom:10px\">${esc(title)}</h1>

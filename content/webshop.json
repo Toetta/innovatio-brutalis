@@ -2,6 +2,7 @@
   "title": "Webshop",
   "intro": "",
   "enabled": true,
+  "eur_display_rate": 11.2,
 
   "catalog_layout": "grid",
   "show_excerpt": true,
