@@ -56,12 +56,14 @@
       --ok:#22c55e;
       --shadow: 0 10px 30px rgba(0,0,0,.35);
       --radius:14px;
+      --tableHeight: 68vh;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
       --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
     }
     *{ box-sizing: border-box; }
     body{
       margin:0;
+      min-height: 100vh;
       font-family: var(--sans);
       background: linear-gradient(180deg, var(--bg), var(--bg2));
       color:var(--text);
@@ -99,6 +101,19 @@
       display:grid;
       grid-template-columns: 1fr 1fr;
       gap: 12px;
+    }
+    .setupGrid{
+      transition: max-height .28s ease, opacity .2s ease, margin .28s ease;
+      max-height: 2400px;
+      opacity: 1;
+    }
+    .setupGrid.is-collapsed{
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      margin: 0;
+      gap: 0;
+      pointer-events: none;
     }
     @media (max-width: 980px){
       .grid2{ grid-template-columns: 1fr; }
@@ -190,6 +205,9 @@
       padding: 10px 12px;
       border-bottom: 1px solid rgba(35,48,64,.55);
       background: rgba(8,10,12,.20);
+      position: sticky;
+      top: 68px;
+      z-index: 24;
     }
     .toolbar .left, .toolbar .right{
       display:flex;
@@ -210,7 +228,7 @@
     .btn.danger:hover{ border-color: rgba(255,74,74,.75); }
     .tableWrap{
       overflow:auto;
-      max-height: 68vh;
+      height: var(--tableHeight);
     }
     table{
       border-collapse: separate;
@@ -322,12 +340,196 @@
     #rpmTable{
       --rowH: 28px;
       --cellFont: 12px;
+      --headFont: 12px;
+      --cellPadX: 8px;
+    }
+    #rpmTable thead th{
+      font-size: var(--headFont);
+      padding: 8px var(--cellPadX);
+      line-height: 1.1;
     }
     #rpmTable tbody td{
       height: var(--rowH);
       line-height: var(--rowH);
-      padding: 0 8px;
+      padding: 0 var(--cellPadX);
       font-size: var(--cellFont);
+    }
+
+    .summaryGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      padding: 12px;
+      border-top: 1px solid rgba(35,48,64,.55);
+      background: rgba(8,10,12,.12);
+    }
+    .summaryCard{
+      border: 1px solid rgba(var(--line-rgb), .55);
+      border-radius: 12px;
+      background: rgba(var(--card-rgb), .60);
+      padding: 10px;
+      min-width: 0;
+    }
+    .summaryTitle{
+      margin: 0 0 8px;
+      font-size: 12px;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+      color: var(--text);
+      font-weight: 800;
+    }
+    .summaryKv{
+      display:grid;
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 4px 8px;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+    .summaryKv .k{
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .summaryKv > div{
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+    .summaryNoteLabel,
+    .summaryNoteValue{
+      display: none;
+    }
+    .summaryTableWrap{
+      overflow-x: auto;
+    }
+    .summaryTable{
+      width: 100%;
+      min-width: 420px;
+      border-collapse: collapse;
+      font-size: 12px;
+      font-family: var(--mono);
+    }
+    .summaryTable th,
+    .summaryTable td{
+      border-bottom: 1px solid rgba(var(--line-rgb), .40);
+      padding: 4px 6px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    .summaryTable th:first-child,
+    .summaryTable td:first-child{
+      text-align: left;
+    }
+
+    .btn.accent:hover{ border-color: rgba(74,163,255,.95); }
+
+    @media (max-width: 980px){
+      .summaryGrid{ grid-template-columns: 1fr; }
+      .toolbar{ position: static; }
+    }
+
+    @media print{
+      @page{
+        size: landscape;
+        margin: 10mm;
+      }
+      body{
+        min-height: auto;
+        background: #fff;
+        color: #111;
+      }
+      #site-topbar,
+      .setupGrid,
+      .toolbar .right,
+      #toggleSetups,
+      #printPdf{
+        display: none !important;
+      }
+      header,
+      .wrap,
+      footer{
+        max-width: none;
+        margin: 0;
+        padding-left: 0;
+        padding-right: 0;
+      }
+      .card,
+      .summaryCard{
+        background: #fff;
+        border-color: #c7c7c7;
+        box-shadow: none;
+      }
+      .toolbar{
+        position: static;
+        top: auto;
+        background: #fff;
+        border-bottom-color: #c7c7c7;
+      }
+      .toolbar .left > div:not(.pillbar){
+        display: none !important;
+      }
+      .pill,
+      .toolbar,
+      .summaryGrid{
+        color: #111;
+      }
+      .pill{
+        background: #fff;
+        border-color: #c7c7c7;
+      }
+      thead th,
+      .speedCol,
+      tbody td,
+      .summaryTable th,
+      .summaryTable td,
+      .summaryKv,
+      .summaryKv .k,
+      .summaryKv > div,
+      .summaryTitle,
+      footer{
+        color: #111;
+      }
+      thead th{
+        background: #f4f4f4;
+        border-bottom-color: #c7c7c7;
+      }
+      .speedCol{
+        background: #f4f4f4;
+        border-right-color: #c7c7c7;
+      }
+      .tableWrap,
+      .summaryTableWrap{
+        height: auto !important;
+        overflow: visible !important;
+      }
+      .summaryGrid{
+        gap: 6px;
+        padding: 6px 0 0;
+        break-inside: avoid;
+      }
+      .summaryCard{
+        padding: 6px;
+      }
+      .summaryKv{
+        grid-template-columns: 72px minmax(0, 1fr);
+        gap: 3px 6px;
+        font-size: 9px;
+        margin-bottom: 4px;
+      }
+      .summaryTitle{
+        font-size: 10px;
+        margin-bottom: 4px;
+      }
+      .summaryTable{
+        min-width: 0;
+        font-size: 9px;
+      }
+      .summaryTable th,
+      .summaryTable td{
+        padding: 3px 4px;
+      }
+      .summaryNoteLabel,
+      .summaryNoteValue{
+        display: none !important;
+      }
     }
 
     /* Keep global nav readable on this page */
@@ -342,10 +544,11 @@
 
   <header>
     <h1>Classic Mini Gearbox Visualiser (HTML)</h1>
+    <p class="sub">Overview-first comparison with adaptive gear columns and compact print details.</p>
   </header>
 
   <div class="wrap">
-    <div class="grid2">
+    <div class="grid2 setupGrid" id="setupGrid">
       <div class="card" id="leftCard">
         <div class="hd">
           <div class="ttl">LEFT setup</div>
@@ -376,6 +579,8 @@
     <div class="card">
       <div class="toolbar">
         <div class="left">
+          <button class="btn" id="toggleSetups" type="button" title="Toggle the setup panels">Hide controls</button>
+          <button class="btn accent" id="printPdf" type="button" title="Open the browser print dialog for PDF or paper output">Print / Save PDF</button>
           <div style="min-width:260px">
             <label style="display:block;margin:0 0 6px">Speed step <span id="speedUnitLabel" style="color:var(--muted)"></span></label>
             <input id="speedStep" type="number" min="1" step="1" value="5" />
@@ -391,7 +596,7 @@
             <label style="display:block;margin:0 0 6px">Table row height</label>
             <div class="zoomRow">
               <button class="btn mini" id="zoomOut" title="Decrease row height">−</button>
-              <input id="zoom" type="range" min="30" max="140" step="2" value="100" aria-label="Zoom slider" />
+              <input id="zoom" type="range" min="20" max="140" step="2" value="100" aria-label="Zoom slider" />
               <button class="btn mini" id="zoomIn" title="Increase row height">+</button>
               <button class="btn" id="btnFit" title="Try to fit the whole table in view">Fit</button>
             </div>
@@ -409,6 +614,17 @@
       <div class="tableWrap">
         <div id="zoomHost"><table id="rpmTable" aria-label="RPM table"></table></div>
       </div>
+
+      <section class="summaryGrid" id="summaryGrid" aria-label="Comparison details">
+        <div class="summaryCard">
+          <h4 class="summaryTitle">Left setup</h4>
+          <div id="leftSummary"></div>
+        </div>
+        <div class="summaryCard">
+          <h4 class="summaryTitle">Right setup</h4>
+          <div id="rightSummary"></div>
+        </div>
+      </section>
     </div>
   </div>
 
@@ -456,9 +672,11 @@
       unit: "kmh",
       speedStep: 5,
       zoom: 0.5,
+      controlsCollapsed: true,
       left: structuredClone(DEFAULT_SIDE),
       right: structuredClone(DEFAULT_SIDE),
     };
+    let printRestoreCollapsed = null;
 
     /** ===== Helpers ===== */
     function clamp01(x){ return Math.max(0, Math.min(1, x)); }
@@ -558,6 +776,89 @@
 
     function formatKmH(x){
       return formatSpeed(x);
+    }
+
+    function validGears(gears){
+      return (gears || []).filter(g => g != null && Number.isFinite(Number(g)) && Number(g) > 0);
+    }
+
+    function ordinal(n){
+      const mod100 = n % 100;
+      const mod10 = n % 10;
+      if (mod100 >= 10 && mod100 <= 20) return n + "th";
+      return n + ({1:"st",2:"nd",3:"rd"}[mod10] || "th");
+    }
+
+    function activeGearKitName(side){
+      const exact = Object.entries(GEAR_KITS).find(([, kit]) => {
+        const vals = [kit.g1, kit.g2, kit.g3, kit.g4, kit.g5];
+        return vals.every((value, index) => {
+          const current = side.gears[index];
+          if (value == null && current == null) return true;
+          return Number(value) === Number(current);
+        });
+      });
+      return exact ? exact[0] : (side.gearKit || "Custom");
+    }
+
+    function renderSummary(sideKey){
+      const side = state[sideKey];
+      const host = document.getElementById(`${sideKey}Summary`);
+      if (!host) return;
+
+      const drop = dropRatioByName(side.dropGear);
+      const effFD = Number(side.finalDrive) * drop;
+      const top = topGearRatio(side.gears);
+      const vmax = fromKmh(maxSpeedAtLimiterKmH(side));
+      const gears = side.gears || [];
+
+      let rows = "";
+      gears.forEach((ratio, index) => {
+        if (ratio == null || !Number.isFinite(Number(ratio)) || Number(ratio) <= 0) return;
+        rows += `<tr><td>${ordinal(index + 1)}</td><td>${Number(ratio).toFixed(3)}</td></tr>`;
+      });
+
+      host.innerHTML = `
+        <div class="summaryKv">
+          <div class="k">Gear kit</div><div><b>${activeGearKitName(side)}</b></div>
+          <div class="k">Tyre</div><div>${side.width}/${Math.round(side.aspect * 100)}-${side.rim} <span class="muted">(${tyreCircumferenceMeters(side.width, side.aspect, side.rim).toFixed(3)} m)</span></div>
+          <div class="k">Drop gear</div><div>${side.dropGear} <span class="muted">(${drop.toFixed(3)})</span></div>
+          <div class="k">Final drive</div><div>${Number(side.finalDrive).toFixed(3)}</div>
+          <div class="k">Eff. final</div><div>${effFD.toFixed(3)}</div>
+          <div class="k">Top gear</div><div>${Number(top).toFixed(3)}</div>
+          <div class="k">Vmax@lim</div><div>${formatSpeed(vmax)} ${unitLabel()}</div>
+        </div>
+        <div class="summaryTableWrap">
+          <table class="summaryTable" aria-label="${sideKey} setup ratios">
+            <thead><tr><th>Gear</th><th>Ratio</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="2">No active gears</td></tr>'}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function updateViewportLayout(){
+      const wrap = document.querySelector(".tableWrap");
+      const summary = document.getElementById("summaryGrid");
+      if (!wrap) return;
+      const summaryHeight = summary ? summary.getBoundingClientRect().height : 0;
+      const available = Math.floor(window.innerHeight - wrap.getBoundingClientRect().top - summaryHeight - 24);
+      const target = Math.max(220, available);
+      document.documentElement.style.setProperty("--tableHeight", target + "px");
+    }
+
+    function setControlsCollapsed(collapsed, options = {}){
+      const { refit = true } = options;
+      state.controlsCollapsed = !!collapsed;
+      const grid = document.getElementById("setupGrid");
+      const btn = document.getElementById("toggleSetups");
+      if (grid) grid.classList.toggle("is-collapsed", state.controlsCollapsed);
+      if (btn) {
+        btn.textContent = state.controlsCollapsed ? "Show controls" : "Hide controls";
+        btn.setAttribute("aria-expanded", String(!state.controlsCollapsed));
+      }
+      updateViewportLayout();
+      if (refit) fitZoom();
     }
 
     /** ===== UI rendering ===== */
@@ -885,20 +1186,23 @@
         speedsU.push(Math.round(s * 1000) / 1000);
       }
 
-      const gearLabels = ["1st","2nd","3rd","4th","5th"];
+      const leftGears = validGears(state.left.gears);
+      const rightGears = validGears(state.right.gears);
+      const leftCount = Math.max(1, leftGears.length);
+      const rightCount = Math.max(1, rightGears.length);
 
       // Build THEAD
       const thead = document.createElement("thead");
       const tr1 = document.createElement("tr");
-      tr1.appendChild(th("LEFT RPM by gear", 5, "groupL"));
+      tr1.appendChild(th("LEFT RPM by gear", leftCount, "groupL"));
       tr1.appendChild(th(`Speed (${unitLabel()})`, 1, "speedCol"));
-      tr1.appendChild(th("RIGHT RPM by gear", 5, "groupR"));
+      tr1.appendChild(th("RIGHT RPM by gear", rightCount, "groupR"));
       thead.appendChild(tr1);
 
       const tr2 = document.createElement("tr");
-      for (let i=0;i<5;i++) tr2.appendChild(th(`${gearLabels[i]} RPM`, 1, "groupL"));
+      for (let i=0;i<leftCount;i++) tr2.appendChild(th(`${ordinal(i + 1)} RPM`, 1, "groupL"));
       tr2.appendChild(th(unitLabel(), 1, "speedCol"));
-      for (let i=0;i<5;i++) tr2.appendChild(th(`${gearLabels[i]} RPM`, 1, "groupR"));
+      for (let i=0;i<rightCount;i++) tr2.appendChild(th(`${ordinal(i + 1)} RPM`, 1, "groupR"));
       thead.appendChild(tr2);
 
       // Build TBODY
@@ -907,8 +1211,8 @@
         const tr = document.createElement("tr");
 
         // Left 5 gears
-        for (let gi=0; gi<5; gi++){
-          tr.appendChild(rpmCell(speedU, state.left.gears[gi], state.left, gi === 4 ? "groupL" : ""));
+        for (let gi=0; gi<leftCount; gi++){
+          tr.appendChild(rpmCell(speedU, leftGears[gi], state.left, gi === leftCount - 1 ? "groupL" : ""));
         }
 
         // Speed center
@@ -918,14 +1222,17 @@
         tr.appendChild(tdS);
 
         // Right 5 gears
-        for (let gi=0; gi<5; gi++){
-          tr.appendChild(rpmCell(speedU, state.right.gears[gi], state.right, gi === 0 ? "groupR" : ""));
+        for (let gi=0; gi<rightCount; gi++){
+          tr.appendChild(rpmCell(speedU, rightGears[gi], state.right, gi === 0 ? "groupR" : ""));
         }
 
         tbody.appendChild(tr);
       });
 
       table.replaceChildren(thead, tbody);
+      renderSummary("left");
+      renderSummary("right");
+      updateViewportLayout();
 
       function th(text, colspan=1, className=""){
         const x = document.createElement("th");
@@ -967,7 +1274,7 @@
     function applyZoom(){
       const table = document.getElementById("rpmTable");
       const label = document.getElementById("zoomLabel");
-      const z = Math.max(0.30, Math.min(1.40, Number(state.zoom) || 1));
+      const z = Math.max(0.20, Math.min(1.40, Number(state.zoom) || 1));
       state.zoom = z;
 
       // Vertical-only scaling: change row height + font size (width stays the same)
@@ -975,10 +1282,14 @@
       const BASE_FONT  = 12;   // px at 100%
       const rowH = Math.max(12, Math.round(BASE_ROW_H * z));
       const font = Math.max(9,  Math.round(BASE_FONT  * z));
+      const headFont = Math.max(9, Math.round(12 * z));
+      const cellPadX = Math.max(3, Math.round(8 * z));
 
       if (table){
         table.style.setProperty("--rowH", rowH + "px");
         table.style.setProperty("--cellFont", font + "px");
+        table.style.setProperty("--headFont", headFont + "px");
+        table.style.setProperty("--cellPadX", cellPadX + "px");
       }
       if (label) label.textContent = `${Math.round(z * 100)}% (height)`;
     }
@@ -1012,9 +1323,9 @@
         const perRow = Math.floor((availH - headH) / rows);
 
         // convert target row height -> scale factor
-        const targetRowH = Math.max(12, Math.min(40, perRow - 1));
+        const targetRowH = Math.max(10, Math.min(40, perRow - 1));
         let z = targetRowH / BASE_ROW_H;
-        z = Math.max(0.30, Math.min(1.40, z));
+        z = Math.max(0.20, Math.min(1.40, z));
 
         state.zoom = z;
         const slider = document.getElementById("zoom");
@@ -1050,6 +1361,7 @@
         state = s;
         if (typeof state.zoom !== "number") state.zoom = 0.5;
         if (typeof state.unit !== "string") state.unit = "kmh";
+        if (typeof state.controlsCollapsed !== "boolean") state.controlsCollapsed = false;
         return true;
       }catch(e){
         return false;
@@ -1060,6 +1372,7 @@
         unit: "kmh",
         speedStep: 5,
         zoom: 0.5,
+        controlsCollapsed: true,
         left: structuredClone(DEFAULT_SIDE),
         right: structuredClone(DEFAULT_SIDE),
       };
@@ -1127,7 +1440,7 @@
       if (zoomOut){
         zoomOut.addEventListener("click", () => {
           const v = Math.round(((state.zoom || 1) * 100 - 8));
-          const nv = Math.max(30, v);
+          const nv = Math.max(20, v);
           if (zoomSlider) zoomSlider.value = String(nv);
           setZoomFromPercent(nv);
         });
@@ -1143,6 +1456,30 @@
       if (btnFit){
         btnFit.addEventListener("click", () => fitZoom());
       }
+
+      const toggleSetups = document.getElementById("toggleSetups");
+      const printPdf = document.getElementById("printPdf");
+      if (toggleSetups){
+        toggleSetups.addEventListener("click", () => setControlsCollapsed(!state.controlsCollapsed));
+      }
+      if (printPdf){
+        printPdf.addEventListener("click", () => {
+          printRestoreCollapsed = state.controlsCollapsed;
+          setControlsCollapsed(true, { refit: false });
+          window.print();
+        });
+      }
+      window.addEventListener("resize", () => updateViewportLayout());
+      window.addEventListener("beforeprint", () => {
+        printRestoreCollapsed = state.controlsCollapsed;
+        setControlsCollapsed(true, { refit: false });
+      });
+      window.addEventListener("afterprint", () => {
+        if (printRestoreCollapsed !== null){
+          setControlsCollapsed(printRestoreCollapsed, { refit: true });
+          printRestoreCollapsed = null;
+        }
+      });
 
       applyZoom();
 
@@ -1160,6 +1497,7 @@
           const zoomSlider = document.getElementById("zoom");
           if (zoomSlider) zoomSlider.value = String(Math.round((state.zoom || 1) * 100));
           applyZoom();
+          setControlsCollapsed(state.controlsCollapsed, { refit: false });
           buildSideForm(document.getElementById("leftForm"), "left");
           buildSideForm(document.getElementById("rightForm"), "right");
           renderAll();
@@ -1178,12 +1516,16 @@
         const zoomSlider = document.getElementById("zoom");
         if (zoomSlider) zoomSlider.value = String(Math.round((state.zoom || 1) * 100));
         applyZoom();
+        setControlsCollapsed(state.controlsCollapsed, { refit: false });
         buildSideForm(document.getElementById("leftForm"), "left");
         buildSideForm(document.getElementById("rightForm"), "right");
         renderAll();
         flash("Reset ✔");
       });
 
+      setControlsCollapsed(state.controlsCollapsed, { refit: false });
+      updateViewportLayout();
+      fitZoom();
       renderAll();
     }
 
