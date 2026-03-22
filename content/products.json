@@ -162,6 +162,24 @@
       "category": "lambretta"
     },
     {
+      "price_sek": 599,
+      "description_sv": "45x25\n50x33\n52x33\n",
+      "is_news": true,
+      "title_sv": "3x packboxverktyg Lambretta",
+      "slug": "seal-tools-lambretta",
+      "description_en": "45x25\n50x33\n52x33\n",
+      "published": true,
+      "shipping_exempt": false,
+      "title_en": "3x seal tools Lambretta",
+      "weight_grams": 400,
+      "main_image": "/assets/uploads/p-box-verktyg.jpg",
+      "images": [],
+      "height_mm": 100,
+      "length_mm": 250,
+      "width_mm": 250,
+      "category": "lambretta"
+    },
+    {
       "price_sek": 449,
       "is_news": true,
       "title_sv": "Si reed adapter till Malossi reedkorg",
