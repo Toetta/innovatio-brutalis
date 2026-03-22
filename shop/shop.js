@@ -701,12 +701,14 @@
 			}
 		};
 
+		let localCatalog = null;
+
 		// Prefer the currently deployed same-origin content so price changes
 		// from the admin panel are reflected before any GitHub/raw fallback.
 		try {
-			return await loadLocalCatalog();
+			localCatalog = await loadLocalCatalog();
 		} catch (_) {
-			// Fall back to GitHub discovery if local catalog artifacts are unavailable.
+			localCatalog = null;
 		}
 
 		// Best effort auto-discovery: list the folders in the GitHub repo.
@@ -743,10 +745,19 @@
 		};
 
 		try {
-			return await loadViaGitHub();
+			const githubCatalog = await loadViaGitHub();
+			if (localCatalog) {
+				return {
+					categories: mergeBySlug(localCatalog.categories, githubCatalog.categories),
+					products: mergeBySlug(localCatalog.products, githubCatalog.products),
+				};
+			}
+			return githubCatalog;
 		} catch (_) {
 			// Fall back to manifest/aggregated JSON
 		}
+
+		if (localCatalog) return localCatalog;
 
 		// Preferred: manifest that lists folder-based slugs
 		//   { "categorySlugs": [..], "productSlugs": [..] }

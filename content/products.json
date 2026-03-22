@@ -31,6 +31,28 @@
       "category": "lambretta"
     },
     {
+      "price_sek": 500,
+      "description_sv": "Topppackning för long stroke vevaxel med 60mm slaglängd. Kan glödgas och återanvändas",
+      "is_news": true,
+      "title_sv": "Gori koppar topppackning 2mm",
+      "slug": "gori-2mm",
+      "description_en": "Head gasket for long stroke 60mm crank applications. Can be heat treated and is reusable.",
+      "published": true,
+      "shipping_exempt": false,
+      "title_en": "Gori copper head gaskes 2mm",
+      "weight_grams": 100,
+      "images": [
+        {
+          "is_main": false,
+          "image": "/assets/uploads/img_4274.jpeg"
+        }
+      ],
+      "height_mm": 5,
+      "length_mm": 100,
+      "width_mm": 100,
+      "category": "lambretta"
+    },
+    {
       "price_sek": 299,
       "description_sv": "Hållare för instrument för infästning vid rattstång. Kan fås med eller utan  \"shift -light\" monteringsörat. I bild sitter där en Innovate PSB-1 bredbandslambda och mapsensor ihop med en knacksensor vis shift light positionen. OBS, instrument medföljer ej, artikeln avser endast hållaren.",
       "is_news": true,
@@ -64,7 +86,7 @@
       "category": "mini-parts"
     },
     {
-      "price_sek": 459,
+      "price_sek": 649,
       "title_sv": "Insug till M210 Quattrini",
       "slug": "quattrini-inlet",
       "published": true,
@@ -96,7 +118,7 @@
     {
       "price_sek": 329,
       "description_sv": "Favoriter i repris! Barnglasögon-bågar som tål i princip allt. Är gjorda av gummi och okrossbara.\n\nKan fås i allt från rainbow färgade med unikt mönster till solida kulörer\n\nBygger på en modell som finns på specsavers så glasen kan tas därifrån med fördel till dessa.",
-      "is_news": true,
+      "is_news": false,
       "title_sv": "Okrossbara gummi-glasögonbågar för barn",
       "slug": "rubber-glasses",
       "description_en": "Favorites in repeat! Children's glasses frames that can withstand basically everything. Are made of rubber and unbreakable. Available in everything from rainbow colored with unique patterns to solid colors. Based on a model that is available at specsavers so the glasses can be taken from there with advantage to these",
@@ -125,7 +147,7 @@
       "published": true,
       "title_en": "Lambretta S1/S2 Beeline gen1 holder basic",
       "weight_grams": 200,
-      "main_image": "/assets/uploads/img_3999.jpeg",
+      "main_image": "/assets/uploads/img_3998.jpeg",
       "title": "Beeline holder",
       "images": [
         {
@@ -138,6 +160,70 @@
       "width_mm": 100,
       "image": "/assets/uploads/img_3999.jpeg",
       "category": "lambretta"
+    },
+    {
+      "price_sek": 449,
+      "is_news": true,
+      "title_sv": "Si reed adapter till Malossi reedkorg",
+      "slug": "si-reed",
+      "published": true,
+      "shipping_exempt": false,
+      "title_en": "Si reed house adapter to Malossi inlet",
+      "weight_grams": 100,
+      "images": [
+        {
+          "is_main": false,
+          "image": "/assets/uploads/img_4287.jpeg"
+        },
+        {
+          "is_main": false,
+          "image": "/assets/uploads/img_4096.jpeg"
+        }
+      ],
+      "height_mm": 40,
+      "length_mm": 100,
+      "width_mm": 100,
+      "category": "vespa-parts-tools"
+    },
+    {
+      "price_sek": 99,
+      "description_sv": "Packning gjord av polyuretan och är etnaolbeständig",
+      "is_news": true,
+      "title_sv": "Vespa Wideframe packning till tanklock",
+      "slug": "wideframe-lid-gasket",
+      "description_en": "Gasker made of polyurethane and is ethanol resitant",
+      "published": true,
+      "shipping_exempt": false,
+      "title_en": "Vespa Wideframe tank lid gasket",
+      "weight_grams": 50,
+      "images": [
+        {
+          "is_main": false,
+          "image": "/assets/uploads/wideframe-tank-gasket.jpg"
+        }
+      ],
+      "height_mm": 9,
+      "length_mm": 75,
+      "width_mm": 75,
+      "category": "vespa-parts-tools"
+    },
+    {
+      "price_sek": 219,
+      "description_sv": "32x16x28.\n\nGamla man med fördel värmas ut brännare. Montering av denna ske med plastklubba. och kranshålen vända inåt.",
+      "is_news": true,
+      "title_sv": "Vespa Wideframe motorbussning",
+      "slug": "wideframe-swingarm-bush",
+      "description_en": "32x16x28",
+      "published": true,
+      "shipping_exempt": false,
+      "title_en": "Vespa Wideframe swingarm bush",
+      "weight_grams": 75,
+      "main_image": "/assets/uploads/vespa-engine-bush.jpg",
+      "images": [],
+      "height_mm": 75,
+      "length_mm": 75,
+      "width_mm": 735,
+      "category": "vespa-parts-tools"
     }
   ]
 }
