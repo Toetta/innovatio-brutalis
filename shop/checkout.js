@@ -646,27 +646,10 @@
     const wanted = Array.isArray(slugs) ? slugs.map((s) => String(s || "").trim()).filter(Boolean) : [];
     const map = new Map();
 
-    // Fast path: aggregated JSON (may be stale in some deploy setups)
-    try {
-      const res = await fetch("/content/products.json", { cache: "no-store", headers: { accept: "application/json" } });
-      if (res.ok) {
-        const data = await res.json().catch(() => null);
-        const list = Array.isArray(data?.products) ? data.products : [];
-        for (const p of list) {
-          const slug = String(p?.slug || "").trim();
-          if (!slug) continue;
-          if (!map.has(slug)) map.set(slug, p);
-        }
-      }
-    } catch (_) {
-      // ignore
-    }
-
-    // Fallback: load missing slugs directly
-    const missing = wanted.length ? wanted.filter((s) => !map.has(s)) : [];
-    if (missing.length) {
+    // Prefer direct product files so updated prices win over stale aggregates.
+    if (wanted.length) {
       const docs = await Promise.all(
-        missing.map(async (slug) => {
+        wanted.map(async (slug) => {
           try {
             const res = await fetch(`/content/products/${encodeURIComponent(slug)}.json`, { cache: "no-store", headers: { accept: "application/json" } });
             if (!res.ok) return null;
@@ -680,6 +663,25 @@
         const slug = String(p?.slug || "").trim();
         if (!slug) continue;
         if (!map.has(slug)) map.set(slug, p);
+      }
+    }
+
+    // Fallback: aggregated JSON for missing products.
+    const missing = wanted.length ? wanted.filter((s) => !map.has(s)) : [];
+    if (missing.length || !wanted.length) {
+      try {
+        const res = await fetch("/content/products.json", { cache: "no-store", headers: { accept: "application/json" } });
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          const list = Array.isArray(data?.products) ? data.products : [];
+          for (const p of list) {
+            const slug = String(p?.slug || "").trim();
+            if (!slug) continue;
+            if (!map.has(slug)) map.set(slug, p);
+          }
+        }
+      } catch (_) {
+        // ignore
       }
     }
 

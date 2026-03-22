@@ -3,29 +3,11 @@ export const loadProducts = async ({ request, slugs = [] }) => {
 
   const map = new Map();
 
-  // Fast path: aggregated file (may be stale in some deploy setups)
-  try {
-    const url = new URL("/content/products.json", request.url);
-    const res = await fetch(url.toString(), { headers: { accept: "application/json" }, cache: "no-store" });
-    if (res.ok) {
-      const data = await res.json().catch(() => null);
-      const products = Array.isArray(data?.products) ? data.products : [];
-      for (const p of products) {
-        const slug = String(p?.slug || "").trim();
-        if (!slug) continue;
-        if (!map.has(slug)) map.set(slug, p);
-      }
-    }
-  } catch (_) {
-    // ignore
-  }
-
-  // Fallback: load missing products directly from folder-based JSON files
-  const missing = wanted.length ? wanted.filter((s) => !map.has(s)) : [];
-  if (missing.length) {
+  // Prefer direct product files so current prices win over stale aggregates.
+  if (wanted.length) {
     const base = new URL("/content/products/", request.url);
     const docs = await Promise.all(
-      missing.map(async (slug) => {
+      wanted.map(async (slug) => {
         try {
           const url = new URL(`${encodeURIComponent(slug)}.json`, base);
           const res = await fetch(url.toString(), { headers: { accept: "application/json" }, cache: "no-store" });
@@ -40,6 +22,26 @@ export const loadProducts = async ({ request, slugs = [] }) => {
       const slug = String(p?.slug || "").trim();
       if (!slug) continue;
       if (!map.has(slug)) map.set(slug, p);
+    }
+  }
+
+  // Fallback: aggregated file for anything still missing.
+  const missing = wanted.length ? wanted.filter((s) => !map.has(s)) : [];
+  if (missing.length || !wanted.length) {
+    try {
+      const url = new URL("/content/products.json", request.url);
+      const res = await fetch(url.toString(), { headers: { accept: "application/json" }, cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json().catch(() => null);
+        const products = Array.isArray(data?.products) ? data.products : [];
+        for (const p of products) {
+          const slug = String(p?.slug || "").trim();
+          if (!slug) continue;
+          if (!map.has(slug)) map.set(slug, p);
+        }
+      }
+    } catch (_) {
+      // ignore
     }
   }
 

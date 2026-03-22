@@ -626,6 +626,71 @@
 		return null;
 	};
 
+	const mergeBySlug = (preferred, fallback) => {
+		const map = new Map();
+		for (const item of Array.isArray(preferred) ? preferred : []) {
+			const slug = String(item?.slug || "").trim();
+			if (!slug || map.has(slug)) continue;
+			map.set(slug, item);
+		}
+		for (const item of Array.isArray(fallback) ? fallback : []) {
+			const slug = String(item?.slug || "").trim();
+			if (!slug || map.has(slug)) continue;
+			map.set(slug, item);
+		}
+		return Array.from(map.values());
+	};
+
+	const fetchFolderEntries = async (basePath, slugs) => {
+		const wanted = Array.isArray(slugs) ? slugs.map((slug) => String(slug || "").trim()).filter(Boolean) : [];
+		if (!wanted.length) return [];
+		const docs = await Promise.all(wanted.map((slug) => {
+			return fetchJSON(`${basePath}/${encodeURIComponent(slug)}.json`).catch(() => null);
+		}));
+		return docs.filter(Boolean);
+	};
+
+	const loadLocalCatalog = async () => {
+		const [manifest, categoriesDoc, productsDoc] = await Promise.all([
+			fetchJSON("/content/shop-catalog.json").catch(() => null),
+			fetchJSON("/content/categories.json").catch(() => ({ categories: [] })),
+			fetchJSON("/content/products.json").catch(() => ({ products: [] })),
+		]);
+
+		const aggregatedCategories = (Array.isArray(categoriesDoc?.categories) ? categoriesDoc.categories : [])
+			.map(normalizeCategory)
+			.filter(Boolean);
+		const aggregatedProducts = (Array.isArray(productsDoc?.products) ? productsDoc.products : [])
+			.map(normalizeProduct)
+			.filter(Boolean);
+
+		const categorySlugs = new Set([
+			...(Array.isArray(manifest?.categorySlugs) ? manifest.categorySlugs : []),
+			...aggregatedCategories.map((item) => item.slug),
+		]);
+		const productSlugs = new Set([
+			...(Array.isArray(manifest?.productSlugs) ? manifest.productSlugs : []),
+			...aggregatedProducts.map((item) => item.slug),
+		]);
+
+		const [directCategoriesRaw, directProductsRaw] = await Promise.all([
+			fetchFolderEntries("/content/categories", Array.from(categorySlugs)),
+			fetchFolderEntries("/content/products", Array.from(productSlugs)),
+		]);
+
+		const directCategories = directCategoriesRaw.map(normalizeCategory).filter(Boolean);
+		const directProducts = directProductsRaw.map(normalizeProduct).filter(Boolean);
+
+		const categories = mergeBySlug(directCategories, aggregatedCategories);
+		const products = mergeBySlug(directProducts, aggregatedProducts);
+
+		if (!categories.length && !products.length) {
+			throw new Error("No local catalog data available");
+		}
+
+		return { categories, products };
+	};
+
 	const loadCatalog = async () => {
 		const RAW_BASE = "https://raw.githubusercontent.com/Toetta/innovatio-brutalis/main/";
 		const fetchJSONWithFallback = async (primaryUrl, fallbackUrl) => {
@@ -635,6 +700,14 @@
 				return await fetchJSON(fallbackUrl);
 			}
 		};
+
+		// Prefer the currently deployed same-origin content so price changes
+		// from the admin panel are reflected before any GitHub/raw fallback.
+		try {
+			return await loadLocalCatalog();
+		} catch (_) {
+			// Fall back to GitHub discovery if local catalog artifacts are unavailable.
+		}
 
 		// Best effort auto-discovery: list the folders in the GitHub repo.
 		// This avoids having to manually keep content/shop-catalog.json in sync.
