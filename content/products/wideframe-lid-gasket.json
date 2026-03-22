@@ -1,0 +1,22 @@
+{
+  "price_sek": 99,
+  "description_sv": "Packning gjord av polyuretan och är etnaolbeständig",
+  "is_news": true,
+  "title_sv": "Vespa Wideframe packning till tanklock",
+  "slug": "wideframe-lid-gasket",
+  "description_en": "Gasker made of polyurethane and is ethanol resitant",
+  "published": true,
+  "shipping_exempt": false,
+  "title_en": "Vespa Wideframe tank lid gasket",
+  "weight_grams": 50,
+  "images": [
+    {
+      "is_main": false,
+      "image": "/assets/uploads/packning-wideframe.png"
+    }
+  ],
+  "height_mm": 9,
+  "length_mm": 75,
+  "width_mm": 75,
+  "category": "vespa-parts-tools"
+}
