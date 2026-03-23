@@ -38,8 +38,9 @@
       #view-cms.active #nc-root{ position:fixed !important; top: var(--portal-fixed-offset) !important; left:0 !important; right:0 !important; bottom:0 !important; }
       .cms-mobile-nav{ display:none; }
       .ib-cms-hidden-mobile{ display:none !important; }
-      .ib-cms-fullwidth-mobile{ width:100% !important; max-width:100% !important; flex:1 1 100% !important; min-width:0 !important; }
-      .ib-cms-stack-mobile{ display:block !important; }
+      .ib-cms-fullwidth-mobile{ display:block !important; width:100% !important; min-width:100% !important; max-width:100% !important; flex:1 1 100% !important; flex-basis:100% !important; }
+      .ib-cms-stack-mobile{ display:block !important; width:100% !important; max-width:100% !important; grid-template-columns:minmax(0,1fr) !important; flex-direction:column !important; }
+      .ib-cms-stack-mobile > *{ max-width:100% !important; }
       /* Custom tool container */
       #view-payment-links{ padding:18px 14px 28px; }
       #view-payment-links main{ max-width:1100px; margin:0 auto; }
@@ -114,6 +115,7 @@
         <button type="button" class="cms-chip" data-cms-hash="#/collections/products">Produkter</button>
         <button type="button" class="cms-chip" data-cms-hash="#/collections/services">Tjänster</button>
         <button type="button" class="cms-chip" data-cms-hash="#/collections/webshop">Webshop</button>
+        <button type="button" class="cms-chip primary" id="cmsCreateEntryBtn" hidden>Ny</button>
         <button type="button" class="cms-chip" id="cmsBackToCollection" hidden>Till listan</button>
       </div>
       <div id="nc-root"></div>
@@ -739,16 +741,72 @@
         }
       }
 
-      function expandCmsSiblingPane(pane){
+      function promoteCmsPrimaryPane(pane){
         try {
-          if (!pane || !pane.parentElement) return;
+          if (!pane) return;
+          pane.classList.add('ib-cms-fullwidth-mobile');
           var parent = pane.parentElement;
-          parent.classList.add('ib-cms-stack-mobile');
-          for (var i = 0; i < parent.children.length; i++) {
-            var child = parent.children[i];
-            if (child !== pane) child.classList.add('ib-cms-fullwidth-mobile');
-          }
+          if (parent) parent.classList.add('ib-cms-stack-mobile');
         } catch (_) {}
+      }
+
+      function findLikelyCmsColumns(){
+        try {
+          var root = document.getElementById('nc-root');
+          if (!root) return { left: null, right: null };
+          var viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+          var viewportHeight = Math.max(document.documentElement.clientHeight || 0, window.innerHeight || 0);
+          var nodes = root.querySelectorAll('div, section, aside, nav, main');
+          var left = null;
+          var right = null;
+          var leftScore = Number.NEGATIVE_INFINITY;
+          var rightScore = Number.NEGATIVE_INFINITY;
+
+          for (var i = 0; i < nodes.length; i++) {
+            var el = nodes[i];
+            if (!el || !el.offsetParent) continue;
+            var rect = el.getBoundingClientRect();
+            if (rect.width < 150 || rect.height < 220) continue;
+            if (rect.width > (viewportWidth * 0.92)) continue;
+            if (rect.top > (viewportHeight * 0.75)) continue;
+
+            var score = (rect.width * rect.height) - (rect.top * 150);
+            if (rect.left < (viewportWidth * 0.25) && score > leftScore) {
+              left = el;
+              leftScore = score;
+            }
+            if (rect.right > (viewportWidth * 0.65) && score > rightScore) {
+              right = el;
+              rightScore = score;
+            }
+          }
+
+          if (left === right) right = null;
+          return { left: left, right: right };
+        } catch (_) {
+          return { left: null, right: null };
+        }
+      }
+
+      function currentCmsCreateHash(){
+        try {
+          var collection = currentCmsCollectionFromHash();
+          if (!collection) return '';
+          return '#/collections/' + collection + '/new';
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function currentCmsCreateLabel(){
+        var collection = currentCmsCollectionFromHash();
+        switch (collection) {
+          case 'products': return 'Ny produkt';
+          case 'categories': return 'Ny kategori';
+          case 'services': return 'Ny tjänst';
+          case 'webshop': return 'Redigera webshop';
+          default: return 'Ny';
+        }
       }
 
       function applyCmsPortraitLayout(){
@@ -770,12 +828,20 @@
           if (topSwitchBar) topSwitchBar.classList.add('ib-cms-hidden-mobile');
 
           var collectionsPane = findCmsElementByText(['collections', 'search all']);
+          var likelyColumns = findLikelyCmsColumns();
           if (!isOverview && collectionsPane) {
             var collectionsPanel = findCmsPaneAncestor(collectionsPane);
             if (collectionsPanel) {
               collectionsPanel.classList.add('ib-cms-hidden-mobile');
-              expandCmsSiblingPane(collectionsPanel);
+              if (likelyColumns.right) promoteCmsPrimaryPane(likelyColumns.right);
             }
+          }
+
+          if (!isOverview && likelyColumns.left) {
+            likelyColumns.left.classList.add('ib-cms-hidden-mobile');
+          }
+          if (!isOverview && likelyColumns.right) {
+            promoteCmsPrimaryPane(likelyColumns.right);
           }
 
           if (isEntryRoute) {
@@ -784,15 +850,17 @@
               var previewPane = findCmsPaneAncestor(previewFrame);
               if (previewPane) {
                 previewPane.classList.add('ib-cms-hidden-mobile');
-                expandCmsSiblingPane(previewPane);
+                if (likelyColumns.left) promoteCmsPrimaryPane(likelyColumns.left);
               }
             }
+            if (likelyColumns.right) likelyColumns.right.classList.add('ib-cms-hidden-mobile');
+            if (likelyColumns.left) promoteCmsPrimaryPane(likelyColumns.left);
           }
 
           if (collection && !isEntryRoute) {
             var collectionHeading = findCmsElementByText([collection.replace(/-/g, ' ')]);
             var listPane = collectionHeading ? findCmsPaneAncestor(collectionHeading) : null;
-            if (listPane) listPane.classList.add('ib-cms-fullwidth-mobile');
+            if (listPane) promoteCmsPrimaryPane(listPane);
           }
         } catch (_) {}
         syncPortalTopbarHeight();
@@ -824,6 +892,15 @@
           if (backBtn) {
             backBtn.hidden = !isEntryRoute;
             backBtn.setAttribute('data-target-hash', currentCmsCollectionListHash());
+          }
+
+          var createBtn = document.getElementById('cmsCreateEntryBtn');
+          if (createBtn) {
+            var createHash = currentCmsCreateHash();
+            var showCreate = !!createHash && !isEntryRoute;
+            createBtn.hidden = !showCreate;
+            createBtn.textContent = currentCmsCreateLabel();
+            createBtn.setAttribute('data-target-hash', createHash || '');
           }
         } catch (_) {}
         applyCmsPortraitLayout();
