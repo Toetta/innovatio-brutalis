@@ -37,6 +37,9 @@
       /* Keep CMS below the portal topbar (Decap otherwise covers the whole viewport). */
       #view-cms.active #nc-root{ position:fixed !important; top: var(--portal-fixed-offset) !important; left:0 !important; right:0 !important; bottom:0 !important; }
       .cms-mobile-nav{ display:none; }
+      .ib-cms-hidden-mobile{ display:none !important; }
+      .ib-cms-fullwidth-mobile{ width:100% !important; max-width:100% !important; flex:1 1 100% !important; min-width:0 !important; }
+      .ib-cms-stack-mobile{ display:block !important; }
       /* Custom tool container */
       #view-payment-links{ padding:18px 14px 28px; }
       #view-payment-links main{ max-width:1100px; margin:0 auto; }
@@ -639,6 +642,162 @@
         }
       }
 
+      function clearCmsPortraitLayout(){
+        try {
+          var root = document.getElementById('nc-root');
+          if (!root) return;
+          var nodes = root.querySelectorAll('.ib-cms-hidden-mobile, .ib-cms-fullwidth-mobile, .ib-cms-stack-mobile');
+          for (var i = 0; i < nodes.length; i++) {
+            nodes[i].classList.remove('ib-cms-hidden-mobile', 'ib-cms-fullwidth-mobile', 'ib-cms-stack-mobile');
+          }
+        } catch (_) {}
+      }
+
+      function normalizeCmsText(value){
+        return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      }
+
+      function findCmsElementByText(requiredSnippets){
+        try {
+          var root = document.getElementById('nc-root');
+          if (!root) return null;
+          var needles = (Array.isArray(requiredSnippets) ? requiredSnippets : []).map(normalizeCmsText).filter(Boolean);
+          if (!needles.length) return null;
+          var nodes = root.querySelectorAll('div, section, aside, nav, main');
+          var best = null;
+          var bestArea = Number.POSITIVE_INFINITY;
+          for (var i = 0; i < nodes.length; i++) {
+            var el = nodes[i];
+            if (!el || !el.offsetParent) continue;
+            var text = normalizeCmsText(el.innerText || el.textContent || '');
+            if (!text) continue;
+            var ok = true;
+            for (var j = 0; j < needles.length; j++) {
+              if (text.indexOf(needles[j]) === -1) {
+                ok = false;
+                break;
+              }
+            }
+            if (!ok) continue;
+            var rect = el.getBoundingClientRect();
+            var area = rect.width * rect.height;
+            if (rect.width < 120 || rect.height < 80) continue;
+            if (area < bestArea) {
+              best = el;
+              bestArea = area;
+            }
+          }
+          return best;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function findCmsTopSwitchBar(){
+        try {
+          var root = document.getElementById('nc-root');
+          if (!root) return null;
+          var controls = root.querySelectorAll('button, a');
+          var contentsBtn = null;
+          var mediaBtn = null;
+          for (var i = 0; i < controls.length; i++) {
+            var text = normalizeCmsText(controls[i].textContent || '');
+            if (!contentsBtn && text === 'contents') contentsBtn = controls[i];
+            if (!mediaBtn && text === 'media') mediaBtn = controls[i];
+          }
+          if (!contentsBtn || !mediaBtn) return null;
+          var a = contentsBtn;
+          while (a && a !== root) {
+            var b = mediaBtn;
+            while (b && b !== root) {
+              if (a === b) return a;
+              b = b.parentElement;
+            }
+            a = a.parentElement;
+          }
+          return null;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function findCmsPaneAncestor(startEl){
+        try {
+          var root = document.getElementById('nc-root');
+          var node = startEl;
+          while (node && node !== root) {
+            var parent = node.parentElement;
+            var rect = node.getBoundingClientRect();
+            if (parent && parent.children && parent.children.length > 1 && rect.width > 140 && rect.height > 120) {
+              return node;
+            }
+            node = parent;
+          }
+          return startEl || null;
+        } catch (_) {
+          return startEl || null;
+        }
+      }
+
+      function expandCmsSiblingPane(pane){
+        try {
+          if (!pane || !pane.parentElement) return;
+          var parent = pane.parentElement;
+          parent.classList.add('ib-cms-stack-mobile');
+          for (var i = 0; i < parent.children.length; i++) {
+            var child = parent.children[i];
+            if (child !== pane) child.classList.add('ib-cms-fullwidth-mobile');
+          }
+        } catch (_) {}
+      }
+
+      function applyCmsPortraitLayout(){
+        try {
+          clearCmsPortraitLayout();
+          var isMobile = window.innerWidth <= 700;
+          var cmsActive = document.getElementById('view-cms')?.classList.contains('active');
+          if (!isMobile || !cmsActive) {
+            syncPortalTopbarHeight();
+            return;
+          }
+
+          var raw = String(location.hash || '');
+          var collection = currentCmsCollectionFromHash();
+          var isOverview = /^#\/?collections\/?$/.test(raw) || raw === '#cms' || raw === '';
+          var isEntryRoute = /#\/?collections\/[^/]+\/entries\//.test(raw);
+
+          var topSwitchBar = findCmsTopSwitchBar();
+          if (topSwitchBar) topSwitchBar.classList.add('ib-cms-hidden-mobile');
+
+          var collectionsPane = findCmsElementByText(['collections', 'search all']);
+          if (!isOverview && collectionsPane) {
+            var collectionsPanel = findCmsPaneAncestor(collectionsPane);
+            if (collectionsPanel) {
+              collectionsPanel.classList.add('ib-cms-hidden-mobile');
+              expandCmsSiblingPane(collectionsPanel);
+            }
+          }
+
+          if (isEntryRoute) {
+            var previewFrame = document.querySelector('#nc-root iframe');
+            if (previewFrame) {
+              var previewPane = findCmsPaneAncestor(previewFrame);
+              if (previewPane) {
+                previewPane.classList.add('ib-cms-hidden-mobile');
+                expandCmsSiblingPane(previewPane);
+              }
+            }
+          }
+
+          if (collection && !isEntryRoute) {
+            var collectionHeading = findCmsElementByText([collection.replace(/-/g, ' ')]);
+            var listPane = collectionHeading ? findCmsPaneAncestor(collectionHeading) : null;
+            if (listPane) listPane.classList.add('ib-cms-fullwidth-mobile');
+          }
+        } catch (_) {}
+        syncPortalTopbarHeight();
+      }
+
       function syncCmsMobileNav(){
         try {
           var nav = document.getElementById('cmsMobileNav');
@@ -667,7 +826,7 @@
             backBtn.setAttribute('data-target-hash', currentCmsCollectionListHash());
           }
         } catch (_) {}
-        syncPortalTopbarHeight();
+        applyCmsPortraitLayout();
       }
 
       var cmsLoaded = false;
@@ -677,6 +836,12 @@
         initDecapUploadsRewrite();
         await loadScriptOnce('https://unpkg.com/decap-cms@^3/dist/decap-cms.js');
         initDecapMainImageRadio();
+        try {
+          var cmsRoot = document.getElementById('view-cms') || document.documentElement;
+          var portraitObserver = new MutationObserver(function(){ applyCmsPortraitLayout(); });
+          portraitObserver.observe(cmsRoot, { subtree: true, childList: true, attributes: true });
+        } catch (_) {}
+        applyCmsPortraitLayout();
         return true;
       }
 
