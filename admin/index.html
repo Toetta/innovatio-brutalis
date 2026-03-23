@@ -22,22 +22,68 @@
     <style>
       :root{ color-scheme: light; }
       :root{ --portal-topbar-h: 52px; }
-      body{ margin:0; padding-top: var(--portal-topbar-h); font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; }
-      .topbar{ position:fixed; top:0; left:0; right:0; z-index:2147483647; height: var(--portal-topbar-h); display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 14px; border-bottom:1px solid #e5e7eb; background:#fff; box-sizing:border-box; }
-      .topbar .left{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-      .topbar h1{ margin:0; font-size:14px; font-weight:700; }
+      *{ box-sizing:border-box; }
+      html{ -webkit-text-size-adjust:100%; }
+      body{ margin:0; padding-top: var(--portal-topbar-h); font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#f8fafc; color:#111827; }
+      .topbar{ position:fixed; top:0; left:0; right:0; z-index:2147483647; min-height: var(--portal-topbar-h); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px 14px; border-bottom:1px solid #e5e7eb; background:#fff; box-sizing:border-box; }
+      .topbar .left{ display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; flex:1 1 auto; min-width:0; }
+      .topbar h1{ margin:0; font-size:14px; font-weight:700; line-height:1.2; padding-top:2px; }
       .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
-      .tab{ appearance:none; border:1px solid #d1d5db; background:#fff; padding:8px 10px; border-radius:10px; cursor:pointer; font:inherit; font-size:13px; }
+      .tab{ appearance:none; border:1px solid #d1d5db; background:#fff; padding:8px 10px; border-radius:10px; cursor:pointer; font:inherit; font-size:13px; min-height:40px; }
       .tab[aria-pressed="true"]{ border-color:#2563eb; box-shadow:0 0 0 3px rgba(37,99,235,.12); }
-      .hint{ font-size:12px; color:#6b7280; }
+      .hint{ font-size:12px; color:#6b7280; max-width:100%; word-break:break-word; }
       .view{ display:none; }
       .view.active{ display:block; }
       /* Keep CMS below the portal topbar (Decap otherwise covers the whole viewport). */
       #view-cms.active #nc-root{ position:fixed !important; top: var(--portal-topbar-h) !important; left:0 !important; right:0 !important; bottom:0 !important; }
       /* Custom tool container */
-      #view-payment-links{ padding:18px 14px; }
+      #view-payment-links{ padding:18px 14px 28px; }
       #view-payment-links main{ max-width:1100px; margin:0 auto; }
+      .portal-section{ margin-top:16px; padding:12px; border:1px solid #ccc; border-radius:8px; background:#fff; }
+      .portal-section h2{ margin-top:0; }
+      .form-grid{ display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+      .action-row{ margin-top:12px; display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+      .inline-check{ display:inline-flex; gap:8px; align-items:center; margin-top:6px; }
+      .table-wrap{ margin-top:12px; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+      .table-wrap table{ width:100%; border-collapse:collapse; min-width:760px; }
+      .editor-textarea,
+      #view-payment-links input,
+      #view-payment-links select,
+      #view-payment-links textarea,
+      #view-payment-links button{ font:inherit; }
+      #view-payment-links input,
+      #view-payment-links select,
+      #view-payment-links textarea{ max-width:100%; }
       code,kbd{ font-family: ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace; }
+
+      @media (max-width: 900px){
+        .form-grid{ grid-template-columns:minmax(0,1fr); }
+      }
+
+      @media (max-width: 700px){
+        body{ background:#fff; }
+        .topbar{ padding:10px 12px; gap:10px; }
+        .topbar .left{ display:grid; grid-template-columns:1fr; gap:8px; }
+        .tabs{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); width:100%; }
+        .tab{ width:100%; text-align:center; }
+        .hint{ display:none; }
+        #view-payment-links{ padding:12px 10px 24px; }
+        .portal-section{ padding:10px; border-radius:0; border-left:none; border-right:none; }
+        .action-row > *{ flex:1 1 100%; }
+        .inline-check{ display:flex; width:100%; }
+        .table-wrap table{ min-width:640px; }
+        #view-payment-links input,
+        #view-payment-links select,
+        #view-payment-links textarea,
+        #view-payment-links button,
+        #view-payment-links a.btn-like{ font-size:16px; }
+      }
+
+      @media (max-width: 480px){
+        .topbar h1{ font-size:13px; }
+        .tab{ padding:9px 8px; font-size:12px; }
+        .table-wrap table{ min-width:560px; }
+      }
     </style>
   </head>
   <body>
@@ -60,7 +106,7 @@
       <main class="content">
         <h1>Custom Payment Links</h1>
 
-        <section style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
+        <section class="portal-section">
           <h2 style="margin-top: 0;">Admin-nyckel</h2>
           <p style="margin-top: 0;">Sparas lokalt i webbläsaren. Skickas som <code>X-Admin-Key</code> till API.</p>
           <p style="margin-top: 0; opacity: 0.85;">Obs: backend måste ha samma nyckel satt som <code>ADMIN_CUSTOM_KEY</code> eller <code>EXPORT_ADMIN_KEY</code> i Cloudflare Pages. Den kan inte ändras från webben.</p>
@@ -76,11 +122,11 @@
               Nyckel
               <input id="adminKey" name="password" type="password" autocomplete="new-password" autocapitalize="none" spellcheck="false" style="width: 100%; max-width: 520px;" />
             </label>
-            <label style="display: inline-flex; gap: 8px; align-items: center; margin-top: 6px;">
+            <label class="inline-check">
               <input id="toggleShowAdminKey" type="checkbox" />
               Visa nyckel
             </label>
-            <div style="margin-top: 8px; display: flex; gap: 8px; align-items: center;">
+            <div class="action-row" style="margin-top: 8px;">
               <button id="saveAdminKey" type="submit">Spara</button>
               <button id="generateAdminKey" type="button">Skapa ny nyckel</button>
               <button id="testAdminKey" type="button">Testa</button>
@@ -90,9 +136,9 @@
           </form>
         </section>
 
-        <section style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
+        <section class="portal-section">
           <h2 style="margin-top: 0;">Skapa ny quote</h2>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-grid">
             <label>
               Kundens email *
               <input id="newEmail" type="email" style="width: 100%;" />
@@ -118,15 +164,15 @@
               <input id="newExpires" type="date" style="width: 100%;" />
             </label>
           </div>
-          <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center;">
+          <div class="action-row">
             <button id="createQuote">Skapa</button>
             <span id="createStatus" style="opacity: 0.8;"></span>
           </div>
         </section>
 
-        <section style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px;">
+        <section class="portal-section">
           <h2 style="margin-top: 0;">Quotes</h2>
-          <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div class="action-row" style="margin-top: 0;">
             <label>
               Status
               <select id="filterStatus">
@@ -146,8 +192,8 @@
             <span id="listStatus" style="opacity: 0.8;"></span>
           </div>
 
-          <div style="margin-top: 12px; overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+          <div class="table-wrap">
+            <table>
               <thead>
                 <tr>
                   <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Skapad</th>
@@ -163,11 +209,11 @@
           </div>
         </section>
 
-        <section id="editor" style="margin-top: 16px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; display:none;">
+        <section id="editor" class="portal-section" style="display:none;">
           <h2 style="margin-top: 0;">Redigera quote</h2>
           <div id="editorHeader" style="opacity: 0.9;"></div>
 
-          <div style="margin-top: 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-grid">
             <label>
               Status
               <select id="editStatus">
@@ -213,7 +259,7 @@
             <textarea id="editNotes" rows="3" style="width: 100%;"></textarea>
           </label>
 
-          <div style="margin-top: 12px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div class="action-row">
             <button id="saveQuote" type="button">Spara</button>
             <a id="payLink" href="#" target="_blank" rel="noopener">Öppna betalningslänk</a>
             <button id="copyPayLink" type="button">Kopiera betalningslänk</button>
@@ -222,8 +268,8 @@
 
           <h3 style="margin-top: 16px;">Rader</h3>
           <div id="totals" style="opacity: 0.9;"></div>
-          <div style="margin-top: 8px; overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse;">
+          <div class="table-wrap" style="margin-top: 8px;">
+            <table>
               <thead>
                 <tr>
                   <th style="text-align:left; border-bottom: 1px solid #ddd; padding: 8px;">Typ</th>
@@ -242,7 +288,7 @@
           </div>
 
           <h3 style="margin-top: 16px;">Lägg till / redigera rad</h3>
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+          <div class="form-grid">
             <label>
               Kategori
               <select id="lineCategory"></select>
@@ -276,7 +322,7 @@
             <label>
               À-pris <span id="linePriceLabelMode">ex moms</span>
               <input id="lineUnitPrice" type="number" step="0.01" />
-              <div style="margin-top: 6px; display: inline-flex; gap: 8px; align-items: center;">
+              <div class="inline-check" style="margin-top: 6px;">
                 <input id="linePriceIncVat" type="checkbox" />
                 <span>Beloppet är inkl moms</span>
               </div>
@@ -300,7 +346,7 @@
             Beskrivning
             <textarea id="lineDesc" rows="2" style="width: 100%;"></textarea>
           </label>
-          <div style="margin-top: 12px; display:flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <div class="action-row">
             <button id="saveLine" type="button">Spara rad</button>
             <button id="resetLine" type="button">Nollställ</button>
             <span id="lineStatus" style="opacity: 0.8;"></span>
@@ -539,6 +585,15 @@
         });
       }
 
+      function syncPortalTopbarHeight(){
+        try {
+          var topbar = document.querySelector('.topbar');
+          if (!topbar) return;
+          var h = Math.max(52, Math.ceil(topbar.getBoundingClientRect().height || 0));
+          document.documentElement.style.setProperty('--portal-topbar-h', h + 'px');
+        } catch (_) {}
+      }
+
       var cmsLoaded = false;
       async function ensureCmsLoaded(){
         if (cmsLoaded) return true;
@@ -584,6 +639,14 @@
       document.getElementById('tab-cms')?.addEventListener('click', function(){ location.hash = '#/collections'; });
       document.getElementById('tab-payment-links')?.addEventListener('click', function(){ location.hash = '#payment-links'; });
       window.addEventListener('hashchange', route);
+      window.addEventListener('resize', syncPortalTopbarHeight);
+      window.addEventListener('orientationchange', syncPortalTopbarHeight);
+      try {
+        var topbarObserver = new ResizeObserver(function(){ syncPortalTopbarHeight(); });
+        var topbarEl = document.querySelector('.topbar');
+        if (topbarEl) topbarObserver.observe(topbarEl);
+      } catch (_) {}
+      syncPortalTopbarHeight();
       route();
     </script>
 
