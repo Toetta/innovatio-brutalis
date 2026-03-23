@@ -21,7 +21,7 @@
     </script>
     <style>
       :root{ color-scheme: light; }
-      :root{ --portal-topbar-h: 52px; }
+      :root{ --portal-topbar-h: 52px; --portal-cms-nav-h: 0px; --portal-fixed-offset: 52px; }
       *{ box-sizing:border-box; }
       html{ -webkit-text-size-adjust:100%; }
       body{ margin:0; padding-top: var(--portal-topbar-h); font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#f8fafc; color:#111827; }
@@ -35,7 +35,8 @@
       .view{ display:none; }
       .view.active{ display:block; }
       /* Keep CMS below the portal topbar (Decap otherwise covers the whole viewport). */
-      #view-cms.active #nc-root{ position:fixed !important; top: var(--portal-topbar-h) !important; left:0 !important; right:0 !important; bottom:0 !important; }
+      #view-cms.active #nc-root{ position:fixed !important; top: var(--portal-fixed-offset) !important; left:0 !important; right:0 !important; bottom:0 !important; }
+      .cms-mobile-nav{ display:none; }
       /* Custom tool container */
       #view-payment-links{ padding:18px 14px 28px; }
       #view-payment-links main{ max-width:1100px; margin:0 auto; }
@@ -72,6 +73,11 @@
         .action-row > *{ flex:1 1 100%; }
         .inline-check{ display:flex; width:100%; }
         .table-wrap table{ min-width:640px; }
+        .cms-mobile-nav{ display:flex; position:fixed; top:var(--portal-topbar-h); left:0; right:0; z-index:2147483646; gap:8px; padding:8px 10px; overflow-x:auto; -webkit-overflow-scrolling:touch; background:#fff; border-bottom:1px solid #e5e7eb; }
+        .cms-mobile-nav[hidden]{ display:none !important; }
+        .cms-mobile-nav .cms-chip{ appearance:none; border:1px solid #d1d5db; background:#f8fafc; color:#111827; border-radius:999px; padding:9px 12px; font:inherit; font-size:13px; white-space:nowrap; min-height:40px; }
+        .cms-mobile-nav .cms-chip.primary{ border-color:#2563eb; background:#eff6ff; color:#1d4ed8; }
+        .cms-mobile-nav .cms-chip.active{ border-color:#111827; background:#111827; color:#fff; }
         #view-payment-links input,
         #view-payment-links select,
         #view-payment-links textarea,
@@ -99,6 +105,14 @@
     </div>
 
     <div id="view-cms" class="view active">
+      <div id="cmsMobileNav" class="cms-mobile-nav" hidden aria-label="CMS quick navigation">
+        <button type="button" class="cms-chip primary" data-cms-hash="#/collections">Översikt</button>
+        <button type="button" class="cms-chip" data-cms-hash="#/collections/categories">Kategorier</button>
+        <button type="button" class="cms-chip" data-cms-hash="#/collections/products">Produkter</button>
+        <button type="button" class="cms-chip" data-cms-hash="#/collections/services">Tjänster</button>
+        <button type="button" class="cms-chip" data-cms-hash="#/collections/webshop">Webshop</button>
+        <button type="button" class="cms-chip" id="cmsBackToCollection" hidden>Till listan</button>
+      </div>
       <div id="nc-root"></div>
     </div>
 
@@ -589,9 +603,71 @@
         try {
           var topbar = document.querySelector('.topbar');
           if (!topbar) return;
-          var h = Math.max(52, Math.ceil(topbar.getBoundingClientRect().height || 0));
-          document.documentElement.style.setProperty('--portal-topbar-h', h + 'px');
+          var topbarHeight = Math.max(52, Math.ceil(topbar.getBoundingClientRect().height || 0));
+          var cmsNav = document.getElementById('cmsMobileNav');
+          var cmsNavHeight = 0;
+          if (cmsNav && !cmsNav.hidden && window.innerWidth <= 700) {
+            cmsNavHeight = Math.ceil(cmsNav.getBoundingClientRect().height || 0);
+          }
+          document.documentElement.style.setProperty('--portal-topbar-h', topbarHeight + 'px');
+          document.documentElement.style.setProperty('--portal-cms-nav-h', cmsNavHeight + 'px');
+          document.documentElement.style.setProperty('--portal-fixed-offset', (topbarHeight + cmsNavHeight) + 'px');
         } catch (_) {}
+      }
+
+      function currentCmsCollectionFromHash(){
+        try {
+          var raw = String(location.hash || '');
+          var normalized = raw.replace(/^#\/?/, '');
+          var parts = normalized.split('/').filter(Boolean);
+          if (parts[0] !== 'collections') return '';
+          return String(parts[1] || '');
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function currentCmsCollectionListHash(){
+        try {
+          var raw = String(location.hash || '');
+          var normalized = raw.replace(/^#\/?/, '');
+          var parts = normalized.split('/').filter(Boolean);
+          if (parts[0] !== 'collections' || !parts[1]) return '#/collections';
+          return '#/collections/' + parts[1];
+        } catch (_) {
+          return '#/collections';
+        }
+      }
+
+      function syncCmsMobileNav(){
+        try {
+          var nav = document.getElementById('cmsMobileNav');
+          if (!nav) return;
+          var isCmsView = document.getElementById('view-cms')?.classList.contains('active');
+          var isMobile = window.innerWidth <= 700;
+          nav.hidden = !(isCmsView && isMobile);
+
+          var collection = currentCmsCollectionFromHash();
+          var raw = String(location.hash || '');
+          var isEntryRoute = /#\/?collections\/[^/]+\/entries\//.test(raw);
+
+          var buttons = nav.querySelectorAll('[data-cms-hash]');
+          for (var i = 0; i < buttons.length; i++) {
+            var btn = buttons[i];
+            var target = String(btn.getAttribute('data-cms-hash') || '');
+            var isOverview = target === '#/collections';
+            var btnCollection = target.replace('#/collections/', '').replace('#/collections', '');
+            var active = isOverview ? (!collection && !isEntryRoute) : (btnCollection === collection);
+            btn.classList.toggle('active', !!active);
+          }
+
+          var backBtn = document.getElementById('cmsBackToCollection');
+          if (backBtn) {
+            backBtn.hidden = !isEntryRoute;
+            backBtn.setAttribute('data-target-hash', currentCmsCollectionListHash());
+          }
+        } catch (_) {}
+        syncPortalTopbarHeight();
       }
 
       var cmsLoaded = false;
@@ -622,6 +698,7 @@
             alert('Kunde inte ladda CMS. Se konsolen.');
           });
         }
+        syncCmsMobileNav();
       }
 
       function route(){
@@ -638,15 +715,27 @@
 
       document.getElementById('tab-cms')?.addEventListener('click', function(){ location.hash = '#/collections'; });
       document.getElementById('tab-payment-links')?.addEventListener('click', function(){ location.hash = '#payment-links'; });
+      document.getElementById('cmsMobileNav')?.addEventListener('click', function(e){
+        try {
+          var target = e.target && e.target.closest ? e.target.closest('[data-cms-hash], #cmsBackToCollection') : null;
+          if (!target) return;
+          var nextHash = target.getAttribute('data-cms-hash') || target.getAttribute('data-target-hash');
+          if (!nextHash) return;
+          location.hash = nextHash;
+        } catch (_) {}
+      });
       window.addEventListener('hashchange', route);
-      window.addEventListener('resize', syncPortalTopbarHeight);
-      window.addEventListener('orientationchange', syncPortalTopbarHeight);
+      window.addEventListener('hashchange', syncCmsMobileNav);
+      window.addEventListener('resize', syncCmsMobileNav);
+      window.addEventListener('orientationchange', syncCmsMobileNav);
       try {
-        var topbarObserver = new ResizeObserver(function(){ syncPortalTopbarHeight(); });
+        var topbarObserver = new ResizeObserver(function(){ syncCmsMobileNav(); });
         var topbarEl = document.querySelector('.topbar');
         if (topbarEl) topbarObserver.observe(topbarEl);
+        var cmsNavEl = document.getElementById('cmsMobileNav');
+        if (cmsNavEl) topbarObserver.observe(cmsNavEl);
       } catch (_) {}
-      syncPortalTopbarHeight();
+      syncCmsMobileNav();
       route();
     </script>
 
