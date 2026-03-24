@@ -1,0 +1,18 @@
+{
+  "price_sek": 449,
+  "description_sv": "Snorkel för att förhindra spitback och rikta insugsljud bort från försten",
+  "is_news": true,
+  "title_sv": "Vespa wideframe luftsnorkel 40mm",
+  "slug": "wideframe-snorkel-40",
+  "description_en": "Inlet snorkel to prevent spitback and redirect intake sound from driver",
+  "published": true,
+  "shipping_exempt": false,
+  "title_en": "Vespa wideframe air snorkel 40mm",
+  "weight_grams": 150,
+  "main_image": "/assets/uploads/img_4361.jpeg",
+  "images": [],
+  "height_mm": 100,
+  "length_mm": 250,
+  "width_mm": 250,
+  "category": "vespa-parts-tools"
+}
