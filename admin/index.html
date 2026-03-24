@@ -96,6 +96,8 @@
       #view-cms.active #nc-root{ position:fixed !important; top: var(--portal-fixed-offset) !important; left:0 !important; right:0 !important; bottom:0 !important; overflow-y:auto !important; overflow-x:hidden !important; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; touch-action:pan-y; }
       .cms-mobile-nav{ display:none; }
       body.portal-chrome-hidden .cms-mobile-nav{ display:none !important; }
+      .cms-collections-flyout{ display:none; }
+      .cms-collections-backdrop{ display:none; }
       .ib-cms-hidden-mobile{ display:none !important; }
       .ib-cms-fullwidth-mobile{ display:block !important; width:100% !important; min-width:100% !important; max-width:100% !important; flex:1 1 100% !important; flex-basis:100% !important; }
       .ib-cms-stack-mobile{ display:block !important; width:100% !important; max-width:100% !important; grid-template-columns:minmax(0,1fr) !important; flex-direction:column !important; }
@@ -143,6 +145,15 @@
         .cms-mobile-nav .cms-chip{ appearance:none; border:1px solid #d1d5db; background:#f8fafc; color:#111827; border-radius:999px; padding:9px 12px; font:inherit; font-size:13px; white-space:nowrap; min-height:40px; }
         .cms-mobile-nav .cms-chip.primary{ border-color:#2563eb; background:#eff6ff; color:#1d4ed8; }
         .cms-mobile-nav .cms-chip.active{ border-color:#111827; background:#111827; color:#fff; }
+        .cms-collections-backdrop{ position:fixed; top:var(--portal-fixed-offset); left:0; right:0; bottom:0; z-index:2147483645; background:rgba(15,23,42,.24); }
+        .cms-collections-backdrop[hidden]{ display:none !important; }
+        .cms-collections-flyout{ position:fixed; top:calc(var(--portal-fixed-offset) + 8px); left:10px; right:10px; z-index:2147483646; padding:10px; border:1px solid #e5e7eb; border-radius:16px; background:#fff; box-shadow:0 18px 48px rgba(15,23,42,.18); max-height:min(60dvh, 420px); overflow:auto; -webkit-overflow-scrolling:touch; }
+        .cms-collections-flyout[hidden]{ display:none !important; }
+        .cms-collections-flyout .flyout-header{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:8px; }
+        .cms-collections-flyout .flyout-title{ margin:0; font-size:14px; font-weight:700; }
+        .cms-collections-flyout .flyout-close{ appearance:none; border:1px solid #d1d5db; background:#fff; color:#111827; border-radius:999px; min-width:40px; min-height:40px; font:inherit; }
+        .cms-collections-list{ display:grid; grid-template-columns:minmax(0,1fr); gap:8px; }
+        .cms-collections-list .cms-chip{ width:100%; justify-content:flex-start; text-align:left; }
         #view-payment-links input,
         #view-payment-links select,
         #view-payment-links textarea,
@@ -172,12 +183,22 @@
     <div id="view-cms" class="view active">
       <div id="cmsMobileNav" class="cms-mobile-nav" hidden aria-label="CMS quick navigation">
         <button type="button" class="cms-chip primary" data-cms-hash="#/collections">Översikt</button>
-        <button type="button" class="cms-chip" data-cms-hash="#/collections/categories">Kategorier</button>
-        <button type="button" class="cms-chip" data-cms-hash="#/collections/products">Produkter</button>
-        <button type="button" class="cms-chip" data-cms-hash="#/collections/services">Tjänster</button>
-        <button type="button" class="cms-chip" data-cms-hash="#/collections/webshop">Webshop</button>
+        <button type="button" class="cms-chip" id="cmsCollectionsToggle" aria-expanded="false" aria-controls="cmsCollectionsFlyout">Collections</button>
         <button type="button" class="cms-chip primary" id="cmsCreateEntryBtn" hidden>Ny</button>
         <button type="button" class="cms-chip" id="cmsBackToCollection" hidden>Till listan</button>
+      </div>
+      <div id="cmsCollectionsBackdrop" class="cms-collections-backdrop" hidden></div>
+      <div id="cmsCollectionsFlyout" class="cms-collections-flyout" hidden aria-label="Collections navigation">
+        <div class="flyout-header">
+          <p class="flyout-title">Collections</p>
+          <button type="button" class="flyout-close" id="cmsCollectionsClose" aria-label="Stäng collections">Stäng</button>
+        </div>
+        <div class="cms-collections-list">
+          <button type="button" class="cms-chip" data-cms-hash="#/collections/categories">Kategorier</button>
+          <button type="button" class="cms-chip" data-cms-hash="#/collections/products">Produkter</button>
+          <button type="button" class="cms-chip" data-cms-hash="#/collections/services">Tjänster</button>
+          <button type="button" class="cms-chip" data-cms-hash="#/collections/webshop">Webshop</button>
+        </div>
       </div>
       <div id="nc-root"></div>
     </div>
@@ -962,6 +983,37 @@
         }
       }
 
+      function currentCmsCollectionLabel(){
+        var collection = currentCmsCollectionFromHash();
+        switch (collection) {
+          case 'categories': return 'Kategorier';
+          case 'products': return 'Produkter';
+          case 'services': return 'Tjänster';
+          case 'webshop': return 'Webshop';
+          default: return 'Collections';
+        }
+      }
+
+      var cmsCollectionsFlyoutOpen = false;
+      function setCmsCollectionsFlyoutOpen(open){
+        try {
+          cmsCollectionsFlyoutOpen = !!open;
+          var flyout = document.getElementById('cmsCollectionsFlyout');
+          var backdrop = document.getElementById('cmsCollectionsBackdrop');
+          var toggle = document.getElementById('cmsCollectionsToggle');
+          var isMobile = window.innerWidth <= 700;
+          var canShow = isMobile && document.getElementById('view-cms')?.classList.contains('active') && !shouldHidePortalChrome();
+          var visible = cmsCollectionsFlyoutOpen && canShow;
+          if (flyout) flyout.hidden = !visible;
+          if (backdrop) backdrop.hidden = !visible;
+          if (toggle) toggle.setAttribute('aria-expanded', visible ? 'true' : 'false');
+        } catch (_) {}
+      }
+
+      function closeCmsCollectionsFlyout(){
+        setCmsCollectionsFlyoutOpen(false);
+      }
+
       var initialMobileHashNormalized = false;
       function normalizeInitialCmsHash(){
         try {
@@ -1064,6 +1116,7 @@
           var collection = currentCmsCollectionFromHash();
           var raw = String(location.hash || '');
           var isEntryRoute = /#\/?collections\/[^/]+\/entries\//.test(raw);
+          var isOverviewRoute = !collection && !isEntryRoute;
 
           var buttons = nav.querySelectorAll('[data-cms-hash]');
           for (var i = 0; i < buttons.length; i++) {
@@ -1073,6 +1126,20 @@
             var btnCollection = target.replace('#/collections/', '').replace('#/collections', '');
             var active = isOverview ? (!collection && !isEntryRoute) : (btnCollection === collection);
             btn.classList.toggle('active', !!active);
+          }
+
+          var collectionsToggle = document.getElementById('cmsCollectionsToggle');
+          if (collectionsToggle) {
+            collectionsToggle.textContent = isOverviewRoute ? 'Collections' : currentCmsCollectionLabel();
+            collectionsToggle.classList.toggle('active', !!collection && !isEntryRoute);
+          }
+
+          var flyoutButtons = document.querySelectorAll('#cmsCollectionsFlyout [data-cms-hash]');
+          for (var k = 0; k < flyoutButtons.length; k++) {
+            var flyoutBtn = flyoutButtons[k];
+            var flyoutTarget = String(flyoutBtn.getAttribute('data-cms-hash') || '');
+            var flyoutCollection = flyoutTarget.replace('#/collections/', '').replace('#/collections', '');
+            flyoutBtn.classList.toggle('active', flyoutCollection === collection);
           }
 
           var backBtn = document.getElementById('cmsBackToCollection');
@@ -1089,6 +1156,9 @@
             createBtn.textContent = currentCmsCreateLabel();
             createBtn.setAttribute('data-target-hash', createHash || '');
           }
+
+          if (hidePortalChrome || !isCmsView || !isMobile) closeCmsCollectionsFlyout();
+          else setCmsCollectionsFlyoutOpen(cmsCollectionsFlyoutOpen);
         } catch (_) {}
         applyCmsPortraitLayout();
       }
@@ -1146,17 +1216,38 @@
       document.getElementById('tab-payment-links')?.addEventListener('click', function(){ location.hash = '#payment-links'; });
       document.getElementById('cmsMobileNav')?.addEventListener('click', function(e){
         try {
+          var toggle = e.target && e.target.closest ? e.target.closest('#cmsCollectionsToggle') : null;
+          if (toggle) {
+            setCmsCollectionsFlyoutOpen(!cmsCollectionsFlyoutOpen);
+            return;
+          }
           var target = e.target && e.target.closest ? e.target.closest('[data-cms-hash], #cmsBackToCollection') : null;
           if (!target) return;
           var nextHash = target.getAttribute('data-cms-hash') || target.getAttribute('data-target-hash');
           if (!nextHash) return;
+          closeCmsCollectionsFlyout();
           location.hash = nextHash;
         } catch (_) {}
       });
+      document.getElementById('cmsCollectionsFlyout')?.addEventListener('click', function(e){
+        try {
+          var target = e.target && e.target.closest ? e.target.closest('[data-cms-hash]') : null;
+          if (!target) return;
+          var nextHash = target.getAttribute('data-cms-hash');
+          if (!nextHash) return;
+          closeCmsCollectionsFlyout();
+          location.hash = nextHash;
+        } catch (_) {}
+      });
+      document.getElementById('cmsCollectionsBackdrop')?.addEventListener('click', closeCmsCollectionsFlyout);
+      document.getElementById('cmsCollectionsClose')?.addEventListener('click', closeCmsCollectionsFlyout);
       window.addEventListener('hashchange', route);
       window.addEventListener('hashchange', syncCmsMobileNav);
       window.addEventListener('resize', queueCmsLayoutSync);
       window.addEventListener('orientationchange', queueCmsLayoutSync);
+      window.addEventListener('keydown', function(e){
+        if (e.key === 'Escape') closeCmsCollectionsFlyout();
+      });
       try {
         var topbarObserver = new ResizeObserver(function(){ queueCmsLayoutSync(); });
         var topbarEl = document.querySelector('.topbar');
