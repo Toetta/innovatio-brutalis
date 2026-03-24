@@ -81,7 +81,9 @@
       *{ box-sizing:border-box; }
       html{ -webkit-text-size-adjust:100%; }
       body{ margin:0; padding-top: var(--portal-topbar-h); font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial; background:#f8fafc; color:#111827; }
+      body.portal-chrome-hidden{ padding-top:0; }
       .topbar{ position:fixed; top:0; left:0; right:0; z-index:2147483647; min-height: var(--portal-topbar-h); display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:12px 14px; border-bottom:1px solid #e5e7eb; background:#fff; box-sizing:border-box; }
+      body.portal-chrome-hidden .topbar{ display:none; }
       .topbar .left{ display:flex; align-items:flex-start; gap:10px; flex-wrap:wrap; flex:1 1 auto; min-width:0; }
       .topbar h1{ margin:0; font-size:14px; font-weight:700; line-height:1.2; padding-top:2px; }
       .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
@@ -93,6 +95,7 @@
       /* Keep CMS below the portal topbar (Decap otherwise covers the whole viewport). */
       #view-cms.active #nc-root{ position:fixed !important; top: var(--portal-fixed-offset) !important; left:0 !important; right:0 !important; bottom:0 !important; }
       .cms-mobile-nav{ display:none; }
+      body.portal-chrome-hidden .cms-mobile-nav{ display:none !important; }
       .ib-cms-hidden-mobile{ display:none !important; }
       .ib-cms-fullwidth-mobile{ display:block !important; width:100% !important; min-width:100% !important; max-width:100% !important; flex:1 1 100% !important; flex-basis:100% !important; }
       .ib-cms-stack-mobile{ display:block !important; width:100% !important; max-width:100% !important; grid-template-columns:minmax(0,1fr) !important; flex-direction:column !important; }
@@ -662,12 +665,14 @@
 
       function syncPortalTopbarHeight(){
         try {
+          var body = document.body;
           var topbar = document.querySelector('.topbar');
           if (!topbar) return;
-          var topbarHeight = Math.max(52, Math.ceil(topbar.getBoundingClientRect().height || 0));
+          var portalHidden = !!(body && body.classList.contains('portal-chrome-hidden'));
+          var topbarHeight = portalHidden ? 0 : Math.max(52, Math.ceil(topbar.getBoundingClientRect().height || 0));
           var cmsNav = document.getElementById('cmsMobileNav');
           var cmsNavHeight = 0;
-          if (cmsNav && !cmsNav.hidden && window.innerWidth <= 700) {
+          if (!portalHidden && cmsNav && !cmsNav.hidden && window.innerWidth <= 700) {
             cmsNavHeight = Math.ceil(cmsNav.getBoundingClientRect().height || 0);
           }
           document.documentElement.style.setProperty('--portal-topbar-h', topbarHeight + 'px');
@@ -713,6 +718,44 @@
 
       function normalizeCmsText(value){
         return String(value || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      }
+
+      function cmsShowsAuthScreen(){
+        try {
+          var root = document.getElementById('nc-root');
+          if (!root) return false;
+          var text = normalizeCmsText(root.innerText || root.textContent || '');
+          if (!text) return true;
+          if (
+            text.indexOf('login with github') !== -1 ||
+            text.indexOf('log in with github') !== -1 ||
+            text.indexOf('redirecting to github') !== -1 ||
+            text.indexOf('authorizing') !== -1 ||
+            text.indexOf('loading configuration') !== -1 ||
+            text.indexOf('checking backend') !== -1
+          ) return true;
+          return false;
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function shouldHidePortalChrome(){
+        try {
+          var isMobile = window.innerWidth <= 700;
+          var isCmsView = document.getElementById('view-cms')?.classList.contains('active');
+          if (!isMobile || !isCmsView) return false;
+          return cmsShowsAuthScreen();
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function syncPortalChromeVisibility(){
+        try {
+          document.body.classList.toggle('portal-chrome-hidden', shouldHidePortalChrome());
+        } catch (_) {}
+        syncPortalTopbarHeight();
       }
 
       function findCmsElementByText(requiredSnippets){
@@ -885,7 +928,12 @@
           var isMobile = window.innerWidth <= 700;
           var cmsActive = document.getElementById('view-cms')?.classList.contains('active');
           if (!isMobile || !cmsActive) {
-            syncPortalTopbarHeight();
+            syncPortalChromeVisibility();
+            return;
+          }
+
+          if (shouldHidePortalChrome()) {
+            syncPortalChromeVisibility();
             return;
           }
 
@@ -933,7 +981,24 @@
             if (listPane) promoteCmsPrimaryPane(listPane);
           }
         } catch (_) {}
-        syncPortalTopbarHeight();
+        syncPortalChromeVisibility();
+      }
+
+      var cmsLayoutSyncQueued = false;
+      function queueCmsLayoutSync(){
+        try {
+          if (cmsLayoutSyncQueued) return;
+          cmsLayoutSyncQueued = true;
+          var flush = function(){
+            cmsLayoutSyncQueued = false;
+            syncCmsMobileNav();
+          };
+          if (typeof requestAnimationFrame === 'function') requestAnimationFrame(flush);
+          else setTimeout(flush, 16);
+        } catch (_) {
+          cmsLayoutSyncQueued = false;
+          syncCmsMobileNav();
+        }
       }
 
       function syncCmsMobileNav(){
@@ -942,7 +1007,8 @@
           if (!nav) return;
           var isCmsView = document.getElementById('view-cms')?.classList.contains('active');
           var isMobile = window.innerWidth <= 700;
-          nav.hidden = !(isCmsView && isMobile);
+          var hidePortalChrome = shouldHidePortalChrome();
+          nav.hidden = hidePortalChrome || !(isCmsView && isMobile);
 
           var collection = currentCmsCollectionFromHash();
           var raw = String(location.hash || '');
@@ -985,10 +1051,10 @@
         initDecapMainImageRadio();
         try {
           var cmsRoot = document.getElementById('view-cms') || document.documentElement;
-          var portraitObserver = new MutationObserver(function(){ applyCmsPortraitLayout(); });
-          portraitObserver.observe(cmsRoot, { subtree: true, childList: true, attributes: true });
+          var portraitObserver = new MutationObserver(function(){ queueCmsLayoutSync(); });
+          portraitObserver.observe(cmsRoot, { subtree: true, childList: true });
         } catch (_) {}
-        applyCmsPortraitLayout();
+        queueCmsLayoutSync();
         return true;
       }
 
@@ -1038,17 +1104,17 @@
       });
       window.addEventListener('hashchange', route);
       window.addEventListener('hashchange', syncCmsMobileNav);
-      window.addEventListener('resize', syncCmsMobileNav);
-      window.addEventListener('orientationchange', syncCmsMobileNav);
+      window.addEventListener('resize', queueCmsLayoutSync);
+      window.addEventListener('orientationchange', queueCmsLayoutSync);
       try {
-        var topbarObserver = new ResizeObserver(function(){ syncCmsMobileNav(); });
+        var topbarObserver = new ResizeObserver(function(){ queueCmsLayoutSync(); });
         var topbarEl = document.querySelector('.topbar');
         if (topbarEl) topbarObserver.observe(topbarEl);
         var cmsNavEl = document.getElementById('cmsMobileNav');
         if (cmsNavEl) topbarObserver.observe(cmsNavEl);
       } catch (_) {}
       normalizeInitialCmsHash();
-      syncCmsMobileNav();
+      queueCmsLayoutSync();
       route();
     </script>
 
