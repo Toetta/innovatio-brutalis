@@ -93,7 +93,7 @@
       .view{ display:none; }
       .view.active{ display:block; }
       /* Keep CMS below the portal topbar (Decap otherwise covers the whole viewport). */
-      #view-cms.active #nc-root{ position:fixed !important; top: var(--portal-fixed-offset) !important; left:0 !important; right:0 !important; bottom:0 !important; }
+      #view-cms.active #nc-root{ position:fixed !important; top: var(--portal-fixed-offset) !important; left:0 !important; right:0 !important; bottom:0 !important; overflow-y:auto !important; overflow-x:hidden !important; -webkit-overflow-scrolling:touch; overscroll-behavior-y:contain; touch-action:pan-y; }
       .cms-mobile-nav{ display:none; }
       body.portal-chrome-hidden .cms-mobile-nav{ display:none !important; }
       .ib-cms-hidden-mobile{ display:none !important; }
@@ -126,6 +126,8 @@
 
       @media (max-width: 700px){
         body{ background:#fff; }
+        #view-cms{ padding-top: var(--portal-cms-nav-h); min-height: calc(100dvh - var(--portal-topbar-h)); }
+        #view-cms.active #nc-root{ position:relative !important; top:auto !important; left:auto !important; right:auto !important; bottom:auto !important; min-height: calc(100dvh - var(--portal-fixed-offset)); max-height:none !important; padding-bottom:24px; }
         .topbar{ padding:10px 12px; gap:10px; }
         .topbar .left{ display:grid; grid-template-columns:1fr; gap:8px; }
         .tabs{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); width:100%; }
