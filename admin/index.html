@@ -870,7 +870,6 @@
         try {
           if (initialMobileHashNormalized) return;
           initialMobileHashNormalized = true;
-          if (window.innerWidth > 700) return;
 
           var raw = String(location.hash || '');
           if (!/#\/?collections\/[^/]+\/entries\//.test(raw)) return;
