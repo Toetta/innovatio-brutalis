@@ -9,6 +9,11 @@ This implementation fixes the common “login loop” by implementing the **Deca
 - popup then redirects to GitHub
 - `/callback` posts `authorization:github:success:{ token, provider }`
 
+It also includes a mobile/same-tab fallback:
+
+- if `window.opener` is missing on `/auth`, the Worker continues the GitHub flow in the current tab
+- if `window.opener` is still missing on `/callback`, the Worker redirects back to `/admin/` with a hash-only auth payload that the admin page consumes and stores in `localStorage`
+
 ## Endpoints
 
 - `GET /health` → JSON `{ ok: true }`

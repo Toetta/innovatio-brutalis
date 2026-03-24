@@ -24,6 +24,10 @@ function base64UrlEncode(bytes: Uint8Array): string {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
 }
 
+function base64UrlEncodeUtf8(value: string): string {
+  return base64UrlEncode(new TextEncoder().encode(value));
+}
+
 function randomState(bytes = 24): string {
   const buf = new Uint8Array(bytes);
   crypto.getRandomValues(buf);
@@ -132,6 +136,29 @@ async function exchangeCodeForToken(reqUrl: URL, env: Env, code: string, state: 
   return { ok: true, token: String(jsonResp.access_token), scope: jsonResp.scope ? String(jsonResp.scope) : undefined };
 }
 
+async function fetchGitHubUser(token: string): Promise<Record<string, unknown>> {
+  try {
+    const resp = await fetch('https://api.github.com/user', {
+      headers: {
+        'accept': 'application/json',
+        'authorization': `Bearer ${token}`,
+        'user-agent': 'innovatio-brutalis-decap-oauth',
+      },
+    });
+    if (!resp.ok) return {};
+    const jsonResp = await resp.json().catch(() => null) as Record<string, unknown> | null;
+    return jsonResp && typeof jsonResp === 'object' ? jsonResp : {};
+  } catch {
+    return {};
+  }
+}
+
+function buildAdminFallbackUrl(openerOrigin: string, payload: Record<string, unknown>, routeHash = '#/collections'): string {
+  const encodedPayload = base64UrlEncodeUtf8(JSON.stringify(payload));
+  const route = encodeURIComponent(routeHash);
+  return `${openerOrigin}/admin/#ib-decap-auth=${encodedPayload}&route=${route}`;
+}
+
 function authPage(openerOrigin: string, provider: string, authorizeUrl: string): string {
   return `<!doctype html>
 <html>
@@ -150,7 +177,8 @@ function authPage(openerOrigin: string, provider: string, authorizeUrl: string):
         const handshake = 'authorizing:' + provider;
 
         if (!window.opener) {
-          document.body.textContent = 'Missing window.opener (popup blocked or COOP).';
+          document.body.textContent = 'Continuing login in this tab…';
+          window.location.href = authorizeUrl;
           return;
         }
 
@@ -174,7 +202,7 @@ function authPage(openerOrigin: string, provider: string, authorizeUrl: string):
 </html>`;
 }
 
-function callbackPage(openerOrigin: string, provider: string, message: string): string {
+function callbackPage(openerOrigin: string, provider: string, message: string, fallbackUrl = ''): string {
   return `<!doctype html>
 <html>
   <head>
@@ -188,14 +216,20 @@ function callbackPage(openerOrigin: string, provider: string, message: string): 
       (function () {
         const openerOrigin = ${JSON.stringify(openerOrigin)};
         const msg = ${JSON.stringify(message)};
+        const fallbackUrl = ${JSON.stringify(fallbackUrl)};
 
         if (window.opener) {
           window.opener.postMessage(msg, openerOrigin);
+          setTimeout(() => window.close(), 50);
+          return;
+        }
+
+        if (fallbackUrl) {
+          window.location.replace(fallbackUrl);
+          return;
         } else {
           document.body.textContent = 'Missing window.opener (popup blocked or COOP).';
         }
-
-        setTimeout(() => window.close(), 50);
       })();
     </script>
   </body>
@@ -267,9 +301,19 @@ export default {
         return html(callbackPage(openerOrigin, provider, msg), { status: 400, headers });
       }
 
-      const payload = { token: tokenResp.token, provider };
+      const user = await fetchGitHubUser(tokenResp.token);
+      const payload = {
+        login: typeof user.login === 'string' ? user.login : '',
+        name: typeof user.name === 'string' ? user.name : '',
+        avatar_url: typeof user.avatar_url === 'string' ? user.avatar_url : '',
+        email: typeof user.email === 'string' ? user.email : '',
+        token: tokenResp.token,
+        provider,
+        useOpenAuthoring: false,
+      };
+      const fallbackUrl = buildAdminFallbackUrl(openerOrigin, payload, '#/collections');
       const msg = `authorization:${provider}:success:` + JSON.stringify(payload);
-      return html(callbackPage(openerOrigin, provider, msg), { headers });
+      return html(callbackPage(openerOrigin, provider, msg, fallbackUrl), { headers });
     }
 
     return html('<!doctype html><p>Not found</p>', { status: 404 });

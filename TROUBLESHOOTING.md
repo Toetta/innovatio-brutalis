@@ -193,6 +193,10 @@ Fix: uppdatera OAuth Worker `/auth` så att den:
 
 `/callback` ska sedan bara `postMessage`-a `authorization:github:success:{...}` (eller `...:error:{...}`) och stänga fönstret.
 
+Mobil/same-tab fallback:
+- Om popup/opener inte finns på mobil kan Workern istället fortsätta login i samma flik och sedan redirecta tillbaka till `/admin/` med en hash-buren auth-payload.
+- Admin-sidan kan då skriva `decap-cms-user` lokalt och hoppa tillbaka till `#/collections` utan att token hamnar i querystring.
+
 Det finns en färdig minimal Cloudflare Worker-implementation i repot:
 - `tools/decap-oauth-worker/`
 

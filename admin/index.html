@@ -10,13 +10,69 @@
       // Note: Payment links backend calls use an explicit API base URL (configured in the UI),
       // so the admin portal itself can live on GitHub Pages.
       const CANONICAL_HOST = "www.innovatio-brutalis.se";
+      const DECAP_FALLBACK_HASH_PREFIX = "#ib-decap-auth=";
       const host = location.hostname;
       const isLocal = host === "localhost" || host === "127.0.0.1";
+
+      function decodeBase64UrlUtf8(raw){
+        try {
+          var normalized = String(raw || '').replace(/-/g, '+').replace(/_/g, '/');
+          var pad = normalized.length % 4;
+          if (pad) normalized += '='.repeat(4 - pad);
+          var binary = atob(normalized);
+          var bytes = new Uint8Array(binary.length);
+          for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          return new TextDecoder().decode(bytes);
+        } catch (_) {
+          return '';
+        }
+      }
+
+      function consumeDecapFallbackHash(){
+        try {
+          var rawHash = String(location.hash || '');
+          if (!rawHash.startsWith(DECAP_FALLBACK_HASH_PREFIX)) return;
+
+          var fragment = rawHash.slice(DECAP_FALLBACK_HASH_PREFIX.length);
+          var routeMarker = '&route=';
+          var routeIndex = fragment.indexOf(routeMarker);
+          var encodedPayload = routeIndex >= 0 ? fragment.slice(0, routeIndex) : fragment;
+          var encodedRoute = routeIndex >= 0 ? fragment.slice(routeIndex + routeMarker.length) : '';
+          if (!encodedPayload) return;
+
+          var payloadText = decodeBase64UrlUtf8(encodedPayload);
+          var payload = payloadText ? JSON.parse(payloadText) : null;
+          var token = String(payload && payload.token || '').trim();
+          if (!token) throw new Error('Missing Decap fallback token');
+
+          var session = {
+            login: String(payload && payload.login || '').trim(),
+            name: String(payload && payload.name || '').trim(),
+            avatar_url: String(payload && payload.avatar_url || '').trim(),
+            email: String(payload && payload.email || '').trim(),
+            token: token,
+            provider: String(payload && payload.provider || 'github').trim() || 'github',
+            useOpenAuthoring: !!(payload && payload.useOpenAuthoring),
+            backendName: 'github',
+          };
+
+          localStorage.setItem('decap-cms-user', JSON.stringify(session));
+
+          var nextHash = encodedRoute ? decodeURIComponent(encodedRoute) : '#/collections';
+          if (!/^#(?:\/collections(?:\/.*)?|payment-links)$/.test(nextHash)) nextHash = '#/collections';
+          history.replaceState({}, '', location.pathname + location.search + nextHash);
+        } catch (err) {
+          try { console.error('Failed to restore Decap mobile auth fallback', err); } catch (_) {}
+          try { history.replaceState({}, '', location.pathname + location.search + '#/collections'); } catch (_) {}
+        }
+      }
 
       // Always prefer the canonical host for Decap OAuth + localStorage.
       // (The OAuth worker may be locked to a single allowed origin.)
       if (!isLocal && host !== CANONICAL_HOST) {
         location.replace(`https://${CANONICAL_HOST}${location.pathname}${location.search}${location.hash}`);
+      } else {
+        consumeDecapFallbackHash();
       }
     </script>
     <style>
@@ -809,6 +865,21 @@
         }
       }
 
+      var initialMobileHashNormalized = false;
+      function normalizeInitialCmsHash(){
+        try {
+          if (initialMobileHashNormalized) return;
+          initialMobileHashNormalized = true;
+          if (window.innerWidth > 700) return;
+
+          var raw = String(location.hash || '');
+          if (!/#\/?collections\/[^/]+\/entries\//.test(raw)) return;
+
+          var nextHash = currentCmsCollectionListHash();
+          history.replaceState({}, '', location.pathname + location.search + nextHash);
+        } catch (_) {}
+      }
+
       function applyCmsPortraitLayout(){
         try {
           clearCmsPortraitLayout();
@@ -977,6 +1048,7 @@
         var cmsNavEl = document.getElementById('cmsMobileNav');
         if (cmsNavEl) topbarObserver.observe(cmsNavEl);
       } catch (_) {}
+      normalizeInitialCmsHash();
       syncCmsMobileNav();
       route();
     </script>
