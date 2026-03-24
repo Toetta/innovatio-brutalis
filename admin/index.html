@@ -840,6 +840,58 @@
         }
       }
 
+      function findCmsCollectionSidebarPane(){
+        try {
+          var root = document.getElementById('nc-root');
+          if (!root) return null;
+
+          var candidates = [
+            findCmsElementByText(['collections', 'search all']),
+            findCmsElementByText(['collections']),
+          ];
+
+          for (var i = 0; i < candidates.length; i++) {
+            var pane = findCmsPaneAncestor(candidates[i]);
+            if (pane) return pane;
+          }
+
+          var likely = findLikelyCmsColumns();
+          return likely.left || null;
+        } catch (_) {
+          return null;
+        }
+      }
+
+      function findCmsCollectionContentPane(collection){
+        try {
+          var names = [];
+          var normalizedCollection = String(collection || '').replace(/-/g, ' ').trim();
+          if (normalizedCollection) names.push(normalizedCollection);
+          names.push('new ' + normalizedCollection);
+          names.push('create new');
+          names.push('filter');
+          names.push('sort by');
+
+          for (var i = 0; i < names.length; i++) {
+            var text = String(names[i] || '').trim();
+            if (!text) continue;
+            var match = findCmsElementByText([text]);
+            var pane = findCmsPaneAncestor(match);
+            if (!pane) continue;
+            var paneText = normalizeCmsText(pane.innerText || pane.textContent || '');
+            if (paneText.indexOf('collections') !== -1 && paneText.indexOf('search all') !== -1) continue;
+            return pane;
+          }
+
+          var likely = findLikelyCmsColumns();
+          if (likely.right) return likely.right;
+          if (likely.left) return likely.left;
+          return null;
+        } catch (_) {
+          return null;
+        }
+      }
+
       function promoteCmsPrimaryPane(pane){
         try {
           if (!pane) return;
@@ -945,21 +997,19 @@
           var topSwitchBar = findCmsTopSwitchBar();
           if (topSwitchBar) topSwitchBar.classList.add('ib-cms-hidden-mobile');
 
-          var collectionsPane = findCmsElementByText(['collections', 'search all']);
           var likelyColumns = findLikelyCmsColumns();
-          if (!isOverview && collectionsPane) {
-            var collectionsPanel = findCmsPaneAncestor(collectionsPane);
-            if (collectionsPanel) {
-              collectionsPanel.classList.add('ib-cms-hidden-mobile');
-              if (likelyColumns.right) promoteCmsPrimaryPane(likelyColumns.right);
-            }
+          var collectionsPanel = !isOverview ? findCmsCollectionSidebarPane() : null;
+          var contentPane = (!isOverview && !isEntryRoute) ? findCmsCollectionContentPane(collection) : null;
+          if (collectionsPanel && !isOverview) {
+            collectionsPanel.classList.add('ib-cms-hidden-mobile');
           }
 
-          if (!isOverview && likelyColumns.left) {
-            likelyColumns.left.classList.add('ib-cms-hidden-mobile');
-          }
-          if (!isOverview && likelyColumns.right) {
-            promoteCmsPrimaryPane(likelyColumns.right);
+          if (!isOverview) {
+            if (likelyColumns.left && likelyColumns.left !== contentPane) {
+              likelyColumns.left.classList.add('ib-cms-hidden-mobile');
+            }
+            if (contentPane) promoteCmsPrimaryPane(contentPane);
+            else if (likelyColumns.right) promoteCmsPrimaryPane(likelyColumns.right);
           }
 
           if (isEntryRoute) {
@@ -976,8 +1026,7 @@
           }
 
           if (collection && !isEntryRoute) {
-            var collectionHeading = findCmsElementByText([collection.replace(/-/g, ' ')]);
-            var listPane = collectionHeading ? findCmsPaneAncestor(collectionHeading) : null;
+            var listPane = findCmsCollectionContentPane(collection);
             if (listPane) promoteCmsPrimaryPane(listPane);
           }
         } catch (_) {}
