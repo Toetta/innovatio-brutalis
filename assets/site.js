@@ -143,6 +143,7 @@
       { key: "fu-bookkeeping", labelSV: "FU-Bookkeeping", labelEN: "FU-Bookkeeping", hrefSV: "/fu-bookkeeping/", hrefEN: "/en/fu-bookkeeping/" },
       { key: "coding",      labelSV: "AI + CODING", labelEN: "AI + CODING", hrefSV: "/coding/",      hrefEN: "/en/coding/" },
       { key: "automotive",  labelSV: "Automotive",  labelEN: "Automotive",  hrefSV: "/automotive/",  hrefEN: "/en/automotive/" },
+      { key: "scooter-conversions", labelSV: "Scooter-konverteringar", labelEN: "Scooter Conversions", hrefSV: "/scooter-conversions/", hrefEN: "/en/scooter-conversions/" },
       { key: "shop",        labelSV: "Webshop",     labelEN: "Shop",        hrefSV: "/shop/",        hrefEN: "/shop/?lang=en" }
     ];
 
