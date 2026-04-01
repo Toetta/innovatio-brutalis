@@ -1210,6 +1210,16 @@ footer{
   line-height:1.55;
 }
 
+.decision-flow{
+  margin:0;
+  padding-left: 20px;
+  color: rgba(229,231,235,.88);
+}
+
+.decision-flow li{
+  margin: 8px 0;
+}
+
 @media (max-width: 560px){
   .ib-row{grid-template-columns: 1fr;}
 }
