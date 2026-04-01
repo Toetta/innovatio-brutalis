@@ -1176,10 +1176,27 @@ footer{
   margin-top: 8px;
 }
 
+.support-notes--inline{
+  margin: 6px 0 22px;
+}
+
+.support-notes--inline > h3{
+  margin: 0 0 10px 0;
+  font-size: 18px;
+  line-height: 1.25;
+  text-transform: none;
+  letter-spacing: .01em;
+}
+
 .support-notes__lead{
   margin: 0 0 18px 0;
   max-width: 78ch;
   color: rgba(229,231,235,.78);
+}
+
+.support-notes--inline .support-notes__lead{
+  max-width: none;
+  font-size: 14px;
 }
 
 .support-notes__grid{
@@ -1208,6 +1225,10 @@ footer{
   color: rgba(229,231,235,.74);
   font-size:14px;
   line-height:1.55;
+}
+
+.support-notes--inline .support-notes__grid{
+  grid-template-columns: 1fr;
 }
 
 .decision-flow{
