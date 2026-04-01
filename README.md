@@ -25,6 +25,39 @@ If the header is missing/empty or does not match, the API returns:
 
 ---
 
+## Maintenance mode
+
+This repo includes a global Cloudflare Pages maintenance mode via [functions/_middleware.js](functions/_middleware.js).
+
+### Toggle on/off
+
+Set the Pages environment variable:
+
+- `MAINTENANCE_MODE=1` or `true` to enable
+- `MAINTENANCE_MODE=0` or empty to disable
+
+When enabled, the public site returns a temporary maintenance page showing:
+
+- `/assets/konstpaus.png`
+
+### Behaviour
+
+- Public site routes return HTTP `503`
+- The maintenance response is sent with `Cache-Control: no-store`
+- `/assets/konstpaus.png` is exempt so the image can load
+- `/api/*`, `/admin/*`, and `/admin-custom/*` are exempt so backend/admin flows can keep working during the pause
+
+### Cloudflare Pages
+
+In Cloudflare Pages:
+
+1. Open the project
+2. Go to `Settings` -> `Environment variables`
+3. Add or update `MAINTENANCE_MODE`
+4. Redeploy the environment if Cloudflare asks for a new deployment
+
+---
+
 ## Custom Payment Links (private quotes)
 
 This repo includes a minimal “Custom Payment Links” system for customer-specific work/orders **without** publishing anything in the product catalog.
