@@ -1053,7 +1053,7 @@ footer{
 
 .offer-card--electric{
   background:
-    radial-gradient(120% 100% at 100% 0%, rgba(96,165,250,.10), transparent 50%),
+    radial-gradient(120% 100% at 100% 0%, rgba(214,164,106,.12), transparent 50%),
     linear-gradient(180deg, rgba(var(--card-rgb), .88), rgba(var(--card2-rgb), .98));
 }
 
