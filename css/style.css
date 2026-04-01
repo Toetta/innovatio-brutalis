@@ -1013,12 +1013,19 @@ footer{
 
 .offer-card{
   position:relative;
+  display:flex;
+  flex-direction:column;
   padding: 22px;
   border-radius: 20px;
   border:1px solid rgba(214,164,106,.14);
   background:
     linear-gradient(180deg, rgba(var(--card-rgb), .88), rgba(var(--card2-rgb), .98));
   overflow:hidden;
+}
+
+.offer-card > .btn{
+  margin-top:auto;
+  align-self:flex-start;
 }
 
 .offer-card__media{
