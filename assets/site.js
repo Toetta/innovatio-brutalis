@@ -9,6 +9,47 @@
   } catch (_) {}
 
   const lower = (s) => (typeof s === "string" ? s.toLowerCase() : "");
+  const normalizeSiteSettings = (doc) => ((doc && typeof doc === "object") ? doc : {});
+  let cachedSiteSettings = null;
+  let siteSettingsPromise = null;
+
+  const loadSiteSettingsSync = () => {
+    try {
+      if (cachedSiteSettings) return cachedSiteSettings;
+      const xhr = new XMLHttpRequest();
+      xhr.open("GET", "/content/site.json", false);
+      xhr.send(null);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        cachedSiteSettings = normalizeSiteSettings(JSON.parse(xhr.responseText || "{}"));
+      } else {
+        cachedSiteSettings = {};
+      }
+    } catch (_) {
+      cachedSiteSettings = {};
+    }
+    return cachedSiteSettings;
+  };
+
+  const redirectToMaintenanceIfEnabled = () => {
+    try {
+      const pathLower = lower(window.location.pathname || "");
+      if (pathLower === "/maintenance.html") return false;
+      if (pathLower.startsWith("/admin/")) return false;
+      if (pathLower.startsWith("/admin-custom/")) return false;
+      if (pathLower.startsWith("/api/")) return false;
+
+      const settings = loadSiteSettingsSync();
+      if (!settings?.maintenance_mode) return false;
+
+      window.location.replace("/maintenance.html");
+      return true;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  if (redirectToMaintenanceIfEnabled()) return;
+
   const shouldNoopApp = () => {
     try {
       const pathLower = lower(window.location.pathname || "");
@@ -30,33 +71,29 @@
     return res.json();
   };
 
-  const loadSiteSettings = (() => {
-    let cached = null;
-    let inFlight = null;
-    return async () => {
-      try {
-        if (cached) return cached;
-        if (inFlight) return inFlight;
-        inFlight = fetchJSON("/content/site.json")
-          .then((doc) => {
-            cached = (doc && typeof doc === "object") ? doc : {};
-            return cached;
-          })
-          .catch(() => {
-            cached = {};
-            return cached;
-          })
-          .finally(() => {
-            inFlight = null;
-          });
-        return inFlight;
-      } catch (_) {
-        cached = {};
-        inFlight = null;
-        return cached;
-      }
-    };
-  })();
+  const loadSiteSettings = async () => {
+    try {
+      if (cachedSiteSettings) return cachedSiteSettings;
+      if (siteSettingsPromise) return siteSettingsPromise;
+      siteSettingsPromise = fetchJSON("/content/site.json")
+        .then((doc) => {
+          cachedSiteSettings = normalizeSiteSettings(doc);
+          return cachedSiteSettings;
+        })
+        .catch(() => {
+          cachedSiteSettings = {};
+          return cachedSiteSettings;
+        })
+        .finally(() => {
+          siteSettingsPromise = null;
+        });
+      return siteSettingsPromise;
+    } catch (_) {
+      cachedSiteSettings = {};
+      siteSettingsPromise = null;
+      return cachedSiteSettings;
+    }
+  };
 
   const applySiteSettings = (settings) => {
     try {

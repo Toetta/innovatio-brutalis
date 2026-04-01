@@ -164,4 +164,5 @@ collections:
         file: "content/site.json"
         format: "json"
         fields:
+          - { label: "Maintenance mode / Underhållsläge", name: "maintenance_mode", widget: "boolean", default: false, required: false }
           - { label: "Compact topbar", name: "topbar_compact", widget: "boolean", default: false, required: false }
