@@ -329,6 +329,7 @@ small{color:var(--text-muted)}
 }
 
 .print-machine + .print-machine,
+.print-capacity-overview,
 .print-practical{
   margin-top:18px;
   padding-top:18px;
@@ -353,6 +354,43 @@ small{color:var(--text-muted)}
 .print-machine-copy ul{
   columns:2;
   column-gap:24px;
+}
+
+.print-capacity-table-wrap{
+  width:100%;
+  overflow-x:auto;
+  margin-top:12px;
+  border:1px solid rgba(184,115,51,.18);
+  border-radius:14px;
+  background: rgba(var(--card2-rgb), .72);
+}
+
+.print-capacity-table{
+  width:100%;
+  min-width:640px;
+  border-collapse:collapse;
+  font-size:14px;
+}
+
+.print-capacity-table th,
+.print-capacity-table td{
+  padding:11px 12px;
+  text-align:left;
+  vertical-align:top;
+  border-bottom:1px solid rgba(184,115,51,.14);
+}
+
+.print-capacity-table th{
+  color:var(--text-main);
+  font-weight:800;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  font-size:12px;
+  background: rgba(184,115,51,.10);
+}
+
+.print-capacity-table tr:last-child td{
+  border-bottom:0;
 }
 
 .print-practical ul{
