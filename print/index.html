@@ -63,7 +63,7 @@
     <script defer src="/assets/site.js"></script>
     <script defer src="/assets/site-deeplinks.js"></script>
 
-    <section class="hero">
+    <section class="hero print-hero">
       <div class="brand-hero">
         <picture>
           <source srcset="/assets/logo.webp" type="image/webp">
@@ -73,57 +73,68 @@
 
       <h1>3D-print</h1>
       <p class="tagline">Engineering grade-material, fiberförstärkta polymerer och PVC/Vinyl — nu med utökad kapacitet för större prototyper, tekniska specialdelar och småserier.</p>
-      <p style="margin-top:10px;"><strong>Ny kapacitet:</strong> Bambu Lab H2S tillagd i maskinparken.</p>
+      <p class="print-capacity-note"><strong>Ny kapacitet:</strong> Bambu Lab H2S tillagd i maskinparken.</p>
       <p>Har du en större detalj eller ett mer krävande printprojekt? <a href="#kontakt">Kontakta mig</a>.</p>
     </section>
 
     <section class="card" id="utrustning" data-card-id="equipment" style="margin-top:28px;">
       <h2>Produktionsutrustning: snabb, pålitlig och nu med större kapacitet</h2>
-      <img
-        src="/assets/3d-print-farm.jpeg"
-        alt="3D-printerfarm (Bambu Lab X1C)"
-        loading="lazy"
-        decoding="async"
-        style="width:100%; height:auto; border-radius:14px; margin-top:12px;"
-      >
-      <p>
-        Min verkstad är byggd kring Bambu Lab X1C—medvetet. Efter att ha testat nyare generationer föredrar jag fortfarande X1C-plattformen eftersom den träffar rätt på det som faktiskt spelar roll i produktion: hastighet, konsekvens och robusthet.
-      </p>
-      <p>
-        X1C:s lätta printhuvud möjliggör mycket snabb acceleration och förflyttningar, vilket ger korta cykeltider utan att tappa detaljåtergivning. Minst lika viktigt är att plattformen är mekaniskt pålitlig och mindre benägen att drabbas av den "skörhet genom komplexitet" som ofta följer med mer avancerade system.
-      </p>
+      <div class="print-machine print-machine-primary">
+        <img
+          class="print-machine-image"
+          src="/assets/h2s.jpg"
+          alt="Bambu Lab H2S i Innovatio Brutalis maskinpark"
+          loading="lazy"
+          decoding="async"
+        >
+        <div class="print-machine-copy">
+          <h2>Ny kapacitet: Bambu Lab H2S</h2>
+          <p>
+            Kapaciteten har nu byggts ut med Bambu Lab H2S – ett medvetet komplement till den befintliga X1C-farmen. Där X1C fortsatt är ryggraden för snabb, stabil och repeterbar produktion, ger H2S större handlingsutrymme när projekten kräver större byggvolym, tyngre geometrier eller färre kompromisser i upplägg och delning.
+          </p>
+          <p>
+            För kunden betyder det enklare väg till större prototyper, mer sammanhängande kapslingar, större fixturer och specialdelar som tidigare hade behövt delas upp i fler komponenter eller angripas med större kompromisser.
+          </p>
+          <ul>
+            <li>Större delar i ett stycke</li>
+            <li>Färre skarvar och mindre efterarbete</li>
+            <li>Mer flexibilitet för tekniska prototyper och specialkomponenter</li>
+            <li>Ökad kapacitet vid parallella uppdrag och mindre serier</li>
+          </ul>
+        </div>
+      </div>
 
-      <h2>Ny kapacitet: Bambu Lab H2S</h2>
-      <img
-        src="/assets/h2s.jpg"
-        alt="Bambu Lab H2S i Innovatio Brutalis maskinpark"
-        loading="lazy"
-        decoding="async"
-        style="width:100%; height:auto; border-radius:14px; margin-top:12px;"
-      >
-      <p>
-        Kapaciteten har nu byggts ut med Bambu Lab H2S – ett medvetet komplement till den befintliga X1C-farmen. Där X1C fortsatt är ryggraden för snabb, stabil och repeterbar produktion, ger H2S större handlingsutrymme när projekten kräver större byggvolym, tyngre geometrier eller färre kompromisser i upplägg och delning.
-      </p>
-      <p>
-        För kunden betyder det enklare väg till större prototyper, mer sammanhängande kapslingar, större fixturer och specialdelar som tidigare hade behövt delas upp i fler komponenter eller angripas med större kompromisser.
-      </p>
-      <ul>
-        <li>Större delar i ett stycke</li>
-        <li>Färre skarvar och mindre efterarbete</li>
-        <li>Mer flexibilitet för tekniska prototyper och specialkomponenter</li>
-        <li>Ökad kapacitet vid parallella uppdrag och mindre serier</li>
-      </ul>
+      <div class="print-machine">
+        <img
+          class="print-machine-image"
+          src="/assets/3d-print-farm.jpeg"
+          alt="3D-printerfarm (Bambu Lab X1C)"
+          loading="lazy"
+          decoding="async"
+        >
+        <div class="print-machine-copy">
+          <h2>Bambu Lab X1C: snabb och repeterbar produktion</h2>
+          <p>
+            Min verkstad är byggd kring Bambu Lab X1C—medvetet. Efter att ha testat nyare generationer föredrar jag fortfarande X1C-plattformen eftersom den träffar rätt på det som faktiskt spelar roll i produktion: hastighet, konsekvens och robusthet.
+          </p>
+          <p>
+            X1C:s lätta printhuvud möjliggör mycket snabb acceleration och förflyttningar, vilket ger korta cykeltider utan att tappa detaljåtergivning. Minst lika viktigt är att plattformen är mekaniskt pålitlig och mindre benägen att drabbas av den "skörhet genom komplexitet" som ofta följer med mer avancerade system.
+          </p>
+        </div>
+      </div>
 
-      <h2>Vad det betyder i praktiken</h2>
-      <p>
-        Mer kapacitet handlar inte bara om större utskrifter. Det handlar om att kunna välja smartare lösning från början: färre delningar, bättre geometri, snabbare iterationer och större frihet att ta fram detaljer som faktiskt fungerar i sitt sammanhang.
-      </p>
-      <ul>
-        <li><strong>Funktionella prototyper:</strong> större testdetaljer med mindre behov av skarvning.</li>
-        <li><strong>Kapslingar och höljen:</strong> mer sammanhängande geometri och bättre passform.</li>
-        <li><strong>Jiggar och fixturer:</strong> större hjälpmedel för verkstad, montering och test.</li>
-        <li><strong>Småserier:</strong> bättre kapacitet när flera uppdrag eller större delar behöver rulla parallellt.</li>
-      </ul>
+      <div class="print-practical">
+        <h2>Vad det betyder i praktiken</h2>
+        <p>
+          Mer kapacitet handlar inte bara om större utskrifter. Det handlar om att kunna välja smartare lösning från början: färre delningar, bättre geometri, snabbare iterationer och större frihet att ta fram detaljer som faktiskt fungerar i sitt sammanhang.
+        </p>
+        <ul>
+          <li><strong>Funktionella prototyper:</strong> större testdetaljer med mindre behov av skarvning.</li>
+          <li><strong>Kapslingar och höljen:</strong> mer sammanhängande geometri och bättre passform.</li>
+          <li><strong>Jiggar och fixturer:</strong> större hjälpmedel för verkstad, montering och test.</li>
+          <li><strong>Småserier:</strong> bättre kapacitet när flera uppdrag eller större delar behöver rulla parallellt.</li>
+        </ul>
+      </div>
 
       <hr class="sep">
 
@@ -141,9 +152,9 @@
 
     <section class="grid">
       <article class="card" data-card-id="print-details">
-        <h2>Bambu Lab X1C + H2S — kompletterande printkapacitet</h2>
+        <h2>Bambu Lab H2S + X1C — kompletterande printkapacitet</h2>
         <p>
-          X1C-farmen ger tempo, driftsäkerhet och repeterbarhet. H2S tillför större räckvidd för uppdrag där volym, geometri eller projektets ambitionsnivå kräver mer utrymme. Tillsammans ger det en verkstad bättre rustad för både snabba iterationer och större funktionella delar.
+          H2S tillför större räckvidd för uppdrag där volym, geometri eller projektets ambitionsnivå kräver mer utrymme. X1C-farmen ger tempo, driftsäkerhet och repeterbarhet. Tillsammans ger det en verkstad bättre rustad för både större funktionella delar och snabba iterationer.
         </p>
 
         <hr class="sep">
