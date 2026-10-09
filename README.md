@@ -7,7 +7,7 @@ This repo is a static site. Deep links are implemented as a *separate*, main-sit
 Run `npm run build` before publishing (Cloudflare Pages build command: `npm run build`, output directory: `.`).
 The build preserves the shop catalog step and also generates:
 
-- Swedish and English prototyping hubs from [content/pages](content/pages).
+- Swedish and English prototyping, mechatronics and laser services from [content/pages](content/pages).
 - Article pages and the article index from [content/articles](content/articles).
 - A shared case layout and case index from [content/cases](content/cases).
 - [sitemap.xml](sitemap.xml), by discovering canonical HTML pages without `noindex`, including English pages.
@@ -36,6 +36,10 @@ Sitemap `lastmod` uses Git history of each page and its content sources rather t
 Dates are omitted for uncommitted changes instead of publishing a stale timestamp; committing and rebuilding
 supplies their actual Git date. Identical generated files are not rewritten.
 
+Service pages can provide an optional `cta` object with `heading`, `text` and `label` to customise the
+existing contact section and its shortcut button. Text is escaped; contact destinations and event wiring
+remain shared. Pages without this object retain their original CTA.
+
 The company uses Schema.org `ProfessionalService` (a valid LocalBusiness/Organization subtype),
 with the existing Person entity and precise service area. Phone numbers, VAT IDs, company LinkedIn links
 and certifications are not added without evidence.
@@ -49,6 +53,9 @@ works after normal and persistent-player navigation:
 - `quote_request` (explicit `data-ga-event="quote_request"` project CTAs)
 - `service_cta_click`, `prototype_page_cta`
 - `case_click`, `file_download`
+- `laser_page_cta` (contact clicks on either laser page)
+- `laser_quote_request` (explicit quote CTAs on either laser page)
+- `laser_to_prototyping_click`, `laser_to_cnc_click`, `laser_to_print_click` (same-origin service links)
 
 Events include `page_location`, `page_path`, service/category and link text, never form values.
 Optional `data-ga-service` and `data-ga-category` override the page-derived labels.
@@ -84,6 +91,37 @@ Acceptance criteria for this extension:
 6. Mechanical and embedded prototyping pages have static content, metadata, schema, sitemap entries and internal links;
    actual search rankings remain outside the control of this implementation.
 7. Project details beyond the supplied brief require supporting documentation.
+
+### CO₂ laser capability and technical boundaries
+
+The owner-confirmed configuration is Bambu Lab R1, **55 W CO₂**, **600 × 300 mm** normal work area,
+with **Riser Base and Auto-feed Conveyor installed**. Conveyor supports material up to **3 000 mm long**
+through incremental feeding; it does not increase the active 600 mm processing width.
+No Riser clearance or maximum material thickness is documented as a verified production specification.
+The manufacturer's demonstrations of up to 20 mm acrylic or 18 mm black walnut must not become
+guarantees for this service. Assess material, thickness, edge quality and process per application.
+
+The [Swedish source](content/pages/laser.json) and [English source](content/pages/laser-en.json) generate
+`/laser/` and `/en/laser/`, with reciprocal hreflang, Service schema and automatic sitemap discovery.
+Customer benefit and process selection come before machine specifications. Transparent acrylic is
+explicitly supported; generic claims about cutting all plastics or bare metal are not.
+PVC/Vinyl is offered for 3D printing only and must never be offered for laser cutting or engraving.
+
+**Internal safety information:** Bambu Lab describes the normally enclosed R1 as Class 1. When Riser Base
+or Conveyor is used, the enclosure is incomplete and the configuration is **Class 4**. The installed
+Riser/Conveyor configuration must not be presented as Class 1 or suitable for unattended operation.
+Professional use requires correct CO₂ laser protection and a trained operator, following the manufacturer's
+instructions. This documentation is not a substitute for operating instructions or a site-specific assessment.
+
+Laser links are included on both home pages and the prototyping, mechatronics, engineering, print and CNC
+pages. The existing main navigation is already long; no additional top-level item was added.
+Its former “CNC & Laser” label is now “CNC”, with the C500 engraving function retained as secondary content.
+Language switching pairs `/laser/` and `/en/laser/` using the existing same-slug route convention.
+[llms.txt](llms.txt) is maintained directly, not generated; it includes laser capability and process boundaries.
+
+The [multi-process case template](content/cases/mekatronisk-prototyp-laser-3d-print.json) is unpublished.
+It is not evidence of a completed project. Laser-cut components must not be attributed to the existing
+MicroPython/ESP32 valve-control project without actual documentation.
 
 ### Validation and external setup
 

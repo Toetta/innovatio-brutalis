@@ -11,6 +11,9 @@
 - Engineering, CAD and simulation
 - Reverse engineering and 3D scanning
 - 3D printing and CNC machining
+- CO₂ laser cutting and laser engraving in laser-suitable materials
+- Acrylic cutting and transparent acrylic processing
+- Prototype panels, fixtures and low-volume laser production
 - Low-volume production
 
 ## Primary service area
@@ -24,11 +27,19 @@ Malmö, Skåne, southern Sweden and Sweden.
 - [3D scanning and reverse engineering](https://www.innovatio-brutalis.se/scan/)
 - [3D printing](https://www.innovatio-brutalis.se/print/)
 - [CNC machining](https://www.innovatio-brutalis.se/cnc/)
+- [CO₂ laser cutting and engraving](https://www.innovatio-brutalis.se/laser/)
 - [Documented case studies](https://www.innovatio-brutalis.se/case/)
 - [Articles](https://www.innovatio-brutalis.se/articles/)
 - [English home](https://www.innovatio-brutalis.se/en/)
 - [English prototyping](https://www.innovatio-brutalis.se/en/prototyping/)
 - [English mechatronics](https://www.innovatio-brutalis.se/en/mechatronics/)
+- [English laser cutting](https://www.innovatio-brutalis.se/en/laser/)
+
+## Laser capability and process selection
+The right manufacturing method for each part of the prototype: CAD, mechatronics, 3D printing, CO₂ laser cutting, CNC and reverse engineering can be combined.
+Bambu Lab R1, 55 W CO₂, normal work area 600 × 300 mm. Installed Auto-feed Conveyor supports material up to 3 000 mm long through incremental feeding; the active width remains 600 mm. Riser Base is installed.
+Materials, thickness and edge quality are assessed per application; manufacturer demonstrations are not guaranteed production specifications. PVC/Vinyl is for 3D printing, never laser cutting or engraving.
+Multi-process examples are illustrative, not claims of new delivered projects or laser components in the documented valve-control example.
 
 ## Project example
 ESP32/Arduino-based valve-control units with MicroPython firmware on ESP32, e-ink, RFID and wireless communication with an iOS application.

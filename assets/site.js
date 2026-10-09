@@ -201,7 +201,7 @@
       { key: "",        labelSV: "Start",        labelEN: "Home",          hrefSV: "/",              hrefEN: "/en/" },
       { key: isEN ? "prototyping" : "prototypframtagning", labelSV: "Prototyper", labelEN: "Prototyping", hrefSV: "/prototypframtagning/", hrefEN: "/en/prototyping/" },
       { key: isEN ? "mechatronics" : "mekatronik", labelSV: "Mekatronik", labelEN: "Mechatronics", hrefSV: "/mekatronik/", hrefEN: "/en/mechatronics/" },
-      { key: "cnc",     labelSV: "CNC & Laser",  labelEN: "CNC & Laser",   hrefSV: "/cnc/",          hrefEN: "/en/cnc/" },
+      { key: "cnc",     labelSV: "CNC",          labelEN: "CNC",           hrefSV: "/cnc/",          hrefEN: "/en/cnc/" },
       { key: "print",   labelSV: "3D-print",     labelEN: "3D Printing",   hrefSV: "/print/",        hrefEN: "/en/print/" },
       { key: "scan",    labelSV: "3D-scanning",  labelEN: "3D Scanning",   hrefSV: "/scan/",         hrefEN: "/en/scan/" },
       { key: "engineering", labelSV: "Engineering", labelEN: "Engineering", hrefSV: "/engineering/", hrefEN: "/en/engineering/" },
@@ -578,13 +578,20 @@
     if (isContact) {
       events.add("contact_click");
       if (href.startsWith("mailto:")) events.add("email_click");
-      if (["engineering", "print", "scan", "cnc", "coding", "automotive", "scooter-conversions", "prototypframtagning", "prototyping", "mekatronik", "mechatronics"].includes(section)) events.add("service_cta_click");
+      if (["engineering", "print", "scan", "cnc", "laser", "coding", "automotive", "scooter-conversions", "prototypframtagning", "prototyping", "mekatronik", "mechatronics"].includes(section)) events.add("service_cta_click");
       if (["prototypframtagning", "prototyping", "mekatronik", "mechatronics"].includes(section)) events.add("prototype_page_cta");
+      if (section === "laser") events.add("laser_page_cta");
+    }
+    if (section === "laser" && url.origin === window.location.origin) {
+      if (["/prototypframtagning/", "/en/prototyping/"].includes(url.pathname)) events.add("laser_to_prototyping_click");
+      if (["/cnc/", "/en/cnc/"].includes(url.pathname)) events.add("laser_to_cnc_click");
+      if (["/print/", "/en/print/"].includes(url.pathname)) events.add("laser_to_print_click");
     }
     if (url.origin === window.location.origin && /^\/case\/[^/]+\/$/.test(url.pathname)) events.add("case_click");
     if (link.hasAttribute("download") || /\.(?:pdf|step|stp|stl|zip)$/i.test(url.pathname)) events.add("file_download");
     const explicit = link.dataset.gaEvent;
     if (["quote_request", "service_cta_click", "prototype_page_cta"].includes(explicit)) events.add(explicit);
+    if (section === "laser" && explicit === "quote_request") events.add("laser_quote_request");
     for (const name of events) gaEvent(name, params);
   }, { capture: true });
 

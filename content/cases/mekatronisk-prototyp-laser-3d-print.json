@@ -1,0 +1,10 @@
+{
+  "slug": "mekatronisk-prototyp-laser-3d-print",
+  "title": "Mekatronisk prototyp med laser och 3D-print",
+  "description": "Opublicerad mall för ett framtida dokumenterat projekt som kombinerar mekatronik och flera tillverkningsmetoder.",
+  "category": "Prototypframtagning · Processval",
+  "published": false,
+  "source_note": "Strategiskt case-förslag från verksamhetsägaren. Inget specifikt utfört projekt eller användning av laser i det befintliga ventilstyrningsprojektet är dokumenterat.",
+  "todo": "Dokumentera ett verkligt uppdrag, faktiska processval, material, komponenter, egna projektbilder, test och resultat innan publicering. Tillskriv inte befintliga projekt nya laserkomponenter.",
+  "body": "## Problem\n\nTODO: dokumentera det verkliga kundbehovet.\n\n## Systemarkitektur\n\nTODO: dokumentera systemkrav och gränssnitt.\n\n## CAD och processval\n\nTODO: motivera tillverkningsmetod för varje komponent.\n\n## Fysiska komponenter\n\nTODO: dokumentera eventuell 3D-printad kapsling, laserskuren frontpanel och transparent displayfönster, med faktiskt använda material och processer.\n\n## Elektronik och embedded\n\nTODO: dokumentera faktiska komponenter och firmware. ESP32, e-ink och RFID/NFC får bara beskrivas om de används i detta projekt.\n\n## Kommunikation\n\nTODO: dokumentera eventuell BLE/Wi-Fi och appkommunikation.\n\n## Test och verifiering\n\nTODO: dokumentera test mot systemkraven och eventuella mätvärden.\n\n## Resultat\n\nTODO: dokumentera levererad funktion och verkligt utfall."
+}

@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import { readFile, access, readdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
-import { areaServed, origin, renderMarkdown, jsonLd } from "./seo-html.mjs";
+import { runInNewContext } from "node:vm";
+import { areaServed, origin, renderMarkdown, jsonLd, pageHtml } from "./seo-html.mjs";
 import { buildSeo, htmlFiles, root } from "./build-seo.mjs";
 import { onRequest } from "../functions/_middleware.js";
 
@@ -15,9 +16,9 @@ const canonicalOf = (html) => tags(html, "link").find((tag) => tag.rel === "cano
 const metaOf = (html, name) => tags(html, "meta").find((tag) => tag.name === name || tag.property === name)?.content;
 const schemasOf = (html) => [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((match) => JSON.parse(match[1]));
 const expectedRoutes = [
-  "/", "/prototypframtagning/", "/mekatronik/", "/engineering/", "/scan/", "/print/", "/cnc/", "/coding/",
+  "/", "/prototypframtagning/", "/mekatronik/", "/laser/", "/engineering/", "/scan/", "/print/", "/cnc/", "/coding/",
   "/automotive/", "/scooter-conversions/", "/fu-bookkeeping/", "/articles/", "/case/", "/shop/",
-  "/en/", "/en/prototyping/", "/en/mechatronics/", "/en/engineering/", "/en/scan/", "/en/print/", "/en/cnc/",
+  "/en/", "/en/prototyping/", "/en/mechatronics/", "/en/laser/", "/en/engineering/", "/en/scan/", "/en/print/", "/en/cnc/",
   "/en/coding/", "/en/automotive/", "/en/scooter-conversions/", "/en/fu-bookkeeping/",
   "/articles/prototypframtagning-i-malmo/", "/articles/reverse-engineering-reservdelar/",
   "/articles/3d-print-eller-cnc/", "/case/okrossbara-glasogon-prototypframtagning/",
@@ -47,9 +48,10 @@ test("Build is repeatable, respects publication state, and sitemap covers all in
   assert.equal(await read("sitemap.xml"), before);
   const sitemap = await read("sitemap.xml");
   const urls = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map((match) => match[1]);
+  assert.equal(urls.length, expectedRoutes.length);
   assert.equal(new Set(urls).size, urls.length);
   for (const route of expectedRoutes) assert.ok(urls.includes(origin + route), `Missing sitemap URL: ${route}`);
-  for (const excluded of ["/articles/forsta-inlagget/", "/articles/valkommen/", "/case/reverse-engineering-reservdelar/", "/case/mekatronik-ventilstyrning-esp32/", "/account/", "/login/", "/orders/"]) {
+  for (const excluded of ["/articles/forsta-inlagget/", "/articles/valkommen/", "/case/reverse-engineering-reservdelar/", "/case/mekatronik-ventilstyrning-esp32/", "/case/mekatronisk-prototyp-laser-3d-print/", "/account/", "/login/", "/orders/"]) {
     assert.ok(!urls.includes(origin + excluded), `Private or placeholder page indexed: ${excluded}`);
   }
   for (const sourceKind of ["articles", "cases"]) {
@@ -110,7 +112,7 @@ test("Landing pages have unique titles/descriptions, one H1, canonical and socia
 test("Hreflang pairs are reciprocal with the Swedish URL as x-default", async () => {
   const pairs = [
     ["/", "/en/"], ["/prototypframtagning/", "/en/prototyping/"], ["/mekatronik/", "/en/mechatronics/"],
-    ...["cnc", "print", "scan", "engineering", "coding", "automotive", "scooter-conversions", "fu-bookkeeping"].map((slug) => [`/${slug}/`, `/en/${slug}/`]),
+    ...["cnc", "laser", "print", "scan", "engineering", "coding", "automotive", "scooter-conversions", "fu-bookkeeping"].map((slug) => [`/${slug}/`, `/en/${slug}/`]),
   ];
   for (const [sv, en] of pairs) {
     for (const route of [sv, en]) {
@@ -155,7 +157,7 @@ test("All local links, images and fragments on indexable pages resolve", async (
 });
 
 test("Service area, company and visible FAQ data are consistent", async () => {
-  for (const route of ["/print/", "/cnc/", "/scan/", "/en/print/", "/en/cnc/", "/en/scan/", "/prototypframtagning/", "/en/prototyping/", "/mekatronik/", "/en/mechatronics/"]) {
+  for (const route of ["/print/", "/cnc/", "/laser/", "/scan/", "/en/print/", "/en/cnc/", "/en/laser/", "/en/scan/", "/prototypframtagning/", "/en/prototyping/", "/mekatronik/", "/en/mechatronics/"]) {
     const html = await read(routeFile(route));
     const schemas = schemasOf(html);
     const service = schemas.find((schema) => schema["@type"] === "Service");
@@ -238,6 +240,121 @@ test("Mechatronics integrates mechanics, MicroPython firmware and connected inte
   assert.match(draft.body, /MicroPython på ESP32/);
   assert.ok(!(await read("case/index.html")).includes('href="/case/mekatronik-ventilstyrning-esp32/"'));
   assert.match(await read("llms.txt"), /MicroPython firmware on ESP32/);
+});
+
+test("Laser services lead with customer benefits and preserve verified capability boundaries", async () => {
+  const serviceTypes = ["CO2 laser cutting", "Laser engraving", "Acrylic laser cutting", "Prototype manufacturing", "Rapid prototyping", "Low-volume production"];
+  for (const [route, related] of [
+    ["/laser/", ["/prototypframtagning/", "/print/", "/cnc/", "/engineering/", "/mekatronik/"]],
+    ["/en/laser/", ["/en/prototyping/", "/en/print/", "/en/cnc/", "/en/engineering/", "/en/mechatronics/"]],
+  ]) {
+    const en = route.startsWith("/en/");
+    const html = await read(routeFile(route));
+    const visible = decode(html.slice(html.indexOf("<body>")));
+    assert.match(html, /Generated by tools\/build-seo/);
+    assert.match(visible, /55 W CO₂/);
+    assert.match(visible, /600 × 300 mm/);
+    assert.match(visible, /3 000 mm/);
+    assert.match(visible, /Auto-feed Conveyor: installerad|Auto-feed Conveyor: installed/);
+    assert.match(visible, /Riser Base: installerad|Riser Base: installed/);
+    assert.match(visible, /aktiva laserbearbetningsbredden på 600 mm|active laser-processing width of 600 mm/);
+    assert.match(visible, /PVC\/Vinyl laserskärs inte|PVC\/Vinyl is not laser-cut or laser-engraved/);
+    assert.match(visible, /inte garanterad produktionskapacitet|not guaranteed production specifications/);
+    assert.doesNotMatch(visible, /20 mm|18 mm|Class 1|klass 1|laserskär plast/i);
+    assert.ok(visible.indexOf(en ? "Where CO₂" : "Här gör CO₂") < visible.indexOf("Bambu Lab R1"));
+    assert.match(visible, /Transparent akryl|Transparent acrylic/);
+    assert.match(visible, /formverktyg|mould tooling/);
+    assert.match(visible, /inte ett påstående om ett nytt levererat projekt|not a claim about a newly delivered project/);
+    const service = schemasOf(html).find((schema) => schema["@type"] === "Service");
+    assert.equal(service.url, origin + route);
+    assert.deepEqual(service.serviceType, serviceTypes);
+    const links = tags(html, "a");
+    for (const target of related) {
+      assert.ok(links.some((link) => link.href === target), `Missing laser link ${route} -> ${target}`);
+      assert.ok(tags(await read(routeFile(target)), "a").some((link) => link.href === route), `Missing backlink ${target} -> ${route}`);
+    }
+    assert.ok(tags(await read(routeFile(en ? "/en/" : "/")), "a").some((link) => link.href === route));
+    const buttons = links.filter((link) => link.class === "btn");
+    assert.equal(buttons.length, 2);
+    assert.equal(buttons[0].href, en ? "#contact" : "#kontakt");
+    assert.equal(buttons[1].href, "mailto:m.arlemark@innovatio-brutalis.se");
+    assert.ok(buttons.every((link) => link["data-ga-event"] === "quote_request"));
+    assert.equal((visible.match(new RegExp(en ? "Discuss your part" : "Diskutera din detalj", "g")) || []).length, 2);
+  }
+  for (const [route, heading] of [["/cnc/", "CNC-bearbetning"], ["/en/cnc/", "CNC Machining"]]) {
+    const html = await read(routeFile(route));
+    assert.ok(html.includes(`<h1>${heading}</h1>`));
+    assert.match(html, /Nestworks C500/);
+    assert.match(html, /lasergravera|laser engraving/);
+    assert.match(html, /subtraktiv|subtractive/);
+  }
+  const draft = JSON.parse(await read("content/cases/mekatronisk-prototyp-laser-3d-print.json"));
+  assert.equal(draft.published, false);
+  assert.ok(!(await read("case/index.html")).includes(draft.slug));
+  const documentation = await read("README.md");
+  assert.match(documentation, /configuration is \*\*Class 4\*\*/);
+  assert.match(documentation, /must not be presented as Class 1 or suitable for unattended operation/);
+  const llms = await read("llms.txt");
+  assert.ok(llms.includes(origin + "/laser/"));
+  assert.match(llms, /Transparent acrylic processing|transparent acrylic processing/);
+});
+
+test("Custom service CTAs are escaped and default page CTAs remain unchanged", () => {
+  const page = { route: "/laser/", title: "Laser", description: "Description", heading: "Laser" };
+  const standard = pageHtml(page, "");
+  assert.match(standard, /<h2>Ta nästa steg<\/h2>/);
+  assert.match(standard, />Skicka en projektförfrågan<\/a>/);
+  const custom = pageHtml({ ...page, cta: { heading: "<script>", text: "CAD & drawing", label: '"Part"' } }, "");
+  assert.match(custom, /<h2>&lt;script&gt;<\/h2>/);
+  assert.match(custom, /<p>CAD &amp; drawing<\/p>/);
+  assert.match(custom, />&quot;Part&quot;<\/a>/);
+});
+
+test("Laser click tracking uses the shared event handler once per event in both languages", async () => {
+  const runtime = await read("assets/site.js");
+  const start = runtime.indexOf('  document.addEventListener("click", (event) => {');
+  const end = runtime.indexOf("  const gaThrottle", start);
+  assert.ok(start >= 0 && end > start, "Shared analytics click handler not found");
+  for (const route of ["/laser/", "/en/laser/"]) {
+    const events = [];
+    let click;
+    runInNewContext(runtime.slice(start, end), {
+      URL,
+      window: { location: { href: origin + route, origin } },
+      document: { addEventListener: (type, handler) => { assert.equal(type, "click"); click = handler; } },
+      shouldNoopApp: () => false,
+      computeState: () => ({ section: "laser" }),
+      gaEvent: (name, params) => events.push({ name, params }),
+    });
+    const check = (href, explicit, expected) => {
+      events.length = 0;
+      const link = { dataset: explicit ? { gaEvent: explicit } : {}, textContent: "Discuss your part", getAttribute: () => href, hasAttribute: () => false };
+      click({ target: { closest: () => link } });
+      assert.deepEqual(events.map(({ name }) => name).sort(), expected.sort(), `${route} -> ${href}`);
+      assert.ok(events.every(({ params }) => params.service === "laser" && params.category === "laser"));
+    };
+    check(route === "/laser/" ? "#kontakt" : "#contact", "quote_request", ["contact_click", "service_cta_click", "laser_page_cta", "quote_request", "laser_quote_request"]);
+    check("mailto:m.arlemark@innovatio-brutalis.se", "quote_request", ["contact_click", "email_click", "service_cta_click", "laser_page_cta", "quote_request", "laser_quote_request"]);
+    const prefix = route.startsWith("/en/") ? "/en/" : "/";
+    check(prefix + (prefix === "/" ? "prototypframtagning/" : "prototyping/"), "", ["laser_to_prototyping_click"]);
+    check(prefix + "cnc/", "", ["laser_to_cnc_click"]);
+    check(prefix + "print/", "", ["laser_to_print_click"]);
+    check("https://example.com/cnc/", "", []);
+    check(prefix + "engineering/", "", []);
+  }
+  const events = [];
+  let click;
+  runInNewContext(runtime.slice(start, end), {
+    URL,
+    window: { location: { href: origin + "/print/", origin } },
+    document: { addEventListener: (_, handler) => { click = handler; } },
+    shouldNoopApp: () => false,
+    computeState: () => ({ section: "print" }),
+    gaEvent: (name) => events.push(name),
+  });
+  const link = { dataset: { gaEvent: "quote_request" }, textContent: "Contact", getAttribute: () => "#kontakt", hasAttribute: () => false };
+  click({ target: { closest: () => link } });
+  assert.deepEqual(events.sort(), ["contact_click", "quote_request", "service_cta_click"]);
 });
 
 test("Case facts and new material offerings are backed by the supplied sources", async () => {

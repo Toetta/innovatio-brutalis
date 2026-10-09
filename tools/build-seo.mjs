@@ -146,7 +146,7 @@ export const buildSeo = async () => {
 </section>`;
     }
     const content = `<div class="cta-row">
-  <a class="btn" href="#${page.lang === "en" ? "contact" : "kontakt"}" data-ga-event="quote_request">${page.lang === "en" ? "Discuss your idea or part" : "Diskutera din idé eller detalj"}</a>
+  <a class="btn" href="#${page.lang === "en" ? "contact" : "kontakt"}" data-ga-event="quote_request">${escapeHtml(page.cta?.label || (page.lang === "en" ? "Discuss your idea or part" : "Diskutera din idé eller detalj"))}</a>
 </div>
 <section class="card" style="margin-top:28px;">${renderMarkdown(page.body)}</section>
 ${page.project_links?.length ? `<section class="card" style="margin-top:28px;">
