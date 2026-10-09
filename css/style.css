@@ -752,7 +752,8 @@ h1{
   text-decoration:none;
 }
 
-.card h2{
+.card h2,
+.card .section-title{
   margin:0 0 8px 0;
   font-family: "DejaVu Serif", Georgia, "Times New Roman", serif;
   text-transform:uppercase;

@@ -13,8 +13,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>3D-print — Innovatio Brutalis</title>
-  <meta name="description" content="3D-print i engineering grade-material, PVC/Vinyl och utökad kapacitet med Bambu Lab X1C och H2S. Prototyper, fixturer, större specialdelar och lågvolym.">
+  <title>3D-print &amp; prototyptillverkning i Malmö | Innovatio Brutalis</title>
+  <meta name="description" content="3D-print i Malmö för prototyper, fixturer och småserier i Skåne och södra Sverige. Engineering-material, flexibelt TPU och fiberförstärkta polymerer.">
 
   <link rel="canonical" href="https://www.innovatio-brutalis.se/print/">
 
@@ -33,7 +33,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Innovatio Brutalis">
   <meta property="og:locale" content="sv_SE">
-  <meta property="og:title" content="3D-print — Innovatio Brutalis">
+  <meta property="og:title" content="3D-print &amp; prototyptillverkning i Malmö | Innovatio Brutalis">
   <meta property="og:description" content="3D-print i engineering grade-material, PPA-CF och PVC/Vinyl – nu med utökad kapacitet via Bambu Lab H2S för större prototyper, specialdelar och lågvolym.">
   <meta property="og:url" content="https://www.innovatio-brutalis.se/print/">
   <meta property="og:image" content="https://www.innovatio-brutalis.se/assets/og-image.jpg">
@@ -47,10 +47,15 @@
     "@context":"https://schema.org",
     "@type":"Service",
     "name":"3D-print i engineering-material",
-    "provider":{"@type":"EngineeringCompany","name":"Innovatio Brutalis","url":"https://www.innovatio-brutalis.se/"},
-    "areaServed":"SE",
+    "provider":{"@type":"ProfessionalService","@id":"https://www.innovatio-brutalis.se/#org","name":"Innovatio Brutalis","url":"https://www.innovatio-brutalis.se/"},
+    "areaServed":[
+      {"@type":"City","name":"Malmö"},
+      {"@type":"AdministrativeArea","name":"Skåne"},
+      {"@type":"Place","name":"Southern Sweden"},
+      {"@type":"Country","name":"Sweden","identifier":"SE"}
+    ],
     "url":"https://www.innovatio-brutalis.se/print/",
-    "serviceType":["3D printing","Prototyping","Low-volume production","Engineering polymers","PVC/Vinyl","Large-format 3D printing","Functional prototyping"]
+    "serviceType":["3D printing","Prototyping","Low-volume production","Engineering polymers","PVC/Vinyl","Large-format 3D printing","Functional prototyping","Foamed TPU","Polypropylene (PP)"]
   }
   </script>
 </head>
@@ -73,6 +78,7 @@
 
       <h1>3D-print</h1>
       <p class="tagline">Engineering grade-material, fiberförstärkta polymerer och PVC/Vinyl — nu med utökad kapacitet för större prototyper, tekniska specialdelar och småserier.</p>
+      <p>3D-print är ett verktyg i vår <a href="/prototypframtagning/">prototypframtagning i Malmö</a>, från CAD och materialval till test och iteration. Bas i Malmö – för företag i Skåne och södra Sverige.</p>
       <p class="print-capacity-note"><strong>Ny kapacitet:</strong> Bambu Lab H2S tillagd i maskinparken.</p>
       <p>Har du en större detalj eller ett mer krävande printprojekt? <a href="#kontakt">Kontakta mig</a>.</p>
     </section>
@@ -205,8 +211,21 @@
           <li>PC, ASA, ABS</li>
           <li>PETG / PET-varianter</li>
           <li>TPU (flexibelt)</li>
+          <li>Skummad TPU / skumgummi</li>
+          <li>PP (polypropen)</li>
           <li><strong>PVC/Vinyl</strong> (för större projekt/krävande applikationer)</li>
         </ul>
+
+        <hr class="sep">
+
+        <h2>Skummad TPU – 3D-printat skumgummi</h2>
+        <p>Skummad TPU erbjuds för projekt där en mjuk, skumliknande detalj behöver utvecklas. Printförsöken visar möjligheter till varierad hårdhet inom samma del och öppna eller slutna celler beroende på applikation. Utförandet bedöms och provas för det aktuella användningsfallet.</p>
+        <p><a href="https://lnkd.in/p/dHxgf5sr" target="_blank" rel="noopener">Se printförsöken med skummad TPU</a>.</p>
+
+        <h2>PP – polypropen för tunna geometrier</h2>
+        <p>Vi skriver även ut i PP för tåliga, flexibla detaljer och funktionsprov. De dokumenterade exemplen visar tunnväggiga geometrier: 0,2 mm i den tunna delen och 0,75 mm i den större koppen. Det är exempel från specifika utskrifter, inte garanterade väggtjocklekar för alla konstruktioner.</p>
+        <p>Eventuell livsmedelskontakt behöver bedömas för material, färdig detalj och avsedd användning. En materialbeskrivning är inte en generell certifiering av utskriften.</p>
+        <p><a href="https://lnkd.in/p/dADy7REa" target="_blank" rel="noopener">Se de tunnväggiga PP-utskrifterna</a>.</p>
 
         <hr class="sep">
 
@@ -272,8 +291,13 @@
 
     <section class="card" id="projekt" data-card-id="projects" style="margin-top:28px;">
       <h2>Projekt</h2>
+      <p><a href="/case/">Dokumenterade case: problem, prototyp och resultat</a></p>
+      <ul>
+        <li><a href="/case/moderna-museet-additiv-tillverkning/">Moderna Museet Malmö: cirka 40 skulpturfigurer med 3D-print</a></li>
+        <li><a href="/case/smaserieproduktion-3d-print/">Från prototyp till återkommande produktion: över 2 000 enheter</a></li>
+      </ul>
       <div class="project-grid">
-        <article class="project-card" data-card-id="project-quattrini-inlet">
+        <article class="project-card" id="project-quattrini-inlet" data-card-id="project-quattrini-inlet">
           <div class="project-thumb">
             <img src="/assets/inlet1.jpg" alt="Lambretta Quattrini M210 insug (reed manifold) — 3D-print" loading="lazy" decoding="async">
             <span class="project-tag">PAHT-CF</span>
@@ -298,6 +322,7 @@
           </div>
           <div class="project-content">
             <h3>Lambretta Quattrini M210 insug (reed manifold)</h3>
+            <p><a href="/case/quattrini-insug-cad-3d-print/">Case: från CAD och flödesanalys till testat insug</a></p>
             <p style="margin:6px 0 0; color: var(--text-muted);">Material: <strong>PAHT-CF</strong> — kolfiberförstärkt polyamid med hög temperaturtålighet.</p>
             <p style="margin:12px 0 0;"><strong>Insugsstuffer för Lambretta Quattrini-cylindersatser (Mikuni TM(X) 27 mm)</strong></p>
             <p style="margin:6px 0 0; color: var(--text-muted);">
@@ -337,12 +362,13 @@
 
         <article class="project-card" data-card-id="project-okrossbara-glasogon-barn">
           <div class="project-thumb">
-            <img src="/assets/glasogon-projekt.jpg" alt="CAD och prototyp för okrossbara glasögonbågar för barn" loading="lazy" decoding="async">
+            <img src="/assets/uploads/img_5217.jpg" alt="Flexibla 3D-printade glasögonbågar för barn" loading="lazy" decoding="async">
             <span class="project-tag">TPU</span>
           </div>
 
           <div class="project-content">
             <h3>Okrossbara glasögonbågar för barn — 3D-print i flexibelt material</h3>
+            <p><a href="/case/okrossbara-glasogon-prototypframtagning/">Case: användarbehov, CAD och iterativa glasögonprototyper</a></p>
             <p style="margin:6px 0 0; color: var(--text-muted);">Material: <strong>TPU</strong> (flexibelt) / “gummiliknande” polymer — designad för att böjas utan att spricka.</p>
 
             <p style="margin:12px 0 6px;"><strong>Bakgrund / problem</strong></p>

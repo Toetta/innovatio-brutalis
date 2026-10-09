@@ -122,14 +122,18 @@ collections:
     format: "json"
     extension: "json"
     slug: "{{fields.slug}}"
-    preview_path: "services/#/{{slug}}"
+    preview_path: "articles/{{slug}}/"
     fields:
       - { label: "Slug", name: "slug", widget: "string" }
       - { label: "Titel", name: "title", widget: "string" }
+      - { label: "Ingress / meta description", name: "description", widget: "text" }
+      - { label: "Författare (tomt = Innovatio Brutalis)", name: "author", widget: "string", required: false }
       - { label: "Datum", name: "date", widget: "datetime", format: "YYYY-MM-DDTHH:mm:ssZ" }
       - { label: "Kategori (slug)", name: "category", widget: "string", required: false }
       - { label: "Publicerad", name: "published", widget: "boolean", default: true }
+      - { label: "Indexerbar", name: "indexable", widget: "boolean", default: true, required: false }
       - { label: "Bild", name: "image", widget: "image", required: false }
+      - { label: "Bildbeskrivning", name: "image_alt", widget: "string", required: false }
       - { label: "Text", name: "body", widget: "markdown", required: false }
 
   - name: "webshop"

@@ -1,0 +1,42 @@
+# Innovatio Brutalis
+
+> A Malmö-based development partner in Sweden, from ideas and system architecture to working physical and connected prototypes.
+
+## Core services
+- Product development and industrial design
+- Prototyping, rapid prototyping and functional prototypes
+- Mechatronics and embedded prototyping with ESP32/Arduino
+- MicroPython firmware on ESP32, sensors, actuators and valve control
+- E-ink displays, RFID/NFC, BLE, Wi-Fi and mobile app communication
+- Engineering, CAD and simulation
+- Reverse engineering and 3D scanning
+- 3D printing and CNC machining
+- Low-volume production
+
+## Primary service area
+Malmö, Skåne, southern Sweden and Sweden.
+
+## Important pages
+- [Home](https://www.innovatio-brutalis.se/)
+- [Product development and prototyping](https://www.innovatio-brutalis.se/prototypframtagning/)
+- [Mechatronics and connected prototypes](https://www.innovatio-brutalis.se/mekatronik/)
+- [Engineering, CAD and simulation](https://www.innovatio-brutalis.se/engineering/)
+- [3D scanning and reverse engineering](https://www.innovatio-brutalis.se/scan/)
+- [3D printing](https://www.innovatio-brutalis.se/print/)
+- [CNC machining](https://www.innovatio-brutalis.se/cnc/)
+- [Documented case studies](https://www.innovatio-brutalis.se/case/)
+- [Articles](https://www.innovatio-brutalis.se/articles/)
+- [English home](https://www.innovatio-brutalis.se/en/)
+- [English prototyping](https://www.innovatio-brutalis.se/en/prototyping/)
+- [English mechatronics](https://www.innovatio-brutalis.se/en/mechatronics/)
+
+## Project example
+ESP32/Arduino-based valve-control units with MicroPython firmware on ESP32, e-ink, RFID and wireless communication with an iOS application.
+BLE or Wi-Fi is selected according to the application's requirements. No component models, test measurements or certifications are claimed without project documentation.
+
+## Contact
+Innovatio Brutalis · Malmö, Skåne, Sweden
+m.arlemark@innovatio-brutalis.se
+
+## AI policy
+Search indexing is permitted. AI model training is prohibited; see robots.txt.

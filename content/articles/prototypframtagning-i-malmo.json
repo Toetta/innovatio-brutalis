@@ -1,0 +1,11 @@
+{
+  "slug": "prototypframtagning-i-malmo",
+  "title": "Prototypframtagning i Malmö: från behov till funktion",
+  "description": "Så hänger behovsanalys, CAD, materialval, prototyper och verifiering ihop i produktutveckling hos Innovatio Brutalis i Malmö.",
+  "date": "2026-10-09",
+  "category": "Produktutveckling",
+  "published": true,
+  "image": "/assets/uploads/img_5217.jpg",
+  "image_alt": "Flexibla 3D-printade glasögonbågar för barn",
+  "body": "## Börja med frågan prototypen ska besvara\n\nEn prototyp är ett sätt att undersöka något konkret. Ska den visa att en idé är möjlig, att en detalj passar eller att ett material fungerar? Den frågan styr konstruktion, material och tillverkningsmetod. Att börja med en maskin eller ett filformat är inte alltid rätt första steg.\n\nInnovatio Brutalis arbetar med produktutveckling och prototypframtagning från Malmö, för kunder i Skåne, södra Sverige och övriga Sverige. Arbetet kan omfatta behovsanalys, koncept, CAD, simulering, tillverkning, test och mindre produktionsserier.\n\n## Från kravbild till fysisk del\n\n- Beskriv användningen, problemet och de viktigaste begränsningarna.\n- Ta fram ett koncept och CAD-underlag med material och tillverkning i åtanke.\n- Använd analys där den hjälper ett beslut, exempelvis FEM eller flödessimulering.\n- Tillverka prototypen och pröva den mot den ursprungliga frågan.\n- Justera konstruktion eller material utifrån utfallet.\n\nEn proof of concept och en funktionell prototyp kan därför se olika ut. Det viktiga är vad testet faktiskt lär oss.\n\n## Ett konkret användarbehov\n\nDe [flexibla glasögonbågarna för barn](/case/okrossbara-glasogon-prototypframtagning/) utgick från bågar som gick sönder i vardagen. Egen CAD och återkommande TPU-prototyper gjorde det möjligt att justera passform och återanvända befintliga glas. Här är materialval och användning centrala, inte bara formen.\n\n## Vilka underlag behövs?\n\nEn beskrivning, skiss, CAD-fil, fotografier, mått eller en fysisk del kan vara startpunkten. Underlagen behöver inte vara färdiga när kontakten börjar. Läs om [hela utvecklingskedjan för prototypframtagning](/prototypframtagning/) och [CAD, konstruktion och verifiering](/engineering/).\n\n[Beskriv din idé eller ditt tekniska problem](/#kontakt)."
+}

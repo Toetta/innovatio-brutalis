@@ -1,0 +1,11 @@
+{
+  "slug": "reverse-engineering-reservdelar",
+  "title": "Reverse engineering när reservdelens CAD saknas",
+  "description": "Hur en fysisk del kan bli underlag för scanning, CAD-rekonstruktion och en ny komponent – och varför funktion måste bedömas tillsammans med form.",
+  "date": "2026-10-09",
+  "category": "Reverse engineering",
+  "published": true,
+  "image": "/assets/og-image.jpg",
+  "image_alt": "Innovatio Brutalis – utvecklingspartner i Malmö",
+  "body": "## En fysisk del är ett underlag, inte en färdig ritning\n\nNär ritningar eller CAD saknas kan 3D-scanning digitalisera en befintlig del. Underlaget kan sedan användas för CAD-rekonstruktion, anpassning och tillverkning. Det är en av möjligheterna inom [3D-scanning och reverse engineering hos Innovatio Brutalis](/scan/).\n\nFormen säger däremot inte allt. Material, belastning, passform och gränssnitt behöver också bedömas. En sliten eller skadad yta är inte nödvändigtvis den geometri den nya delen ska ha.\n\n## Från scan till konstruktion\n\nScanningen ger ett digitalt formunderlag. CAD-arbetet gör det möjligt att definiera funktionella ytor och anpassa konstruktionen till en tillverkningsmetod. [Engineering och konstruktion](/engineering/) knyter ihop dessa steg med materialval och verifiering.\n\nNästa steg kan vara en fysisk prototyp för att prova passform eller funktion. [3D-print](/print/) och [CNC](/cnc/) fyller olika roller beroende på material och användning.\n\n## Rekonstruktion och nyutveckling är inte samma sak\n\nEtt befintligt underlag kan behöva anpassas snarare än kopieras. Som jämförelse visar [Quattrini-insuget](/case/quattrini-insug-cad-3d-print/) hur CAD, flödesanalys och materialval användes för en ny teknisk lösning. Det projektet beskrivs som konstruktion och utveckling, inte som ett dokumenterat scanninguppdrag.\n\n## Förbered din förfrågan\n\nBeskriv vad delen gör, vad som är skadat eller saknas och vilka ytor som måste passa. Bilder och mått hjälper, liksom information om miljö och material. Innovatio Brutalis har bas i Malmö och arbetar med kunder i Skåne, södra Sverige och övriga Sverige.\n\nLäs om [produktutveckling från befintlig del till fysisk prototyp](/prototypframtagning/) eller [ta kontakt om din reservdel](/#kontakt)."
+}

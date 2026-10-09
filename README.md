@@ -2,6 +2,107 @@
 
 This repo is a static site. Deep links are implemented as a *separate*, main-site-only module.
 
+## Static SEO/AEO publishing
+
+Run `npm run build` before publishing (Cloudflare Pages build command: `npm run build`, output directory: `.`).
+The build preserves the shop catalog step and also generates:
+
+- Swedish and English prototyping hubs from [content/pages](content/pages).
+- Article pages and the article index from [content/articles](content/articles).
+- A shared case layout and case index from [content/cases](content/cases).
+- [sitemap.xml](sitemap.xml), by discovering canonical HTML pages without `noindex`, including English pages.
+
+Keep generated HTML in version control so a static host can serve it without JavaScript rendering or a runtime build.
+Edit the source JSON, not generated HTML. Rebuild after CMS changes; ensure the deployment runs the build
+when publishing directly from Decap. The SEO CI workflow runs the build and tests but does not deploy or push commits.
+
+Article URLs are `/articles/<slug>/`; old `/articles/#/<slug>` links redirect to them, including during
+the site's persistent-player navigation. `published: false` excludes an entry completely.
+`indexable: false` keeps a published URL accessible with `noindex`, but excludes it from the index and sitemap
+(used for the original CMS test article). Rebuilding removes only marked generated HTML for removed,
+renamed or unpublished sources.
+
+Required published article fields: `slug` (matching its filename), `title`, `description`, `date`,
+`published`, and `body`. Optional fields: `author`, `modified`, `image`, `image_alt`, `category`, `indexable`.
+An absent author is credited to Innovatio Brutalis, not an invented person. Case sources use the same format,
+but no publication date is invented for an undated project. `sources` records evidence, and `todo`
+records missing project details; unpublished case templates must not be published until those facts exist.
+
+The dependency-free renderer supports paragraphs, headings, flat ordered/unordered lists, emphasis,
+links, images, quotations, rules and fenced code blocks. Raw HTML is escaped; unsafe URLs and malformed
+code fences fail the build. Body headings never introduce a second H1. Complex/nested Markdown is not supported.
+
+Sitemap `lastmod` uses Git history of each page and its content sources rather than build timestamps.
+Dates are omitted for uncommitted changes instead of publishing a stale timestamp; committing and rebuilding
+supplies their actual Git date. Identical generated files are not rewritten.
+
+The company uses Schema.org `ProfessionalService` (a valid LocalBusiness/Organization subtype),
+with the existing Person entity and precise service area. Phone numbers, VAT IDs, company LinkedIn links
+and certifications are not added without evidence.
+
+### Business analytics
+
+The existing GA4 configuration is unchanged. Delegated click tracking in [assets/site.js](assets/site.js)
+works after normal and persistent-player navigation:
+
+- `contact_click`, `email_click`
+- `quote_request` (explicit `data-ga-event="quote_request"` project CTAs)
+- `service_cta_click`, `prototype_page_cta`
+- `case_click`, `file_download`
+
+Events include `page_location`, `page_path`, service/category and link text, never form values.
+Optional `data-ga-service` and `data-ga-category` override the page-derived labels.
+Automatic GA4 download measurement can also emit `file_download`; disable that enhanced-measurement
+option in GA4 if using this site's broader PDF/CAD-file tracking to avoid duplicate reports.
+
+### Mechatronics and embedded positioning
+
+The development chain includes mechanics, electronics, firmware and app communication:
+from ideas and system architecture to working physical and connected prototypes.
+The Swedish [mechatronics source](content/pages/mekatronik.json) generates `/mekatronik/`;
+the [English source](content/pages/mechatronics.json) generates `/en/mechatronics/`.
+Both use the existing static page template, Service schema, service area, language pairing and CTA tracking.
+
+The owner supplied a concrete valve-control example: ESP32/Arduino platform context, firmware written
+in **MicroPython on ESP32**, e-ink display, RFID and wireless communication with an iOS application.
+BLE or Wi-Fi is selected according to application requirements; do not assert that both were implemented
+in a particular delivered unit. Arduino is not evidence of Arduino/C++ firmware. General RFID/NFC capability
+must not be turned into an undocumented NFC implementation in this project.
+
+The [valve-control case draft](content/cases/mekatronik-ventilstyrning-esp32.json) remains `published: false`.
+Its source note records the owner's brief. Document problem, system requirements, mechanics, electronics,
+firmware, chosen communication, interfaces, tests and results before publishing it.
+Do not invent components, quantities, specifications, safety certifications or delivery outcomes.
+
+Acceptance criteria for this extension:
+
+1. Mechatronics is visible on both home pages and prototyping hubs.
+2. ESP32 and Arduino appear naturally on relevant service pages.
+3. BLE, Wi-Fi, RFID/NFC and e-ink describe owner-confirmed prototype capabilities.
+4. Mechanics, electronics, firmware and app communication are presented as an integrated system.
+5. The valve-control example includes the confirmed MicroPython/ESP32 implementation.
+6. Mechanical and embedded prototyping pages have static content, metadata, schema, sitemap entries and internal links;
+   actual search rankings remain outside the control of this implementation.
+7. Project details beyond the supplied brief require supporting documentation.
+
+### Validation and external setup
+
+Run `npm run test:seo` after the build. It checks static content, metadata, H1 counts, canonical/hreflang
+pairs, local links/images/fragments, schema, publication state, source-backed case facts, robots and
+private-response noindex behavior. Existing shipping tests remain available with `npm test`.
+
+Private static pages have `noindex`; Pages middleware also adds `X-Robots-Tag: noindex` to API, account,
+admin, checkout and token payment responses without changing their body, status or CORS headers.
+Search crawlers remain allowed to fetch pages and see the noindex directive.
+
+[robots.txt](robots.txt) allows OAI-SearchBot and ordinary search engines while disallowing GPTBot.
+[llms.txt](llms.txt) lists factual services and primary pages. These files express indexing/training policy;
+they are not access controls or a guarantee of crawler compliance.
+
+After deployment, submit the sitemap in Search Console and verify indexing and live canonical URLs there.
+Google Business Profile and GA4 reporting settings require separate account access; no verification tokens
+or credentials are embedded here. Rankings and AI citations cannot be guaranteed by code changes.
+
 ## Deep link module
 
 - JS: `/assets/site-deeplinks.js`

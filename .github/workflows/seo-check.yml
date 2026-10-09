@@ -1,0 +1,45 @@
+name: SEO checks
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "**/*.html"
+      - "content/**"
+      - "assets/site.js"
+      - "css/style.css"
+      - "tools/*seo*"
+      - "robots.txt"
+      - "llms.txt"
+      - "functions/_middleware.js"
+      - "package*.json"
+      - ".github/workflows/seo-check.yml"
+  pull_request:
+    paths:
+      - "**/*.html"
+      - "content/**"
+      - "assets/site.js"
+      - "css/style.css"
+      - "tools/*seo*"
+      - "robots.txt"
+      - "llms.txt"
+      - "functions/_middleware.js"
+      - "package*.json"
+      - ".github/workflows/seo-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seo:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm run build
+      - run: npm run test:seo

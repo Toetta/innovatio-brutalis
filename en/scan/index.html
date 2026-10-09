@@ -47,8 +47,13 @@
     "@context":"https://schema.org",
     "@type":"Service",
     "name":"3D scanning & reverse engineering",
-    "provider":{"@type":"EngineeringCompany","name":"Innovatio Brutalis","url":"https://www.innovatio-brutalis.se/"},
-    "areaServed":"SE",
+    "provider":{"@type":"ProfessionalService","@id":"https://www.innovatio-brutalis.se/#org","name":"Innovatio Brutalis","url":"https://www.innovatio-brutalis.se/"},
+    "areaServed":[
+      {"@type":"City","name":"Malmö"},
+      {"@type":"AdministrativeArea","name":"Skåne"},
+      {"@type":"Place","name":"Southern Sweden"},
+      {"@type":"Country","name":"Sweden","identifier":"SE"}
+    ],
     "url":"https://www.innovatio-brutalis.se/en/scan/",
     "serviceType":["3D scanning","Reverse engineering","CAD reconstruction","Inspection"]
   }
@@ -73,6 +78,7 @@
 
       <h1>3D scanning &amp; reverse engineering</h1>
       <p class="tagline">Digitisation, fit validation and spare parts — from scan to CAD and finished part.</p>
+      <p>Based in Malmö, serving Skåne and southern Sweden. Existing parts can provide the starting point for <a href="/en/prototyping/">product development and physical prototypes</a> when drawings are missing.</p>
     </section>
 
     <section class="card" id="value" data-card-id="scan-value" style="margin-top:28px;">

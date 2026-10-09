@@ -11,6 +11,8 @@ const isExemptPath = (pathname) => {
   return false;
 };
 
+const isPrivatePath = (pathname) => /^(?:\/(?:api|admin|admin-custom|account|login|orders|pay)(?:\/|$)|\/shop\/checkout(?:\.html|\/|$)|\/callback\.html$)/.test(pathname);
+
 const buildMaintenanceHtml = (origin, imagePath) => `<!doctype html>
 <html lang="sv">
 <head>
@@ -78,11 +80,18 @@ const buildMaintenanceHtml = (origin, imagePath) => `<!doctype html>
 </html>`;
 
 export async function onRequest(context) {
-  const enabled = isEnabled(context?.env?.MAINTENANCE_MODE);
-  if (!enabled) return context.next();
-
   const url = new URL(context.request.url);
-  if (isExemptPath(url.pathname)) return context.next();
+  const nextWithRobots = async () => {
+    const response = await context.next();
+    if (!isPrivatePath(url.pathname)) return response;
+    const headers = new Headers(response.headers);
+    headers.set("X-Robots-Tag", "noindex");
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  };
+  const enabled = isEnabled(context?.env?.MAINTENANCE_MODE);
+  if (!enabled) return nextWithRobots();
+
+  if (isExemptPath(url.pathname)) return nextWithRobots();
 
   const imagePath = "/assets/konstpaus.png";
   const html = buildMaintenanceHtml(url.origin, imagePath);

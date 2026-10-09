@@ -1,48 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-
-  <url>
-    <loc>https://www.innovatio-brutalis.se/</loc>
-    <priority>1.0</priority>
-  </url>
-
-  <url>
-    <loc>https://www.innovatio-brutalis.se/cnc/</loc>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://www.innovatio-brutalis.se/print/</loc>
-    <priority>0.9</priority>
-  </url>
-
-  <url>
-    <loc>https://www.innovatio-brutalis.se/scan/</loc>
-    <priority>0.9</priority>
-  </url>
-  <url>
-    <loc>https://www.innovatio-brutalis.se/engineering/</loc>
-  </url>
-  <url>
-    <loc>https://www.innovatio-brutalis.se/automotive/</loc>
-  </url>
-  <url>
-    <loc>https://www.innovatio-brutalis.se/coding/</loc>
-  </url>
-
-  <url>
-    <loc>https://www.innovatio-brutalis.se/fu-bookkeeping/</loc>
-  </url>
-    <url><loc>https://www.innovatio-brutalis.se/en/engineering/</loc>
-  </url>
-    <url><loc>https://www.innovatio-brutalis.se/en/automotive/</loc>
-  </url>
-    <url><loc>https://www.innovatio-brutalis.se/en/coding/</loc>
-  </url>
-
-    <url><loc>https://www.innovatio-brutalis.se/en/fu-bookkeeping/</loc>
-  </url>
-
-
-
+  <url><loc>https://www.innovatio-brutalis.se/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/articles/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/articles/3d-print-eller-cnc/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/articles/prototypframtagning-i-malmo/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/articles/reverse-engineering-reservdelar/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/automotive/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/case/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/case/moderna-museet-additiv-tillverkning/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/case/okrossbara-glasogon-prototypframtagning/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/case/quattrini-insug-cad-3d-print/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/case/smaserieproduktion-3d-print/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/cnc/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/coding/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/automotive/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/cnc/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/coding/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/engineering/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/fu-bookkeeping/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/mechatronics/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/print/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/prototyping/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/scan/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/en/scooter-conversions/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/engineering/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/fu-bookkeeping/</loc><lastmod>2026-02-24</lastmod></url>
+  <url><loc>https://www.innovatio-brutalis.se/mekatronik/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/print/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/prototypframtagning/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/scan/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/scooter-conversions/</loc></url>
+  <url><loc>https://www.innovatio-brutalis.se/shop/</loc></url>
 </urlset>

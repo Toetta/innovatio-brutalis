@@ -64,8 +64,10 @@ Om CMS är korrekt konfigurerat ska du direkt se exempelposter som redan finns i
 
 ## Direktlänkar till artiklar
 
-- Public URL-format: `https://www.innovatio-brutalis.se/articles/#/<slug>`
-  - Ex: `https://www.innovatio-brutalis.se/articles/#/valkommen`
+- Public URL-format: `https://www.innovatio-brutalis.se/articles/<slug>/`
+  - Ex: `https://www.innovatio-brutalis.se/articles/prototypframtagning-i-malmo/`
+- Kör `npm run build` efter ändringar i [artikelkällorna](content/articles). Bygget genererar statisk HTML, artikelindex och sitemap.
+- Äldre hash-länkar omdirigeras till den statiska URL:en. `published: false` publiceras inte; `indexable: false` ger en tillgänglig testsida med noindex.
 - I CMS kan du också öppna en artikel direkt via collection-listan, och med `preview_path` får du en stabil “view”-länk baserad på slug.
 
 ## Så felsöker du i Chrome DevTools (konkret)

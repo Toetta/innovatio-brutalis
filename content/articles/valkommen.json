@@ -1,6 +1,8 @@
 {
   "slug": "valkommen",
   "title": "Välkommen",
+  "description": "Teknisk exempelartikel för att verifiera publicering med Decap CMS hos Innovatio Brutalis.",
+  "indexable": false,
   "date": "2026-02-23T12:00:00Z",
   "category": "nyheter",
   "published": true,

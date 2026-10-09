@@ -1,0 +1,10 @@
+{
+  "slug": "mekatronik-ventilstyrning-esp32",
+  "title": "Mekatronik: ESP32/Arduino-baserad ventilstyrning",
+  "description": "Case-utkast för ventilstyrningsenheter med MicroPython på ESP32, Arduino-plattformskontext, e-ink, RFID och trådlös kommunikation med iOS-applikation.",
+  "category": "Mekatronik · Embedded",
+  "published": false,
+  "source_note": "Projektbeskrivning och kapacitet bekräftade av verksamhetsägaren i SEO/AEO-tillägget 2026-10-09, kompletterat med att koden är skriven i MicroPython för ESP32/Arduino. Inga ytterligare tekniska projektuppgifter finns i repots befintliga innehåll.",
+  "todo": "TODO: dokumentera problem, systemkrav, faktisk mekanik och elektronik, firmware, vald kommunikation, användargränssnitt, test och resultat samt egna projektbilder före publicering.",
+  "body": "## Problem\n\nTODO: dokumentera användarbehov och det faktiska uppdraget.\n\n## Systemkrav\n\nTODO: dokumentera krav på ventilstyrning, identifiering, gränssnitt och kommunikation.\n\n## Mekanik\n\nTODO: dokumentera fysisk konstruktion och gränssnitt. Inga material eller mått är bekräftade.\n\n## Elektronik\n\nBekräftat underlag: ventilstyrningsenheter byggda kring ESP32/Arduino med e-ink-display och RFID-funktion. TODO: dokumentera faktiska komponenter och elektroniklösning.\n\n## Embedded\n\nBekräftat underlag: firmware skriven i MicroPython på ESP32. Arduino anger plattformskontexten, inte Arduino/C++-kod. TODO: dokumentera den implementerade kontrollogiken, utan att uppfinna bibliotek eller säkerhetsegenskaper.\n\n## Kommunikation\n\nBekräftat underlag: trådlös kommunikation med iOS-applikation. BLE eller Wi-Fi kan användas beroende på applikationens krav. TODO: dokumentera vilken kommunikationsväg som faktiskt användes i projektet.\n\n## Användargränssnitt\n\nBekräftat underlag: e-ink-display och kommunikation med iOS-applikation. TODO: dokumentera funktioner och användarflöden.\n\n## Test\n\nTODO: dokumentera testupplägg, verifierade krav och mätvärden.\n\n## Resultat\n\nTODO: dokumentera faktisk leverans och resultat. Inga volymer, ledtider, prestandavärden eller certifieringar får uppfinnas."
+}

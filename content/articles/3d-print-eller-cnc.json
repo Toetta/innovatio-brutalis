@@ -1,0 +1,11 @@
+{
+  "slug": "3d-print-eller-cnc",
+  "title": "3D-print eller CNC för en prototyp?",
+  "description": "Välj tillverkningsmetod efter funktion, material, geometri och testbehov. 3D-print och CNC är två verktyg i samma utvecklingskedja.",
+  "date": "2026-10-09",
+  "category": "Tillverkningsmetoder",
+  "published": true,
+  "image": "/assets/3d-print-farm.jpeg",
+  "image_alt": "Bambu Lab X1C-printrar i Innovatio Brutalis verkstad",
+  "body": "## Funktionen styr processen\n\nDet finns ingen metod som är bäst för alla prototyper. Material, geometri, funktion och det test som ska göras är viktigare än att alltid välja samma maskin. Hos Innovatio Brutalis i Malmö ingår både [3D-print](/print/) och [CNC-bearbetning](/cnc/) i arbetet med prototyper och lågvolymproduktion.\n\n## När 3D-print är relevant\n\nAdditiv tillverkning gör det möjligt att ta fram delar direkt från digitalt underlag, utan en formsprutningsform. Det kan vara användbart för återkommande geometriska ändringar, flexibla delar, fixturer och kapslingar. Polymer och printorientering påverkar funktionen och behöver bedömas i konstruktionen.\n\nDe [flexibla glasögonbågarna](/case/okrossbara-glasogon-prototypframtagning/) är ett exempel där böjbar TPU och justerbar CAD var centrala. Ett annat dokumenterat användningsfall är [cirka 40 skulpturfigurer till Moderna Museet Malmö](/case/moderna-museet-additiv-tillverkning/), där digitala modeller blev fysiska delar till en konstinstallation.\n\n## När CNC är relevant\n\nCNC-bearbetning används för prototypdetaljer och småserier i metall och tekniska plaster. Geometrin behöver fungera ihop med verktygsåtkomst och uppspänning. En tänkt detalj bör därför bedömas både som konstruktion och som tillverkningsuppgift.\n\n## Jämför rätt saker\n\n- Vilket material och vilken miljö ska prototypen fungera i?\n- Är det passform, utseende, belastning eller annan funktion som ska testas?\n- Hur påverkar geometrin och antalet valet av process?\n- Behöver konstruktionen ändras mellan testerna?\n\n[CAD och engineering](/engineering/) hjälper till att formulera dessa frågor innan tillverkningen börjar. Läs om [prototypframtagning från idé till testad lösning](/prototypframtagning/) eller [skicka underlag för en bedömning](/#kontakt)."
+}

@@ -9,6 +9,24 @@
   } catch (_) {}
 
   const lower = (s) => (typeof s === "string" ? s.toLowerCase() : "");
+  const legacyArticleUrl = (url) => {
+    if (!/^\/articles\/(?:index\.html)?$/.test(url.pathname)) return url;
+    const slug = url.hash.replace(/^#\/?/, "");
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return url;
+    const target = new URL(url);
+    target.pathname = `/articles/${slug}/`;
+    target.hash = "";
+    return target;
+  };
+  const initialArticleUrl = legacyArticleUrl(new URL(window.location.href));
+  if (initialArticleUrl.href !== window.location.href) {
+    window.location.replace(initialArticleUrl.href);
+    return;
+  }
+  window.addEventListener("hashchange", () => {
+    const target = legacyArticleUrl(new URL(window.location.href));
+    if (target.href !== window.location.href) window.location.replace(target.href);
+  });
   const normalizeSiteSettings = (doc) => ((doc && typeof doc === "object") ? doc : {});
   let cachedSiteSettings = null;
   let siteSettingsPromise = null;
@@ -146,12 +164,20 @@
     let enUrl = pathname.startsWith("/assets/")
       ? `${pathname}?lang=en`
       : (path.startsWith("/en/") ? path : "/en" + path);
+    const translatedPairs = [
+      ["/prototypframtagning/", "/en/prototyping/"],
+      ["/mekatronik/", "/en/mechatronics/"],
+    ];
+    const translatedPair = translatedPairs.find((pair) => pair.includes(path));
+    if (translatedPair) {
+      [svUrl, enUrl] = translatedPair;
+    }
 
     // Some sections are shared between languages and don't exist under /en/.
     // For those, switch language using the `?lang=` override.
     try {
       const pathLower = lower(path);
-      const shouldUseQueryLang = pathLower.startsWith("/shop/") || pathLower.startsWith("/articles/");
+      const shouldUseQueryLang = pathLower.startsWith("/shop/") || pathLower.startsWith("/articles/") || pathLower.startsWith("/case/");
       if (shouldUseQueryLang) {
         const withLang = (lang) => {
           const next = new URLSearchParams(window.location.search);
@@ -173,6 +199,8 @@
     // Nav items (edit THIS list only, future-proof)
     const navItems = [
       { key: "",        labelSV: "Start",        labelEN: "Home",          hrefSV: "/",              hrefEN: "/en/" },
+      { key: isEN ? "prototyping" : "prototypframtagning", labelSV: "Prototyper", labelEN: "Prototyping", hrefSV: "/prototypframtagning/", hrefEN: "/en/prototyping/" },
+      { key: isEN ? "mechatronics" : "mekatronik", labelSV: "Mekatronik", labelEN: "Mechatronics", hrefSV: "/mekatronik/", hrefEN: "/en/mechatronics/" },
       { key: "cnc",     labelSV: "CNC & Laser",  labelEN: "CNC & Laser",   hrefSV: "/cnc/",          hrefEN: "/en/cnc/" },
       { key: "print",   labelSV: "3D-print",     labelEN: "3D Printing",   hrefSV: "/print/",        hrefEN: "/en/print/" },
       { key: "scan",    labelSV: "3D-scanning",  labelEN: "3D Scanning",   hrefSV: "/scan/",         hrefEN: "/en/scan/" },
@@ -181,7 +209,9 @@
       { key: "coding",      labelSV: "AI + CODING", labelEN: "AI + CODING", hrefSV: "/coding/",      hrefEN: "/en/coding/" },
       { key: "automotive",  labelSV: "Automotive",  labelEN: "Automotive",  hrefSV: "/automotive/",  hrefEN: "/en/automotive/" },
       { key: "scooter-conversions", labelSV: "Scooter-konverteringar", labelEN: "Scooter Conversions", hrefSV: "/scooter-conversions/", hrefEN: "/en/scooter-conversions/" },
-      { key: "shop",        labelSV: "Webshop",     labelEN: "Shop",        hrefSV: "/shop/",        hrefEN: "/shop/?lang=en" }
+      { key: "shop",        labelSV: "Webshop",     labelEN: "Shop",        hrefSV: "/shop/",        hrefEN: "/shop/?lang=en" },
+      { key: "case", labelSV: "Case", labelEN: "Case studies", hrefSV: "/case/", hrefEN: "/case/?lang=en" },
+      { key: "articles", labelSV: "Artiklar", labelEN: "Articles", hrefSV: "/articles/", hrefEN: "/articles/?lang=en" }
     ];
 
     let navLinks = navItems.map(item => {
@@ -528,10 +558,35 @@
       const safeParams = (params && typeof params === "object") ? params : {};
       window.gtag("event", String(name), {
         ...safeParams,
+        page_location: window.location.href,
         page_path: window.location.pathname || undefined,
       });
     } catch (_) {}
   };
+
+  document.addEventListener("click", (event) => {
+    if (shouldNoopApp()) return;
+    const link = event.target?.closest?.("a[href]");
+    if (!link) return;
+    const href = link.getAttribute("href");
+    const url = new URL(href, window.location.href);
+    const { section } = computeState();
+    const service = link.dataset.gaService || section || "home";
+    const params = { service, category: link.dataset.gaCategory || service, link_text: (link.textContent || "").trim().slice(0, 80) };
+    const events = new Set();
+    const isContact = /^mailto:|^tel:/i.test(href) || (url.origin === window.location.origin && /^#(?:kontakt|contact)$/.test(url.hash));
+    if (isContact) {
+      events.add("contact_click");
+      if (href.startsWith("mailto:")) events.add("email_click");
+      if (["engineering", "print", "scan", "cnc", "coding", "automotive", "scooter-conversions", "prototypframtagning", "prototyping", "mekatronik", "mechatronics"].includes(section)) events.add("service_cta_click");
+      if (["prototypframtagning", "prototyping", "mekatronik", "mechatronics"].includes(section)) events.add("prototype_page_cta");
+    }
+    if (url.origin === window.location.origin && /^\/case\/[^/]+\/$/.test(url.pathname)) events.add("case_click");
+    if (link.hasAttribute("download") || /\.(?:pdf|step|stp|stl|zip)$/i.test(url.pathname)) events.add("file_download");
+    const explicit = link.dataset.gaEvent;
+    if (["quote_request", "service_cta_click", "prototype_page_cta"].includes(explicit)) events.add(explicit);
+    for (const name of events) gaEvent(name, params);
+  }, { capture: true });
 
   const gaThrottle = (() => {
     const last = new Map();
@@ -1961,6 +2016,8 @@
         if (lp === "/admin" || lp.startsWith("/admin/")) return false;
         if (lp === "/login" || lp.startsWith("/login/")) return false;
         if (lp === "/account" || lp.startsWith("/account/")) return false;
+        if (lp === "/orders" || lp.startsWith("/orders/")) return false;
+        if (lp === "/pay" || lp.startsWith("/pay/")) return false;
 
         // Allow landing pages like /fu-bookkeeping/ to be PJAXed; the actual tool lives under /assets/.
         // Avoid hijacking direct file downloads
@@ -2016,6 +2073,12 @@
       // Import the destination page's content nodes into #ib-main
       const nodes = Array.from(newContainer.childNodes || []).filter((n) => !isSkippableNode(n));
       for (const n of nodes) {
+        if (n.nodeType === Node.ELEMENT_NODE && n.id === "ib-main") {
+          for (const child of Array.from(n.childNodes).filter((node) => !isSkippableNode(node))) {
+            curMain.appendChild(document.importNode(child, true));
+          }
+          continue;
+        }
         try {
           curMain.appendChild(document.importNode(n, true));
         } catch (_) {
@@ -2023,7 +2086,10 @@
         }
       }
 
-      // Keep a couple of head-level details in sync.
+      const metadataSelector = 'meta[name="description"], meta[name="robots"], meta[property^="og:"], meta[property^="article:"], meta[name^="twitter:"], link[rel="canonical"], link[rel="alternate"][hreflang], script[type="application/ld+json"]';
+      for (const node of document.head.querySelectorAll(metadataSelector)) node.remove();
+      for (const node of doc.head.querySelectorAll(metadataSelector)) document.head.appendChild(document.importNode(node, true));
+
       try { document.title = doc.title || document.title; } catch (_) {}
       try {
         const lang = String(doc.documentElement?.getAttribute?.("lang") || "").trim();
@@ -2054,16 +2120,14 @@
       syncMeta("ib-spotify-default");
       syncMeta("ib-nav-section");
 
-      refreshTopbar();
       ensureMainRegion();
       placeSpotifyPlayerInHeader();
       updateTopbarHeightVar();
       refreshYear();
-      try { window.SiteDeepLinks?.refresh?.(); } catch (_) {}
     };
 
     const navigate = async (url, { replace = false } = {}) => {
-      const u = (url instanceof URL) ? url : new URL(String(url), window.location.origin);
+      const u = legacyArticleUrl((url instanceof URL) ? url : new URL(String(url), window.location.origin));
       const res = await fetch(u.toString(), {
         method: "GET",
         headers: { "X-IB-PJAX": "1" },
@@ -2075,6 +2139,8 @@
       swapFromDoc(doc);
       if (replace) history.replaceState({}, "", u.toString());
       else history.pushState({}, "", u.toString());
+      refreshTopbar();
+      try { window.SiteDeepLinks?.refresh?.(); } catch (_) {}
 
       try { await afterNavigation(u); } catch (_) {}
 

@@ -1,0 +1,8 @@
+{
+  "slug": "reverse-engineering-reservdelar",
+  "title": "Reverse engineering av reservdelar",
+  "description": "Opublicerad case-mall. Projektet ska dokumenteras innan publicering.",
+  "published": false,
+  "todo": "TODO: komplettera med ett verkligt projekt, krav, underlag, process, test, resultat och egna bilder. Publicera inte generella tjänstepåståenden som ett utfört kundprojekt.",
+  "body": "## Problem\n\nTODO: dokumenterat problem och uppdrag.\n\n## Analys och krav\n\nTODO: befintlig del, gränssnitt och krav.\n\n## Lösning\n\nTODO: scanning, CAD-rekonstruktion och teknisk lösning.\n\n## Prototyp och iteration\n\nTODO: verifierade tillverkningssteg, material och ändringar.\n\n## Test\n\nTODO: dokumenterad passform och funktion.\n\n## Resultat och konkret utfall\n\nTODO: faktisk leverans och underlag som styrker resultatet."
+}
