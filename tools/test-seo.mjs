@@ -4,7 +4,7 @@ import { readFile, access, readdir } from "node:fs/promises";
 import { execFileSync } from "node:child_process";
 import path from "node:path";
 import { runInNewContext } from "node:vm";
-import { areaServed, origin, renderMarkdown, jsonLd, pageHtml } from "./seo-html.mjs";
+import { areaServed, origin, renderMarkdown, jsonLd, pageHtml, serviceBodyHtml } from "./seo-html.mjs";
 import { buildSeo, htmlFiles, root } from "./build-seo.mjs";
 import { onRequest } from "../functions/_middleware.js";
 
@@ -297,6 +297,50 @@ test("Laser services lead with customer benefits and preserve verified capabilit
   const llms = await read("llms.txt");
   assert.ok(llms.includes(origin + "/laser/"));
   assert.match(llms, /Transparent acrylic processing|transparent acrylic processing/);
+});
+
+test("Laser navigation and demonstration use the bilingual shared layout", async () => {
+  const runtime = await read("assets/site.js");
+  const start = runtime.indexOf("  const buildTopbarHTML = () => {");
+  const end = runtime.indexOf("  const updatePlayerControlsLabel", start);
+  assert.ok(start >= 0 && end > start);
+  for (const [route, en] of [["/laser/", false], ["/en/laser/", true]]) {
+    const nav = runInNewContext(runtime.slice(start, end) + "\nbuildTopbarHTML();", {
+      computeState: () => ({ isEN: en, section: "laser", svUrl: "/laser/", enUrl: "/en/laser/" }),
+      document: { querySelector: () => null },
+    });
+    const links = tags(nav, "a");
+    const printIndex = links.findIndex((link) => link.href === (en ? "/en/print/" : "/print/"));
+    assert.equal(links[printIndex + 1].href, route);
+    assert.equal(links[printIndex + 1].class, "active");
+    assert.equal(links[printIndex + 2].href, en ? "/en/scan/" : "/scan/");
+    assert.equal(links.filter((link) => link.class === "active" && !["/laser/", "/en/laser/"].includes(link.href)).length, 0);
+    assert.ok(nav.includes(`href="${route}">Laser</a>`));
+    const html = await read(routeFile(route));
+    const iframe = tags(html, "iframe");
+    assert.equal(iframe.length, 1);
+    assert.equal(iframe[0].src, "https://www.youtube-nocookie.com/embed/OryPv1FHqc8");
+    assert.equal(iframe[0].loading, "lazy");
+    assert.equal(iframe[0].title, "Bambu Lab R1 CO₂ laser demonstration");
+    assert.match(html, /loading="lazy" allowfullscreen/);
+    assert.match(html, /class="video-feature"><div class="video-frame">/);
+    const heading = en ? "See the CO₂ laser in action" : "Se CO₂-lasern i arbete";
+    assert.ok(html.indexOf(heading) > html.indexOf(en ? "A prototype does not need" : "En prototyp behöver inte"));
+    assert.ok(html.indexOf(heading) < html.indexOf(en ? "<h2>CO₂ laser capability" : "<h2>CO₂-laserkapacitet"));
+    assert.match(html, en ? /gaskets, seals and shims in suitable verified laser materials/ : /packningar, tätningar och mellanlägg i lämpliga verifierade lasermaterial/);
+    assert.match(html, en ? /exact material grade and compound/ : /exakt materialkvalitet och compound/);
+  }
+});
+
+test("Service section inserts reject invalid anchors and video IDs and escape text", () => {
+  const video = { youtube_id: "OryPv1FHqc8", heading: "<Demo>", intro: "A & B", title: '"Video"' };
+  const page = { body: "## Capacity", sections: [{ before_heading: "Capacity", video }] };
+  assert.match(serviceBodyHtml(page), /&lt;Demo&gt;/);
+  assert.match(serviceBodyHtml(page), /A &amp; B/);
+  assert.throws(() => serviceBodyHtml({ ...page, body: "## Other" }), /unique body heading/);
+  assert.throws(() => serviceBodyHtml({ ...page, body: "## Capacity\n\n## Capacity" }), /unique body heading/);
+  assert.throws(() => serviceBodyHtml({ ...page, sections: [{ before_heading: "Capacity", video: { ...video, youtube_id: '"><script>' } }] }), /Invalid service video/);
+  assert.equal(serviceBodyHtml({ body: "Plain" }), renderMarkdown("Plain"));
 });
 
 test("Custom service CTAs are escaped and default page CTAs remain unchanged", () => {

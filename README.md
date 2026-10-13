@@ -114,9 +114,16 @@ Professional use requires correct CO₂ laser protection and a trained operator,
 instructions. This documentation is not a substitute for operating instructions or a site-specific assessment.
 
 Laser links are included on both home pages and the prototyping, mechatronics, engineering, print and CNC
-pages. The existing main navigation is already long; no additional top-level item was added.
+pages. “Laser” is a separate main navigation item directly after 3D-print / 3D Printing in both languages.
+On mobile, the Spotify bar and panel use the available width so the 520 px player does not expand the page.
 Its former “CNC & Laser” label is now “CNC”, with the C500 engraving function retained as secondary content.
 Language switching pairs `/laser/` and `/en/laser/` using the existing same-slug route convention.
+The laser sources also contain optional `sections`, inserted before a unique `before_heading` in the body.
+Each contains escaped Markdown `body` or a `video` with `youtube_id`, `heading`, `intro` and `title`.
+Invalid video IDs or missing/duplicate target headings fail the build. Videos reuse the existing responsive
+`video-feature` / `video-frame` CSS, use YouTube's privacy-enhanced origin and lazy loading, and never autoplay.
+The demonstration is not evidence of tested commercial capacity. Industrial gasket, seal and shim work
+requires verification of the exact material grade/compound; no whole rubber family is offered as laser-safe.
 [llms.txt](llms.txt) is maintained directly, not generated; it includes laser capability and process boundaries.
 
 The [multi-process case template](content/cases/mekatronisk-prototyp-laser-3d-print.json) is unpublished.

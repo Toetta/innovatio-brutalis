@@ -3,6 +3,21 @@
   "alternate": "/en/laser/",
   "lang": "sv",
   "nav": "laser",
+  "sections": [
+    {
+      "before_heading": "Långa paneler och effektivare batchning",
+      "body": "## Packningar och industridetaljer\n\nVi laserskär lämpliga och verifierade lasermaterial. Industriella tillämpningar kan omfatta packningar, tätningar och mellanlägg i lämpliga verifierade lasermaterial, liksom isolerande detaljer och distanser. För industripackningar bedöms exakt materialkvalitet och compound mot tillverkningsprocessen och den avsedda funktionen innan ett uppdrag accepteras. Alla gummi- eller packningsmaterial är inte lämpliga för laser.\n\nAndra exempel är frontpaneler, maskinpaneler, displayfönster, skyddsdetaljer, fixturer, monteringsmallar, borr-/positioneringsmallar och märkskyltar. Digitalt underlag kan stödja både snabba prototypiterationer och återkommande småseriedetaljer, med processval efter detaljens funktion.\n\nMaterial verifieras före laserbearbetning. PVC/Vinyl laserskärs inte."
+    },
+    {
+      "before_heading": "CO₂-laserkapacitet",
+      "video": {
+        "youtube_id": "OryPv1FHqc8",
+        "heading": "Se CO₂-lasern i arbete",
+        "intro": "En kort demonstration av Bambu Lab R1 och hur CO₂-laserskärning kan användas för snabb och flexibel tillverkning av prototyper, paneler och andra plana detaljer.",
+        "title": "Bambu Lab R1 CO₂ laser demonstration"
+      }
+    }
+  ],
   "title": "Laserskärning & CO₂-laser i Malmö | Innovatio Brutalis",
   "description": "CO₂-laserskärning och gravyr i Malmö för prototyper, paneler, transparent akryl, fixturer och småserier. 600 × 300 mm arbetsområde och conveyermatning för material upp till 3 meter.",
   "heading": "CO₂-laserskärning & gravyr",

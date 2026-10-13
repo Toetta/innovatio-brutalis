@@ -203,6 +203,7 @@
       { key: isEN ? "mechatronics" : "mekatronik", labelSV: "Mekatronik", labelEN: "Mechatronics", hrefSV: "/mekatronik/", hrefEN: "/en/mechatronics/" },
       { key: "cnc",     labelSV: "CNC",          labelEN: "CNC",           hrefSV: "/cnc/",          hrefEN: "/en/cnc/" },
       { key: "print",   labelSV: "3D-print",     labelEN: "3D Printing",   hrefSV: "/print/",        hrefEN: "/en/print/" },
+      { key: "laser",   labelSV: "Laser",        labelEN: "Laser",         hrefSV: "/laser/",        hrefEN: "/en/laser/" },
       { key: "scan",    labelSV: "3D-scanning",  labelEN: "3D Scanning",   hrefSV: "/scan/",         hrefEN: "/en/scan/" },
       { key: "engineering", labelSV: "Engineering", labelEN: "Engineering", hrefSV: "/engineering/", hrefEN: "/en/engineering/" },
       { key: "fu-bookkeeping", labelSV: "FU-Bookkeeping", labelEN: "FU-Bookkeeping", hrefSV: "/fu-bookkeeping/", hrefEN: "/en/fu-bookkeeping/" },

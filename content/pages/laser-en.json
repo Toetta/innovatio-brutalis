@@ -3,6 +3,21 @@
   "alternate": "/laser/",
   "lang": "en",
   "nav": "laser",
+  "sections": [
+    {
+      "before_heading": "Long panels and batch layouts",
+      "body": "## Gaskets and industrial components\n\nWe laser-cut suitable, verified laser materials. Industrial applications can include gaskets, seals and shims in suitable verified laser materials, as well as insulating parts and spacers. The exact material grade and compound are assessed against the manufacturing process and intended function before accepting an industrial gasket job. Not every rubber or gasket material is suitable for laser processing.\n\nOther applications include front panels, machine panels, display windows, guards, fixtures, assembly templates, drilling/positioning templates and identification plates. Digital design information supports prototype iterations and recurring small-series parts, with the process selected for each component's function.\n\nMaterials are verified before laser processing. PVC/Vinyl is not laser-cut."
+    },
+    {
+      "before_heading": "CO₂ laser capability",
+      "video": {
+        "youtube_id": "OryPv1FHqc8",
+        "heading": "See the CO₂ laser in action",
+        "intro": "A demonstration of the Bambu Lab R1 and how CO₂ laser cutting can support fast prototype development, panels and low-volume production.",
+        "title": "Bambu Lab R1 CO₂ laser demonstration"
+      }
+    }
+  ],
   "title": "CO₂ Laser Cutting & Engraving in Malmö | Innovatio Brutalis",
   "description": "CO₂ laser cutting and engraving in Malmö for prototypes, panels, transparent acrylic, fixtures and small series. 600 × 300 mm work area and conveyor feed for material up to 3 metres long.",
   "heading": "CO₂ Laser Cutting & Engraving",

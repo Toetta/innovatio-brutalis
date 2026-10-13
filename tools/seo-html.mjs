@@ -102,6 +102,35 @@ export const renderMarkdown = (body, title = "") => {
   return output.join("\n");
 };
 
+export const serviceBodyHtml = (page) => {
+  let html = renderMarkdown(page.body);
+  for (const section of page.sections || []) {
+    const anchor = renderMarkdown(`## ${section.before_heading}`);
+    if (!section.before_heading || html.split(anchor).length !== 2) {
+      throw new Error(`Section needs a unique body heading: ${section.before_heading}`);
+    }
+    let content;
+    if (section.video) {
+      const video = section.video;
+      if (!/^[A-Za-z0-9_-]{11}$/.test(video.youtube_id) || !video.heading || !video.intro || !video.title) {
+        throw new Error("Invalid service video");
+      }
+      content = `<section>
+  <h2>${escapeHtml(video.heading)}</h2>
+  <p>${escapeHtml(video.intro)}</p>
+  <div class="video-feature"><div class="video-frame">
+    <iframe src="https://www.youtube-nocookie.com/embed/${video.youtube_id}" title="${escapeHtml(video.title)}" loading="lazy" allowfullscreen></iframe>
+  </div></div>
+</section>`;
+    } else {
+      if (typeof section.body !== "string" || !section.body.trim()) throw new Error("Missing service section body");
+      content = renderMarkdown(section.body);
+    }
+    html = html.replace(anchor, content + "\n" + anchor);
+  }
+  return html;
+};
+
 export const jsonLd = (data) => `<script type="application/ld+json">${JSON.stringify(data, null, 2).replace(/</g, "\\u003c")}</script>`;
 
 export const pageHtml = (page, content, schemas = []) => {
