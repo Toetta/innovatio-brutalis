@@ -81,6 +81,7 @@ small{color:var(--text-muted)}
 }
 
 .site-header.is-compact .site-nav a,
+.site-header.is-compact .nav-trigger,
 .site-header.is-compact .lang a{
   padding: 6px 9px;
 }
@@ -101,7 +102,7 @@ small{color:var(--text-muted)}
   align-items:flex-start;
   justify-content:space-between;
   gap:16px;
-  flex-wrap:nowrap;
+  flex-wrap:wrap;
 }
 
 
@@ -112,6 +113,7 @@ small{color:var(--text-muted)}
   flex-wrap:nowrap;
   align-items:flex-start;
   gap:16px;
+  width:100%;
 }
 
 .topbar-left .site-nav{
@@ -128,19 +130,16 @@ small{color:var(--text-muted)}
   align-items:flex-end;
   margin-left:auto;
   flex: 0 0 auto;
-}
-
-@media (max-width: 768px){
-  .topbar{ flex-wrap:wrap; }
-  .topbar-left{ width:100%; flex-wrap:wrap; }
-  .topbar-right{ width:100%; margin-left:0; }
+  max-width:100%;
+  padding:12px 0 0 16px;
+  border-left:1px solid rgba(184,115,51,.18);
 }
 
 /* Site nav */
 .site-nav{
   display:flex;
-  flex-wrap:wrap;
-  gap:10px;
+  flex-wrap:nowrap;
+  gap:8px;
   align-items:center;
   justify-content:flex-start;
   font-weight:700;
@@ -148,29 +147,106 @@ small{color:var(--text-muted)}
   text-transform:uppercase;
   font-size:12px;
 }
-.site-nav a{
+.site-nav a, .nav-trigger, .mobile-nav-toggle{
   padding:8px 10px;
   border:1px solid rgba(184,115,51,.28);
   border-radius:999px;
   color:var(--text-main);
   background: rgba(var(--card-rgb), .85);
 }
-.site-nav a:hover{background: rgba(184,115,51,.18); text-decoration:none}
-.site-nav a.active{
+.nav-trigger, .mobile-nav-toggle{
+  font:inherit;
+  letter-spacing:inherit;
+  text-transform:inherit;
+  cursor:pointer;
+}
+.site-nav a, .nav-trigger{ white-space:nowrap; }
+.site-nav a:hover, .nav-trigger:hover, .mobile-nav-toggle:hover{
+  background: rgba(184,115,51,.18);
+  text-decoration:none;
+}
+.site-nav a.active, .nav-trigger.active{
   background: rgba(184,115,51,.14);
   border-color: rgba(214,164,106,.6);
+}
+.site-header a:focus-visible, .site-header button:focus-visible{
+  outline:2px solid var(--brass-light);
+  outline-offset:3px;
+}
+.nav-group{ position:relative; }
+.nav-dropdown{
+  position:absolute;
+  top:100%;
+  left:0;
+  min-width:220px;
+  padding:10px;
+  border:1px solid rgba(184,115,51,.35);
+  border-radius:var(--radius);
+  background:var(--bg2);
+  box-shadow:var(--shadow);
+  z-index:61;
+}
+.nav-dropdown[hidden]{ display:none; }
+.site-nav .nav-dropdown-item{
+  display:block;
+  white-space:normal;
+  border-color:transparent;
+  border-radius:8px;
+  background:transparent;
+  margin:2px 0;
+}
+.site-nav .nav-dropdown-item:hover, .site-nav .nav-dropdown-item.active{
+  background:rgba(184,115,51,.18);
+}
+.mobile-nav-toggle{ display:none; }
+.nav-contact{ font-size:12px; white-space:nowrap; }
+
+@media (max-width: 900px){
+  .topbar-left{ flex-wrap:wrap; align-items:center; gap:12px; }
+  .mobile-nav-toggle{
+    display:inline-flex;
+    gap:8px;
+    align-items:center;
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .topbar-left .lang{ margin-left:auto; }
+  .topbar-left .site-nav{ display:none; flex-basis:100%; order:3; }
+  .nav-open .site-nav{ display:flex; flex-direction:column; align-items:stretch; }
+  .site-nav > a, .nav-trigger{ width:100%; text-align:left; }
+  .nav-trigger{ display:flex; justify-content:space-between; align-items:center; }
+  .nav-group{ width:100%; }
+  .nav-dropdown{
+    position:static;
+    min-width:0;
+    margin:8px 0 4px 14px;
+    box-shadow:none;
+    border-top:0;
+    border-right:0;
+    border-bottom:0;
+    border-radius:0;
+  }
+  .topbar-right{
+    width:100%;
+    padding:12px 0 0;
+    border-left:0;
+    border-top:1px solid rgba(184,115,51,.18);
+  }
+  .spotify-bar, .spotify-panel{ width:100%; min-width:0; }
 }
 
 /* Language pills */
 .lang{
-  display:flex; gap:10px; align-items:center;
+  display:flex; gap:4px; align-items:center;
   font-weight:600;
   letter-spacing:.06em;
   text-transform:uppercase;
   font-size:12px;
 }
 .lang a{
-  padding:8px 10px;
+  padding:5px 7px;
   border:1px solid rgba(184,115,51,.35);
   border-radius:999px;
   color:var(--text-main);

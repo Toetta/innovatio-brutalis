@@ -114,7 +114,16 @@ Professional use requires correct CO₂ laser protection and a trained operator,
 instructions. This documentation is not a substitute for operating instructions or a site-specific assessment.
 
 Laser links are included on both home pages and the prototyping, mechatronics, engineering, print and CNC
-pages. “Laser” is a separate main navigation item directly after 3D-print / 3D Printing in both languages.
+pages. The seven main navigation choices are Start, Utveckling, Tillverkning, Case, Projekt, Artiklar and Webshop
+(translated on English pages). Development groups prototyping, mechatronics and engineering; Manufacturing
+contains 3D printing, Laser, CNC and scanning in that order; Projects contains coding, bookkeeping and vehicle projects.
+Parents and children retain active states from the existing path/meta section detection. All child URLs remain
+real links in the DOM. Page-provided contact shortcuts remain separate from the seven choices.
+Desktop dropdowns support mouse hover, click, Tab, Arrow Down and Escape; outside clicks close them.
+At 900 px and below, the Menu button exposes the same links with click-operated accordion groups.
+Triggers provide `aria-controls`/`aria-expanded`; focus outlines remain visible.
+Navigation and language markup update in place, while the Spotify iframe is retained. The player has its own
+right-aligned, separated row within the existing 1080 px content width, rather than compressing the nav pills.
 On mobile, the Spotify bar and panel use the available width so the 520 px player does not expand the page.
 Its former “CNC & Laser” label is now “CNC”, with the C500 engraving function retained as secondary content.
 Language switching pairs `/laser/` and `/en/laser/` using the existing same-slug route convention.

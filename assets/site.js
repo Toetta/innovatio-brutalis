@@ -196,38 +196,52 @@
   const buildTopbarHTML = () => {
     const { isEN, section, svUrl, enUrl } = computeState();
 
-    // Nav items (edit THIS list only, future-proof)
     const navItems = [
       { key: "",        labelSV: "Start",        labelEN: "Home",          hrefSV: "/",              hrefEN: "/en/" },
-      { key: isEN ? "prototyping" : "prototypframtagning", labelSV: "Prototyper", labelEN: "Prototyping", hrefSV: "/prototypframtagning/", hrefEN: "/en/prototyping/" },
-      { key: isEN ? "mechatronics" : "mekatronik", labelSV: "Mekatronik", labelEN: "Mechatronics", hrefSV: "/mekatronik/", hrefEN: "/en/mechatronics/" },
-      { key: "cnc",     labelSV: "CNC",          labelEN: "CNC",           hrefSV: "/cnc/",          hrefEN: "/en/cnc/" },
-      { key: "print",   labelSV: "3D-print",     labelEN: "3D Printing",   hrefSV: "/print/",        hrefEN: "/en/print/" },
-      { key: "laser",   labelSV: "Laser",        labelEN: "Laser",         hrefSV: "/laser/",        hrefEN: "/en/laser/" },
-      { key: "scan",    labelSV: "3D-scanning",  labelEN: "3D Scanning",   hrefSV: "/scan/",         hrefEN: "/en/scan/" },
-      { key: "engineering", labelSV: "Engineering", labelEN: "Engineering", hrefSV: "/engineering/", hrefEN: "/en/engineering/" },
-      { key: "fu-bookkeeping", labelSV: "FU-Bookkeeping", labelEN: "FU-Bookkeeping", hrefSV: "/fu-bookkeeping/", hrefEN: "/en/fu-bookkeeping/" },
-      { key: "coding",      labelSV: "AI + CODING", labelEN: "AI + CODING", hrefSV: "/coding/",      hrefEN: "/en/coding/" },
-      { key: "automotive",  labelSV: "Automotive",  labelEN: "Automotive",  hrefSV: "/automotive/",  hrefEN: "/en/automotive/" },
-      { key: "scooter-conversions", labelSV: "Scooter-konverteringar", labelEN: "Scooter Conversions", hrefSV: "/scooter-conversions/", hrefEN: "/en/scooter-conversions/" },
-      { key: "shop",        labelSV: "Webshop",     labelEN: "Shop",        hrefSV: "/shop/",        hrefEN: "/shop/?lang=en" },
+      { type: "group", key: "development", labelSV: "Utveckling", labelEN: "Development", children: [
+        { key: isEN ? "prototyping" : "prototypframtagning", labelSV: "Prototyper", labelEN: "Prototyping", hrefSV: "/prototypframtagning/", hrefEN: "/en/prototyping/" },
+        { key: isEN ? "mechatronics" : "mekatronik", labelSV: "Mekatronik", labelEN: "Mechatronics", hrefSV: "/mekatronik/", hrefEN: "/en/mechatronics/" },
+        { key: "engineering", labelSV: "Engineering", labelEN: "Engineering", hrefSV: "/engineering/", hrefEN: "/en/engineering/" },
+      ] },
+      { type: "group", key: "manufacturing", labelSV: "Tillverkning", labelEN: "Manufacturing", children: [
+        { key: "print", labelSV: "3D-print", labelEN: "3D Printing", hrefSV: "/print/", hrefEN: "/en/print/" },
+        { key: "laser", labelSV: "Laser", labelEN: "Laser", hrefSV: "/laser/", hrefEN: "/en/laser/" },
+        { key: "cnc", labelSV: "CNC", labelEN: "CNC", hrefSV: "/cnc/", hrefEN: "/en/cnc/" },
+        { key: "scan", labelSV: "3D-scanning", labelEN: "3D Scanning", hrefSV: "/scan/", hrefEN: "/en/scan/" },
+      ] },
       { key: "case", labelSV: "Case", labelEN: "Case studies", hrefSV: "/case/", hrefEN: "/case/?lang=en" },
-      { key: "articles", labelSV: "Artiklar", labelEN: "Articles", hrefSV: "/articles/", hrefEN: "/articles/?lang=en" }
+      { type: "group", key: "projects", labelSV: "Projekt", labelEN: "Projects", children: [
+        { key: "coding", labelSV: "AI + CODING", labelEN: "AI + CODING", hrefSV: "/coding/", hrefEN: "/en/coding/" },
+        { key: "fu-bookkeeping", labelSV: "FU-Bookkeeping", labelEN: "FU-Bookkeeping", hrefSV: "/fu-bookkeeping/", hrefEN: "/en/fu-bookkeeping/" },
+        { key: "automotive", labelSV: "Automotive", labelEN: "Automotive", hrefSV: "/automotive/", hrefEN: "/en/automotive/" },
+        { key: "scooter-conversions", labelSV: "Scooter-konverteringar", labelEN: "Scooter Conversions", hrefSV: "/scooter-conversions/", hrefEN: "/en/scooter-conversions/" },
+      ] },
+      { key: "articles", labelSV: "Artiklar", labelEN: "Articles", hrefSV: "/articles/", hrefEN: "/articles/?lang=en" },
+      { key: "shop", labelSV: "Webshop", labelEN: "Shop", hrefSV: "/shop/", hrefEN: "/shop/?lang=en" },
     ];
 
-    let navLinks = navItems.map(item => {
+    const renderNavItem = (item, child = false) => {
       const label = isEN ? item.labelEN : item.labelSV;
+      if (item.type === "group") {
+        const active = item.children.some((entry) => entry.key === section);
+        return `<div class="nav-group">
+          <button type="button" class="nav-trigger${active ? " active" : ""}" aria-haspopup="true" aria-expanded="false" aria-controls="nav-${item.key}">${label} <span aria-hidden="true">▾</span></button>
+          <div class="nav-dropdown" id="nav-${item.key}" hidden>${item.children.map((entry) => renderNavItem(entry, true)).join("")}</div>
+        </div>`;
+      }
       const href  = isEN ? item.hrefEN  : item.hrefSV;
-      const active = (item.key === section) || (item.key === "" && section === "");
-      return `<a ${active ? 'class="active"' : ""} href="${href}">${label}</a>`;
-    }).join("");
+      const active = item.key === section;
+      return `<a class="${child ? "nav-dropdown-item" : "nav-link"}${active ? " active" : ""}"${active ? ' aria-current="page"' : ""} href="${href}">${label}</a>`;
+    };
+    const navLinks = navItems.map((item) => renderNavItem(item)).join("");
+    let contactLink = "";
 
-    // Optional: add a single extra link into the MAIN nav (page-controlled)
+    // Preserve page-controlled contact shortcuts outside the seven main choices.
     try {
       const ctaLabel = document.querySelector('meta[name="ib-topbar-cta-label"]')?.getAttribute("content")?.trim();
       const ctaHref = document.querySelector('meta[name="ib-topbar-cta-href"]')?.getAttribute("content")?.trim();
       if (ctaLabel && ctaHref) {
-        navLinks += `<a href="${ctaHref}">${ctaLabel}</a>`;
+        contactLink = `<a class="nav-contact" href="${ctaHref}">${ctaLabel}</a>`;
       }
     } catch (_) {}
 
@@ -236,19 +250,18 @@
       <a ${isEN ? 'class="active"' : ""} href="${enUrl}">EN</a>
     `;
 
-    const toggleLabel = isEN ? "Music" : "Musik";
-    const toggleTitle = isEN ? "Show/hide music player" : "Visa/dölj musikspelare";
-
     return `
       <header class="site-header" id="ib-site-header">
         <div class="topbar">
           <div class="topbar-left">
-            <nav class="site-nav" aria-label="Site">
+            <button type="button" class="mobile-nav-toggle" aria-expanded="false" aria-controls="ib-primary-nav"><span aria-hidden="true">☰</span> ${isEN ? "Menu" : "Meny"}</button>
+            <nav class="site-nav" id="ib-primary-nav" aria-label="${isEN ? "Main navigation" : "Huvudnavigation"}">
               ${navLinks}
             </nav>
             <nav class="lang" aria-label="Language">
               ${langLinks}
             </nav>
+            ${contactLink}
           </div>
 
           <div class="topbar-right" aria-label="Spotify">
@@ -293,6 +306,13 @@
       const curLang = curHeader.querySelector("nav.lang");
       const nextLang = nextHeader.querySelector("nav.lang");
       if (curLang && nextLang) curLang.innerHTML = nextLang.innerHTML;
+      curHeader.querySelector(".nav-contact")?.remove();
+      const nextContact = nextHeader.querySelector(".nav-contact");
+      if (nextContact) curHeader.querySelector(".topbar-left").appendChild(nextContact);
+      curHeader.classList.remove("nav-open");
+      const mobileToggle = curHeader.querySelector(".mobile-nav-toggle");
+      mobileToggle.textContent = nextHeader.querySelector(".mobile-nav-toggle").textContent;
+      mobileToggle.setAttribute("aria-expanded", "false");
 
       const curToggle = curHeader.querySelector("#ib-spotify-toggle");
       const nextToggle = nextHeader.querySelector("#ib-spotify-toggle");
@@ -307,6 +327,95 @@
     } catch (_) {
       return false;
     }
+  };
+
+  const wireGroupedNavigation = () => {
+    const mobile = window.matchMedia("(max-width: 900px)");
+    const setGroupOpen = (group, open) => {
+      group.querySelector(".nav-trigger").setAttribute("aria-expanded", String(open));
+      group.querySelector(".nav-dropdown").hidden = !open;
+    };
+    const closeGroups = (except = null) => {
+      document.querySelectorAll("#ib-site-header .nav-group").forEach((group) => {
+        if (group !== except) setGroupOpen(group, false);
+      });
+    };
+    const closeMobile = () => {
+      const header = document.getElementById("ib-site-header");
+      header.classList.remove("nav-open");
+      header.querySelector(".mobile-nav-toggle").setAttribute("aria-expanded", "false");
+    };
+    const openGroup = (group) => {
+      closeGroups(group);
+      setGroupOpen(group, true);
+    };
+    document.addEventListener("click", (event) => {
+      const target = event.target;
+      if (!(target instanceof Element)) return;
+      const toggle = target.closest(".mobile-nav-toggle");
+      if (toggle) {
+        const open = toggle.getAttribute("aria-expanded") !== "true";
+        closeGroups();
+        toggle.setAttribute("aria-expanded", String(open));
+        toggle.closest(".site-header").classList.toggle("nav-open", open);
+        updateTopbarHeightVar();
+        return;
+      }
+      const trigger = target.closest(".nav-trigger");
+      if (trigger) {
+        const group = trigger.closest(".nav-group");
+        if (trigger.getAttribute("aria-expanded") === "true") setGroupOpen(group, false);
+        else openGroup(group);
+      } else if (!target.closest(".nav-group")) {
+        closeGroups();
+      }
+      if (!target.closest("#ib-site-header") || target.closest("#ib-site-header a")) {
+        closeGroups();
+        closeMobile();
+      }
+    });
+    document.addEventListener("pointerover", (event) => {
+      if (mobile.matches || event.pointerType !== "mouse" || !(event.target instanceof Element)) return;
+      const group = event.target.closest(".nav-group");
+      if (group && !group.contains(event.relatedTarget)) openGroup(group);
+    });
+    document.addEventListener("pointerout", (event) => {
+      if (mobile.matches || event.pointerType !== "mouse" || !(event.target instanceof Element)) return;
+      const group = event.target.closest(".nav-group");
+      if (group && !group.contains(event.relatedTarget) && !group.contains(document.activeElement)) setGroupOpen(group, false);
+    });
+    document.addEventListener("focusin", (event) => {
+      if (mobile.matches || !(event.target instanceof Element)) return;
+      closeGroups(event.target.closest(".nav-group"));
+    });
+    document.addEventListener("keydown", (event) => {
+      if (!(event.target instanceof Element)) return;
+      const group = event.target.closest(".nav-group");
+      if (event.key === "ArrowDown" && event.target.matches(".nav-trigger")) {
+        event.preventDefault();
+        openGroup(group);
+        group.querySelector("a").focus();
+      }
+      if (event.key === "Escape") {
+        const header = document.getElementById("ib-site-header");
+        const openGroupElement = header.querySelector('.nav-trigger[aria-expanded="true"]');
+        if (!openGroupElement && !header.classList.contains("nav-open")) return;
+        event.preventDefault();
+        const focus = group?.querySelector(".nav-trigger") || openGroupElement || header.querySelector(".mobile-nav-toggle");
+        closeGroups();
+        if (!openGroupElement) closeMobile();
+        focus.focus();
+      }
+    });
+    mobile.addEventListener("change", () => {
+      const focused = document.activeElement;
+      closeGroups();
+      closeMobile();
+      if (focused?.closest("#ib-primary-nav")) {
+        const header = document.getElementById("ib-site-header");
+        (mobile.matches ? header.querySelector(".mobile-nav-toggle") : header.querySelector(".site-nav a")).focus();
+      }
+    });
   };
 
   // Removed: external "next" button (>>) – Spotify's own player controls are used.
@@ -545,6 +654,7 @@
   };
 
   refreshTopbar();
+  wireGroupedNavigation();
   ensureMainRegion();
   updateTopbarHeightVar();
   updatePlayerHeightVar();

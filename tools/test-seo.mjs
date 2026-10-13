@@ -312,10 +312,12 @@ test("Laser navigation and demonstration use the bilingual shared layout", async
     const links = tags(nav, "a");
     const printIndex = links.findIndex((link) => link.href === (en ? "/en/print/" : "/print/"));
     assert.equal(links[printIndex + 1].href, route);
-    assert.equal(links[printIndex + 1].class, "active");
-    assert.equal(links[printIndex + 2].href, en ? "/en/scan/" : "/scan/");
+    assert.ok(links[printIndex + 1].class.split(" ").includes("active"));
+    assert.equal(links[printIndex + 2].href, en ? "/en/cnc/" : "/cnc/");
+    assert.equal(links[printIndex + 3].href, en ? "/en/scan/" : "/scan/");
     assert.equal(links.filter((link) => link.class === "active" && !["/laser/", "/en/laser/"].includes(link.href)).length, 0);
     assert.ok(nav.includes(`href="${route}">Laser</a>`));
+    assert.match(nav, /class="nav-trigger active"[^>]+aria-controls="nav-manufacturing"/);
     const html = await read(routeFile(route));
     const iframe = tags(html, "iframe");
     assert.equal(iframe.length, 1);
@@ -329,6 +331,38 @@ test("Laser navigation and demonstration use the bilingual shared layout", async
     assert.ok(html.indexOf(heading) < html.indexOf(en ? "<h2>CO₂ laser capability" : "<h2>CO₂-laserkapacitet"));
     assert.match(html, en ? /gaskets, seals and shims in suitable verified laser materials/ : /packningar, tätningar och mellanlägg i lämpliga verifierade lasermaterial/);
     assert.match(html, en ? /exact material grade and compound/ : /exakt materialkvalitet och compound/);
+  }
+});
+
+test("Grouped navigation keeps all routes and marks parents and children in both languages", async () => {
+  const runtime = await read("assets/site.js");
+  const start = runtime.indexOf("  const buildTopbarHTML = () => {");
+  const end = runtime.indexOf("  const updatePlayerControlsLabel", start);
+  for (const en of [false, true]) {
+    for (const [section, parent] of [["laser", "manufacturing"], [en ? "mechatronics" : "mekatronik", "development"], ["coding", "projects"]]) {
+      const html = runInNewContext(runtime.slice(start, end) + "\nbuildTopbarHTML();", {
+        computeState: () => ({ isEN: en, section, svUrl: "/", enUrl: "/en/" }),
+        document: { querySelector: () => null },
+      });
+      const topLabels = [...html.matchAll(/<(?:a class="nav-link[^"]*"[^>]*|button type="button" class="nav-trigger[^"]*"[^>]*)>([^<]+)/g)].map((match) => match[1].trim());
+      assert.deepEqual(topLabels, en ? ["Home", "Development", "Manufacturing", "Case studies", "Projects", "Articles", "Shop"] : ["Start", "Utveckling", "Tillverkning", "Case", "Projekt", "Artiklar", "Webshop"]);
+      const triggers = tags(html, "button").filter((button) => button["aria-haspopup"] === "true");
+      assert.equal(triggers.length, 3);
+      assert.equal(triggers.filter((button) => button.class.includes("active"))[0]["aria-controls"], `nav-${parent}`);
+      for (const trigger of triggers) {
+        assert.equal(trigger["aria-expanded"], "false");
+        assert.ok(html.includes(`id="${trigger["aria-controls"]}" hidden`));
+      }
+      const prefix = en ? "/en/" : "/";
+      for (const slug of ["print", "laser", "cnc", "scan", "engineering", "coding", "fu-bookkeeping", "automotive", "scooter-conversions", en ? "prototyping" : "prototypframtagning", en ? "mechatronics" : "mekatronik"]) {
+        assert.ok(tags(html, "a").some((link) => link.href === `${prefix}${slug}/`));
+      }
+      for (const slug of ["shop", "case", "articles"]) {
+        assert.ok(tags(html, "a").some((link) => link.href === `/${slug}/${en ? "?lang=en" : ""}`));
+      }
+      assert.equal(tags(html, "a").filter((link) => link["aria-current"] === "page").length, 1);
+      assert.match(html, /class="mobile-nav-toggle" aria-expanded="false" aria-controls="ib-primary-nav"/);
+    }
   }
 });
 
@@ -356,7 +390,7 @@ test("Custom service CTAs are escaped and default page CTAs remain unchanged", (
 
 test("Laser click tracking uses the shared event handler once per event in both languages", async () => {
   const runtime = await read("assets/site.js");
-  const start = runtime.indexOf('  document.addEventListener("click", (event) => {');
+  const start = runtime.indexOf('  document.addEventListener("click", (event) => {', runtime.indexOf("  const gaEvent ="));
   const end = runtime.indexOf("  const gaThrottle", start);
   assert.ok(start >= 0 && end > start, "Shared analytics click handler not found");
   for (const route of ["/laser/", "/en/laser/"]) {
