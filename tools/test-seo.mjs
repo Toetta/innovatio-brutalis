@@ -443,7 +443,13 @@ test("Case facts and new material offerings are backed by the supplied sources",
   assert.match(museum, /cirka 40/);
   assert.match(museum, /As Things Stand/);
   assert.ok(museum.includes("https://lnkd.in/p/dpaWkmS5"));
-  assert.ok(museum.includes("inte installationen"));
+  const museumImage = "/assets/ogboh-emeka_As-things-stand.jpg";
+  assert.ok(tags(museum, "img").some((image) => image.src === museumImage && image.alt.includes("As Things Stand")));
+  assert.equal(metaOf(museum, "og:image"), origin + museumImage);
+  assert.equal(metaOf(museum, "twitter:image"), origin + museumImage);
+  assert.equal(schemasOf(museum)[0].image, origin + museumImage);
+  assert.ok(tags(await read("case/index.html"), "img").some((image) => image.src === museumImage));
+  assert.doesNotMatch(museum, /printerfarm|inte installationen/);
   for (const route of ["/print/", "/en/print/"]) {
     const html = await read(routeFile(route));
     assert.ok(html.includes("https://lnkd.in/p/dHxgf5sr"));
