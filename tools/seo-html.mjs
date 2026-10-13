@@ -197,10 +197,9 @@ export const pageHtml = (page, content, schemas = []) => {
     </section>
     ${content}
     <section class="card" id="${en ? "contact" : "kontakt"}" data-card-id="contact" style="margin-top:28px;">
-      <h2>${escapeHtml(page.cta?.heading || (en ? "Discuss your project" : "Ta nästa steg"))}</h2>
-      <p>${escapeHtml(page.cta?.text || (en ? "Have an idea, CAD file or physical part that needs development? Send your material or describe the problem so we can discuss the next step." : "Har du en idé, CAD-fil eller fysisk del som behöver utvecklas? Skicka underlag eller beskriv problemet så tar vi nästa steg därifrån."))}</p>
-      <p><a class="btn" href="mailto:m.arlemark@innovatio-brutalis.se" data-ga-event="quote_request">${escapeHtml(page.cta?.label || (en ? "Send a project inquiry" : "Skicka en projektförfrågan"))}</a></p>
-      <p>Innovatio Brutalis · Malmö, Skåne, ${en ? "Sweden" : "Sverige"} · m.arlemark@innovatio-brutalis.se</p>
+      <h2>${en ? "Contact" : "Kontakt"}</h2>
+      <p>${en ? "Email" : "E-post"}: <a href="mailto:m.arlemark@innovatio-brutalis.se">m.arlemark@innovatio-brutalis.se</a></p>
+      <p>Innovatio Brutalis · Malmö, Skåne, ${en ? "Sweden" : "Sverige"}</p>
     </section>
     <footer>
       <div>Innovatio Brutalis™ — ${en ? "Trademark pending registration with PRV (Sweden)." : "Varumärket är föremål för registrering hos PRV (Sverige)."}</div>

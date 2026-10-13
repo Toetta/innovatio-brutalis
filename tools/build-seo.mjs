@@ -145,10 +145,7 @@ export const buildSeo = async () => {
   ${page.faq.map(({ question, answer }) => `<h3>${escapeHtml(question)}</h3><p>${escapeHtml(answer)}</p>`).join("\n  ")}
 </section>`;
     }
-    const content = `<div class="cta-row">
-  <a class="btn" href="#${page.lang === "en" ? "contact" : "kontakt"}" data-ga-event="quote_request">${escapeHtml(page.cta?.label || (page.lang === "en" ? "Discuss your idea or part" : "Diskutera din idé eller detalj"))}</a>
-</div>
-<section class="card" style="margin-top:28px;">${serviceBodyHtml(page)}</section>
+    const content = `<section class="card" style="margin-top:28px;">${serviceBodyHtml(page)}</section>
 ${page.project_links?.length ? `<section class="card" style="margin-top:28px;">
   <h2>${page.lang === "en" ? "More documented projects" : "Fler dokumenterade projekt"}</h2>
   ${renderMarkdown(page.project_links.map(({ href, label }) => `- [${label}](${href})`).join("\n"))}

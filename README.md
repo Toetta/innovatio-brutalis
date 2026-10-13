@@ -36,9 +36,10 @@ Sitemap `lastmod` uses Git history of each page and its content sources rather t
 Dates are omitted for uncommitted changes instead of publishing a stale timestamp; committing and rebuilding
 supplies their actual Git date. Identical generated files are not rewritten.
 
-Service pages can provide an optional `cta` object with `heading`, `text` and `label` to customise the
-existing contact section and its shortcut button. Text is escaped; contact destinations and event wiring
-remain shared. Pages without this object retain their original CTA.
+Public project-inquiry buttons have been removed by owner request. Generated pages show a simple
+Contact section with the selectable email address and location instead. Hand-maintained service pages
+use the same plain contact details; service navigation, purchases and app/feedback actions are unaffected.
+An email-address link still opens the visitor's configured email application; it does not submit a form.
 
 The company uses Schema.org `ProfessionalService` (a valid LocalBusiness/Organization subtype),
 with the existing Person entity and precise service area. Phone numbers, VAT IDs, company LinkedIn links
@@ -50,11 +51,11 @@ The existing GA4 configuration is unchanged. Delegated click tracking in [assets
 works after normal and persistent-player navigation:
 
 - `contact_click`, `email_click`
-- `quote_request` (explicit `data-ga-event="quote_request"` project CTAs)
+- `quote_request` (legacy explicit project-CTA support; public inquiry buttons are no longer rendered)
 - `service_cta_click`, `prototype_page_cta`
 - `case_click`, `file_download`
 - `laser_page_cta` (contact clicks on either laser page)
-- `laser_quote_request` (explicit quote CTAs on either laser page)
+- `laser_quote_request` (legacy explicit quote-CTA support; not emitted by plain email links)
 - `laser_to_prototyping_click`, `laser_to_cnc_click`, `laser_to_print_click` (same-origin service links)
 
 Events include `page_location`, `page_path`, service/category and link text, never form values.

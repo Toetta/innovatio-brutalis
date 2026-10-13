@@ -275,11 +275,8 @@ test("Laser services lead with customer benefits and preserve verified capabilit
     }
     assert.ok(tags(await read(routeFile(en ? "/en/" : "/")), "a").some((link) => link.href === route));
     const buttons = links.filter((link) => link.class === "btn");
-    assert.equal(buttons.length, 2);
-    assert.equal(buttons[0].href, en ? "#contact" : "#kontakt");
-    assert.equal(buttons[1].href, "mailto:m.arlemark@innovatio-brutalis.se");
-    assert.ok(buttons.every((link) => link["data-ga-event"] === "quote_request"));
-    assert.equal((visible.match(new RegExp(en ? "Discuss your part" : "Diskutera din detalj", "g")) || []).length, 2);
+    assert.equal(buttons.length, 0);
+    assert.ok(links.some((link) => link.href === "mailto:m.arlemark@innovatio-brutalis.se"));
   }
   for (const [route, heading] of [["/cnc/", "CNC-bearbetning"], ["/en/cnc/", "CNC Machining"]]) {
     const html = await read(routeFile(route));
@@ -377,15 +374,24 @@ test("Service section inserts reject invalid anchors and video IDs and escape te
   assert.equal(serviceBodyHtml({ body: "Plain" }), renderMarkdown("Plain"));
 });
 
-test("Custom service CTAs are escaped and default page CTAs remain unchanged", () => {
-  const page = { route: "/laser/", title: "Laser", description: "Description", heading: "Laser" };
-  const standard = pageHtml(page, "");
-  assert.match(standard, /<h2>Ta nästa steg<\/h2>/);
-  assert.match(standard, />Skicka en projektförfrågan<\/a>/);
-  const custom = pageHtml({ ...page, cta: { heading: "<script>", text: "CAD & drawing", label: '"Part"' } }, "");
-  assert.match(custom, /<h2>&lt;script&gt;<\/h2>/);
-  assert.match(custom, /<p>CAD &amp; drawing<\/p>/);
-  assert.match(custom, />&quot;Part&quot;<\/a>/);
+test("Public pages show contact details rather than project-inquiry buttons", async () => {
+  for (const route of expectedRoutes) {
+    const html = await read(routeFile(route));
+    for (const link of tags(html, "a")) {
+      const isButton = (link.class || "").split(/\s+/).includes("btn");
+      const url = new URL(link.href, origin + route);
+      const isContact = url.protocol === "mailto:" || (url.origin === origin && ["#kontakt", "#contact"].includes(url.hash));
+      assert.ok(!(isButton && isContact), `Project/contact button remains: ${route} -> ${link.href}`);
+      assert.notEqual(link["data-ga-event"], "quote_request", route);
+    }
+    assert.doesNotMatch(html, /Skicka en projektförfrågan|Send a project inquiry/);
+  }
+  for (const lang of ["sv", "en"]) {
+    const html = pageHtml({ route: "/laser/", title: "Laser", description: "Description", heading: "Laser", lang }, "");
+    assert.ok(html.includes(`<h2>${lang === "en" ? "Contact" : "Kontakt"}</h2>`));
+    assert.ok(html.includes('href="mailto:m.arlemark@innovatio-brutalis.se">m.arlemark@innovatio-brutalis.se</a>'));
+    assert.doesNotMatch(html, /class="btn"|quote_request/);
+  }
 });
 
 test("Laser click tracking uses the shared event handler once per event in both languages", async () => {
@@ -439,6 +445,13 @@ test("Case facts and new material offerings are backed by the supplied sources",
   const production = await read("case/smaserieproduktion-3d-print/index.html");
   assert.match(production, /2 000/);
   assert.ok(production.includes("https://lnkd.in/p/ds24hSAD"));
+  const productionImage = "/assets/st%C3%A4ll.jpeg";
+  assert.ok(tags(production, "img").some((image) => image.src === productionImage && image.alt.includes("ställ")));
+  assert.equal(metaOf(production, "og:image"), origin + productionImage);
+  assert.equal(metaOf(production, "twitter:image"), origin + productionImage);
+  assert.equal(schemasOf(production)[0].image, origin + productionImage);
+  assert.ok(tags(await read("case/index.html"), "img").some((image) => image.src === productionImage));
+  assert.doesNotMatch(production, /Verkstadsbilden|processbild/);
   const museum = await read("case/moderna-museet-additiv-tillverkning/index.html");
   assert.match(museum, /cirka 40/);
   assert.match(museum, /As Things Stand/);
