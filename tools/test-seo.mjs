@@ -339,9 +339,32 @@ test("Consent bootstrap gates analytics and external media", async () => {
   assert.match(consent, /G-LGJK9XKDZB/);
   assert.match(consent, /mediaAllowed/);
   assert.match(consent, /analyticsAllowed/);
-  assert.match(consent, /analytics_storage:"denied"/);
-  assert.match(consent, /analytics_storage:"granted"/);
+  assert.match(consent, /analytics_storage:\s*"denied"/);
+  assert.match(consent, /analytics_storage:\s*"granted"/);
   assert.match(consent, /data-consent-src/);
+  assert.match(consent, /ib-consent-v2/);
+  assert.match(consent, /MAX_AGE_MS\s*=\s*180/);
+  assert.match(consent, /GA_COOKIE_SECONDS\s*=\s*90/);
+  assert.match(consent, /cookie_update:\s*false/);
+  assert.match(consent, /allow_google_signals:\s*false/);
+  assert.match(consent, /allow_ad_personalization_signals:\s*false/);
+  assert.match(consent, /excludedPath/);
+  assert.match(consent, /safeAnalyticsUrl/);
+  const runtime = await read("assets/site.js");
+  assert.match(runtime, /canTrackCurrentPage\(\)/);
+  assert.match(runtime, /safePageLocation\(\)/);
+  assert.doesNotMatch(runtime, /page_location:\s*window\.location\.href/);
+  assert.doesNotMatch(runtime, /link_text:\s*\(link\.textContent/);
+  const spotifyGuard = runtime.slice(runtime.indexOf("// Privacy: defer third-party Spotify initialization"),
+    runtime.indexOf("// Global resize handler already maintains", runtime.indexOf("// Privacy: defer third-party Spotify initialization")));
+  assert.ok(spotifyGuard.includes("} else {"), "Spotify consent must scope init, not abort site runtime");
+  assert.doesNotMatch(spotifyGuard.slice(0, spotifyGuard.indexOf("} else {")), /^\s*return;\s*$/m);
+  const policy = await read("integritet/index.html");
+  for (const term of ["Personuppgiftsansvarig", "kundkonton", "beställningar", "bokföringslagen",
+    "Stripe", "Klarna", "Cloudflare", "180 dagar", "90 dagar", "IMY", "Integritet och cookies"]) {
+    assert.ok(policy.toLowerCase().includes(term.toLowerCase()), "Privacy notice missing " + term);
+  }
+
   for (const route of expectedRoutes) {
     const html = await read(routeFile(route));
     assert.match(html, /assets\/consent\.js/);
