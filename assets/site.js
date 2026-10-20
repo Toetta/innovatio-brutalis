@@ -1800,6 +1800,19 @@
 
       window.IBSpotifyPlayer = { show, restore, nextRandom, prev };
 
+      // Privacy: defer third-party Spotify initialization until explicit media consent.
+      if (window.IBConsent && !window.IBConsent.mediaAllowed()) {
+        const panel = document.getElementById("ib-spotify-embed");
+        if (panel) {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "btn small";
+          button.textContent = document.documentElement.lang === "en" ? "Enable Spotify" : "Aktivera Spotify";
+          button.addEventListener("click", () => window.IBConsent.allowMedia());
+          panel.replaceChildren(button);
+        }
+        return;
+      }
       const didRestore = restore();
       if (!didRestore) {
         // Default: prefer page-provided meta, else show something sensible so the

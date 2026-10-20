@@ -2,13 +2,8 @@
 <html lang="en">
 <head>
   <!-- Google tag (gtag.js) -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-LGJK9XKDZB');
-  </script>
+  <script defer src="/assets/consent.js"></script>
+  <link rel="stylesheet" href="/assets/consent.css">
 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -105,7 +100,7 @@
       <div class="video-feature">
         <div class="video-frame">
           <iframe
-            src="https://www.youtube.com/embed/m_areWpZ50w?si=jH7a5Hvu-jSPYX8R"
+            data-consent-src="https://www.youtube.com/embed/m_areWpZ50w?si=jH7a5Hvu-jSPYX8R"
             title="CNC machining"
             loading="lazy"
             allowfullscreen>
@@ -115,10 +110,10 @@
 
       <p style="margin:14px 0 8px; color: var(--text-muted);">More videos</p>
       <div class="video-grid">
-        <iframe src="https://www.youtube.com/embed/fkRDk68YT3A" title="CNC machining" loading="lazy" allowfullscreen></iframe>
-        <iframe src="https://www.youtube.com/embed/GYmuXTlQczU" title="Machining" loading="lazy" allowfullscreen></iframe>
-        <iframe src="https://www.youtube.com/embed/l-BYCi1tIUU" title="Machining (short)" loading="lazy" allowfullscreen></iframe>
-        <iframe src="https://www.youtube.com/embed/aqmP5YHP7Bs" title="Prototype (short)" loading="lazy" allowfullscreen></iframe>
+        <iframe data-consent-src="https://www.youtube.com/embed/fkRDk68YT3A" title="CNC machining" loading="lazy" allowfullscreen></iframe>
+        <iframe data-consent-src="https://www.youtube.com/embed/GYmuXTlQczU" title="Machining" loading="lazy" allowfullscreen></iframe>
+        <iframe data-consent-src="https://www.youtube.com/embed/l-BYCi1tIUU" title="Machining (short)" loading="lazy" allowfullscreen></iframe>
+        <iframe data-consent-src="https://www.youtube.com/embed/aqmP5YHP7Bs" title="Prototype (short)" loading="lazy" allowfullscreen></iframe>
       </div>
     </aside>
   </section>
