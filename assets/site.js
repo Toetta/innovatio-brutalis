@@ -684,7 +684,8 @@
     const url = new URL(href, window.location.href);
     const { section } = computeState();
     const service = link.dataset.gaService || section || "home";
-    const params = { service, category: link.dataset.gaCategory || service, link_text: (link.textContent || "").trim().slice(0, 80) };
+    // Never forward arbitrary link text: it can include email addresses or other personal data.
+    const params = { service, category: link.dataset.gaCategory || service };
     const events = new Set();
     const isContact = /^mailto:|^tel:/i.test(href) || (url.origin === window.location.origin && /^#(?:kontakt|contact)$/.test(url.hash));
     if (isContact) {
@@ -1968,7 +1969,6 @@
           popup_url: url.pathname,
           popup_width: width,
           popup_height: height,
-          link_text: (link.textContent || "").trim().slice(0, 80),
           page_path: window.location.pathname,
         });
       }
