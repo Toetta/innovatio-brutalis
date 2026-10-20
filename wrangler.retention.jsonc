@@ -14,8 +14,8 @@
     }
   ],
   "vars": {
-    "GDPR_RETENTION_CRON_ENABLED": "false",
-    "GDPR_RETENTION_PRODUCTION_APPROVED": "false"
+    "GDPR_RETENTION_CRON_ENABLED": "true",
+    "GDPR_RETENTION_PRODUCTION_APPROVED": "true"
   },
   "observability": { "enabled": true }
 }
