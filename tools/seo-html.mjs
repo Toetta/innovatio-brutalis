@@ -173,7 +173,8 @@ export const pageHtml = (page, content, schemas = []) => {
   <link rel="manifest" href="/site.webmanifest">
   <meta name="theme-color" content="#262425">
   <link rel="stylesheet" href="/css/style.css">
-  <script defer src="/assets/consent.js"></script>\n  <link rel="stylesheet" href="/assets/consent.css">
+  <script defer src="/assets/consent.js"></script>
+  <link rel="stylesheet" href="/assets/consent.css">
   ${schemas.map(jsonLd).join("\n  ")}
 </head>
 <body>
