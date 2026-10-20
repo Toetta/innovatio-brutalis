@@ -95,7 +95,9 @@ test("Landing pages have unique titles/descriptions, one H1, canonical and socia
     assert.ok(!/noindex/i.test(metaOf(html, "robots") || ""), `Unexpected noindex: ${route}`);
     for (const name of ["og:type", "og:title", "og:description", "og:url", "og:image"]) assert.ok(metaOf(html, name), `Missing ${name}: ${route}`);
     assert.equal(metaOf(html, "og:url"), origin + route);
-    assert.match(html, /googletagmanager\.com\/gtag\/js\?id=G-LGJK9XKDZB/);
+    assert.match(html, /<script defer src="\/assets\/consent\.js"><\/script>/);
+    assert.doesNotMatch(html, /<script[^>]+src="https:\/\/www\.googletagmanager\.com\/gtag\/js/);
+    assert.doesNotMatch(html, /gtag\([\x27\x22]config[\x27\x22],\s*[\x27\x22]G-LGJK9XKDZB/);
     schemasOf(html);
   }
   const home = await read("index.html");
@@ -318,7 +320,8 @@ test("Laser navigation and demonstration use the bilingual shared layout", async
     const html = await read(routeFile(route));
     const iframe = tags(html, "iframe");
     assert.equal(iframe.length, 1);
-    assert.equal(iframe[0].src, "https://www.youtube-nocookie.com/embed/OryPv1FHqc8");
+    assert.equal(iframe[0]["data-consent-src"], "https://www.youtube-nocookie.com/embed/OryPv1FHqc8");
+    assert.equal(iframe[0].src, undefined, "YouTube must not load before a user action");
     assert.equal(iframe[0].loading, "lazy");
     assert.equal(iframe[0].title, "Bambu Lab R1 CO₂ laser demonstration");
     assert.match(html, /loading="lazy" allowfullscreen/);
@@ -328,6 +331,25 @@ test("Laser navigation and demonstration use the bilingual shared layout", async
     assert.ok(html.indexOf(heading) < html.indexOf(en ? "<h2>CO₂ laser capability" : "<h2>CO₂-laserkapacitet"));
     assert.match(html, en ? /gaskets, seals and shims in suitable verified laser materials/ : /packningar, tätningar och mellanlägg i lämpliga verifierade lasermaterial/);
     assert.match(html, en ? /exact material grade and compound/ : /exakt materialkvalitet och compound/);
+  }
+});
+
+test("Consent bootstrap gates analytics and external media", async () => {
+  const consent = await read("assets/consent.js");
+  assert.match(consent, /G-LGJK9XKDZB/);
+  assert.match(consent, /mediaAllowed/);
+  assert.match(consent, /analyticsAllowed/);
+  assert.match(consent, /analytics_storage:"denied"/);
+  assert.match(consent, /analytics_storage:"granted"/);
+  assert.match(consent, /data-consent-src/);
+  for (const route of expectedRoutes) {
+    const html = await read(routeFile(route));
+    assert.match(html, /assets\/consent\.js/);
+    assert.doesNotMatch(html, /<script[^>]+src="https:\/\/www\.googletagmanager\.com\/gtag\/js/);
+    for (const iframe of tags(html, "iframe").filter((tag) => /youtube/i.test(tag.src || tag["data-consent-src"] || ""))) {
+      assert.ok(iframe["data-consent-src"], `Premature YouTube iframe source: ${route}`);
+      assert.ok(!iframe.src, `YouTube source loaded before consent: ${route}`);
+    }
   }
 });
 
