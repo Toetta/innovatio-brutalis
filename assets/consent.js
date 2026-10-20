@@ -196,6 +196,8 @@
   }
   window.IBConsent = {
     analyticsAllowed, mediaAllowed, openPreferences,
+    canTrackCurrentPage: () => !excludedPath(),
+    safePageLocation: safeAnalyticsUrl,
     allowMedia: () => save(analyticsAllowed(), true)
   };
   if (document.readyState === "loading") {
