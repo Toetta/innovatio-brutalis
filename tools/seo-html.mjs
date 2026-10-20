@@ -119,7 +119,7 @@ export const serviceBodyHtml = (page) => {
   <h2>${escapeHtml(video.heading)}</h2>
   <p>${escapeHtml(video.intro)}</p>
   <div class="video-feature"><div class="video-frame">
-    <iframe src="https://www.youtube-nocookie.com/embed/${video.youtube_id}" title="${escapeHtml(video.title)}" loading="lazy" allowfullscreen></iframe>
+    <iframe data-consent-src="https://www.youtube-nocookie.com/embed/${video.youtube_id}" title="${escapeHtml(video.title)}" loading="lazy" allowfullscreen></iframe>
   </div></div>
 </section>`;
     } else {
@@ -173,13 +173,7 @@ export const pageHtml = (page, content, schemas = []) => {
   <link rel="manifest" href="/site.webmanifest">
   <meta name="theme-color" content="#262425">
   <link rel="stylesheet" href="/css/style.css">
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-LGJK9XKDZB"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-LGJK9XKDZB');
-  </script>
+  <script defer src="/assets/consent.js"></script>\n  <link rel="stylesheet" href="/assets/consent.css">
   ${schemas.map(jsonLd).join("\n  ")}
 </head>
 <body>
