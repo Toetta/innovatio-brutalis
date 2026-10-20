@@ -339,9 +339,28 @@ test("Consent bootstrap gates analytics and external media", async () => {
   assert.match(consent, /G-LGJK9XKDZB/);
   assert.match(consent, /mediaAllowed/);
   assert.match(consent, /analyticsAllowed/);
-  assert.match(consent, /analytics_storage:"denied"/);
-  assert.match(consent, /analytics_storage:"granted"/);
+  assert.match(consent, /analytics_storage:\s*"denied"/);
+  assert.match(consent, /analytics_storage:\s*"granted"/);
   assert.match(consent, /data-consent-src/);
+  assert.match(consent, /cookie_expires: COOKIE_SECONDS/);
+  assert.match(consent, /cookie_update: false/);
+  assert.match(consent, /allow_google_signals: false/);
+  assert.match(consent, /allow_ad_personalization_signals: false/);
+  assert.match(consent, /TTL_MS = 180/);
+  assert.match(consent, /pageLocationForAnalytics/);
+  assert.match(consent, /utm_source/);
+  assert.match(consent, /deleteGaCookies/);
+  const privacy = await read("integritet/index.html");
+  for (const required of ["Google Analytics", "Stripe", "Klarna", "Spotify", "YouTube",
+    "Integritetsskyddsmyndigheten", "rättslig grund", "sju år", "30 dagar", "180 dagar"]) {
+    assert.ok(privacy.includes(required) || privacy.toLowerCase().includes(required.toLowerCase()),
+      `Missing privacy disclosure: ${required}`);
+  }
+  assert.match(privacy, /noindex,follow/);
+  const runtime = await read("assets/site.js");
+  assert.match(runtime, /End consented Spotify initialization/);
+  assert.doesNotMatch(runtime, /return;\s*}\s*const didRestore = restore\(\);/);
+
   for (const route of expectedRoutes) {
     const html = await read(routeFile(route));
     assert.match(html, /assets\/consent\.js/);
@@ -531,7 +550,7 @@ test("Noindex headers preserve API/payment responses and maintenance behavior", 
 });
 
 test("JavaScript syntax is valid", () => {
-  for (const file of ["assets/site.js", "tools/build-seo.mjs", "tools/seo-html.mjs", "functions/_middleware.js"]) {
+  for (const file of ["assets/consent.js", "assets/site.js", "tools/build-seo.mjs", "tools/seo-html.mjs", "functions/_middleware.js"]) {
     execFileSync(process.execPath, ["--check", path.join(root, ...file.split("/"))], { stdio: "pipe" });
   }
 });
