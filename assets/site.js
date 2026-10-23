@@ -665,11 +665,12 @@
   const gaEvent = (name, params = {}) => {
     try {
       if (shouldNoopApp()) return;
-      if (typeof window.gtag !== "function") return;
+      if (typeof window.gtag !== "function" || !window.IBConsent?.analyticsAllowed() ||
+          !window.IBConsent?.canTrackCurrentPage()) return;
       const safeParams = (params && typeof params === "object") ? params : {};
       window.gtag("event", String(name), {
         ...safeParams,
-        page_location: window.location.href,
+        page_location: window.IBConsent.safePageLocation(),
         page_path: window.location.pathname || undefined,
       });
     } catch (_) {}
@@ -683,7 +684,8 @@
     const url = new URL(href, window.location.href);
     const { section } = computeState();
     const service = link.dataset.gaService || section || "home";
-    const params = { service, category: link.dataset.gaCategory || service, link_text: (link.textContent || "").trim().slice(0, 80) };
+    // Never forward arbitrary link text: it can include email addresses or other personal data.
+    const params = { service, category: link.dataset.gaCategory || service };
     const events = new Set();
     const isContact = /^mailto:|^tel:/i.test(href) || (url.origin === window.location.origin && /^#(?:kontakt|contact)$/.test(url.hash));
     if (isContact) {
@@ -1798,7 +1800,30 @@
         }
       };
 
-      window.IBSpotifyPlayer = { show, restore, nextRandom, prev };
+      window.IBSpotifyPlayer = {
+        show: (...args) => {
+          if (window.IBConsent && !window.IBConsent.mediaAllowed()) {
+            window.IBConsent.allowMedia();
+            return false;
+          }
+          return show(...args);
+        },
+        restore: () => window.IBConsent?.mediaAllowed() ? restore() : false,
+        nextRandom: (...args) => {
+          if (window.IBConsent && !window.IBConsent.mediaAllowed()) {
+            window.IBConsent.allowMedia();
+            return false;
+          }
+          return nextRandom(...args);
+        },
+        prev: (...args) => {
+          if (window.IBConsent && !window.IBConsent.mediaAllowed()) {
+            window.IBConsent.allowMedia();
+            return false;
+          }
+          return prev(...args);
+        }
+      };
 
       // Privacy: defer third-party Spotify initialization until explicit media consent.
       if (window.IBConsent && !window.IBConsent.mediaAllowed()) {
@@ -1811,8 +1836,9 @@
           button.addEventListener("click", () => window.IBConsent.allowMedia());
           panel.replaceChildren(button);
         }
-        return;
-      }
+        const root = document.getElementById("ib-spotify-player");
+        if (root) root.style.display = "";
+      } else {
       const didRestore = restore();
       if (!didRestore) {
         // Default: prefer page-provided meta, else show something sensible so the
@@ -1894,6 +1920,7 @@
         } catch (_) {}
       })();
 
+      } // End permitted Spotify initialization (no early return from site runtime).
       // Global resize handler already maintains --ib-topbar-h and --ib-player-h.
     } catch (_) {}
   }
@@ -1924,7 +1951,8 @@
     // Analytics: record popup clicks (even if the popup gets blocked).
     // This lets GA4 report click intent separately from pageviews.
     try {
-      if (typeof window.gtag === "function") {
+      if (typeof window.gtag === "function" && window.IBConsent?.analyticsAllowed() &&
+          window.IBConsent?.canTrackCurrentPage()) {
         const url = new URL(href, window.location.origin);
         const pathLower = (url.pathname || "").toLowerCase();
         const popupName = pathLower.includes("gearbox_visualiser.html")
@@ -1938,10 +1966,9 @@
         window.gtag("event", eventName, {
           transport_type: "beacon",
           popup_name: popupName,
-          popup_url: url.pathname + url.search,
+          popup_url: url.pathname,
           popup_width: width,
           popup_height: height,
-          link_text: (link.textContent || "").trim().slice(0, 80),
           page_path: window.location.pathname,
         });
       }
