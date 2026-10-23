@@ -1811,8 +1811,9 @@
           button.addEventListener("click", () => window.IBConsent.allowMedia());
           panel.replaceChildren(button);
         }
-        return;
-      }
+        const root = document.getElementById("ib-spotify-player");
+        if (root) root.style.display = "";
+      } else {
       const didRestore = restore();
       if (!didRestore) {
         // Default: prefer page-provided meta, else show something sensible so the
@@ -1894,6 +1895,7 @@
         } catch (_) {}
       })();
 
+      } // End consented Spotify initialization; do not exit the site runtime.
       // Global resize handler already maintains --ib-topbar-h and --ib-player-h.
     } catch (_) {}
   }
