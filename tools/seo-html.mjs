@@ -110,7 +110,26 @@ export const serviceBodyHtml = (page) => {
       throw new Error(`Section needs a unique body heading: ${section.before_heading}`);
     }
     let content;
-    if (section.video) {
+    if (section.gallery) {
+      const gallery = section.gallery;
+      if (!gallery.heading || !Array.isArray(gallery.items) || !gallery.items.length) throw new Error("Invalid service gallery");
+      const cards = gallery.items.map((item) => {
+        if ((typeof item.src !== "string" || !item.src.startsWith("/assets/laser/") || !item.src.endsWith(".webp") || item.src.includes("..")) || !item.alt || !item.title || !item.description ||
+            !Number.isSafeInteger(item.width) || !Number.isSafeInteger(item.height) || item.width < 1 || item.height < 1) {
+          throw new Error("Invalid service gallery item");
+        }
+        return `    <article class="project-card">
+      <div class="project-thumb"><img src="${escapeHtml(item.src)}" alt="${escapeHtml(item.alt)}" loading="lazy" decoding="async" width="${item.width}" height="${item.height}"></div>
+      <div class="project-content"><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.description)}</p></div>
+    </article>`;
+      });
+      content = `<section aria-label="${escapeHtml(gallery.heading)}">
+  <h2>${escapeHtml(gallery.heading)}</h2>
+  <div class="project-grid">
+${cards.join("\n")}
+  </div>
+</section>`;
+    } else if (section.video) {
       const video = section.video;
       if (!/^[A-Za-z0-9_-]{11}$/.test(video.youtube_id) || !video.heading || !video.intro || !video.title) {
         throw new Error("Invalid service video");
