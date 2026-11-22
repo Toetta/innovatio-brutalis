@@ -35,6 +35,13 @@ Malmö, Skåne, southern Sweden and Sweden.
 - [English mechatronics](https://www.innovatio-brutalis.se/en/mechatronics/)
 - [English laser cutting](https://www.innovatio-brutalis.se/en/laser/)
 
+## Laser signs, personalised gifts and subcontracting
+Innovatio Brutalis produces laser-cut acrylic lettering, sign components, branding details and low-volume promotional items in Malmö, Sweden. Sign makers, advertising agencies and other businesses can enquire about subcontract laser cutting and engraving, custom design adaptation and small series.
+Four-axis rotary laser engraving is available for suitable coated tumblers and glassware. Engraving coated tumblers can reveal the material below the finish; glass engraving normally gives a frosted look. Innovatio Brutalis keeps drink tumblers in stock that can be supplied with the customer's own name, logo or artwork. Exact product availability, quantity and finish must be confirmed when ordering.
+The laser page contains three photographed examples of our own work: multilayer graphic lettering, laser-engraved tumbler and laser-engraved glassware. These are real production/test photos, not third-party or fictional customer cases.
+Swedish service page: https://www.innovatio-brutalis.se/laser/
+English service page: https://www.innovatio-brutalis.se/en/laser/
+
 ## Laser capability and process selection
 The right manufacturing method for each part of the prototype: CAD, mechatronics, 3D printing, CO₂ laser cutting, CNC and reverse engineering can be combined.
 Bambu Lab R1, 55 W CO₂, normal work area 600 × 300 mm. Installed Auto-feed Conveyor supports material up to 3 000 mm long through incremental feeding; the active width remains 600 mm. Riser Base is installed.
